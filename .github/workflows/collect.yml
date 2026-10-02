@@ -43,6 +43,7 @@ jobs:
           import time
           import unicodedata
           import urllib.parse
+          import urllib.error
           import urllib.request
 
           ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -51,7 +52,7 @@ jobs:
                 "(KHTML, like Gecko) Chrome/128.0 Safari/537.36")
           PAUSE = 1.0  # secondes entre deux pages, pour rester discret
 
-          LIMITS = {"sg": 60, "ra": 200, "br": 60, "tac": 30, "fest": 80}
+          LIMITS = {"sg": 40, "ra": 200, "br": 60, "tac": 30, "fest": 50}
           HORIZON_DAYS = 365  # court terme et long terme (festivals, grosses dates)
 
           # FOMO couvre uniquement la France pour l'instant
@@ -74,18 +75,34 @@ jobs:
               return re.sub(r"[^a-z0-9]+", "-", s).strip("-")
 
 
-          def get(url, data=None, headers=None, tries=2):
+          def get(url, data=None, headers=None, tries=4):
+              """Télécharge une page. Si le site répond 429 (trop de requêtes), on attend ce qu'il demande puis on réessaie."""
               last = None
               for i in range(tries):
                   try:
-                      h = {"User-Agent": UA, "Accept-Language": "fr-FR,fr;q=0.9,en;q=0.8"}
+                      h = {"User-Agent": UA, "Accept-Language": "fr-FR,fr;q=0.9,en;q=0.8",
+                           "Accept": "text/html,application/xhtml+xml,application/json;q=0.9,*/*;q=0.8"}
                       h.update(headers or {})
                       req = urllib.request.Request(url, data=data, headers=h)
                       with urllib.request.urlopen(req, timeout=30) as r:
                           return r.read().decode("utf-8", "replace")
+                  except urllib.error.HTTPError as e:
+                      last = e
+                      if e.code == 429:
+                          try:
+                              wait = int(e.headers.get("Retry-After") or 0)
+                          except ValueError:
+                              wait = 0
+                          wait = min(max(wait, 20 * (i + 1)), 120)
+                          log(f"   429 sur {url[:70]} : pause de {wait} s")
+                          time.sleep(wait)
+                      elif e.code in (403, 404):
+                          raise
+                      else:
+                          time.sleep(5)
                   except Exception as e:  # noqa: BLE001
                       last = e
-                      time.sleep(3)
+                      time.sleep(5)
               raise last
 
 
@@ -177,14 +194,22 @@ jobs:
 
 
           # ---------------- Shotgun ----------------
+          SG_PAUSE = 4.0  # Shotgun limite les visites : on ralentit
+
+
           def sg_pages(slugs, city, kind=None, prefix="events"):
-              out = []
+              out, fails = [], 0
               for sl in slugs:
-                  time.sleep(PAUSE)
+                  time.sleep(SG_PAUSE)
                   try:
                       evs = ld_events(get(f"https://shotgun.live/fr/{prefix}/{sl}"))
+                      fails = 0
                   except Exception as e:  # noqa: BLE001
                       log("   ! ", sl, e)
+                      fails += 1
+                      if fails >= 3:
+                          log("   Shotgun refuse pour l'instant : on garde ce qui a été récupéré")
+                          break
                       continue
                   if evs:
                       out.append(from_ld(evs[0], "sg", "s-" + sl, city, kind))
@@ -196,7 +221,7 @@ jobs:
               page = get(f"https://shotgun.live/fr/cities/{s}?page=8")  # les pages sont cumulatives
               slugs = uniq(re.findall(r'/events/([a-z0-9][a-z0-9-]+)', page))
               try:
-                  time.sleep(PAUSE)
+                  time.sleep(SG_PAUSE)
                   conc = get(f"https://shotgun.live/fr/concerts/{s}?page=4")
                   slugs += [x for x in uniq(re.findall(r'/events/([a-z0-9][a-z0-9-]+)', conc)) if x not in slugs]
               except Exception as e:  # noqa: BLE001
@@ -386,6 +411,17 @@ jobs:
                       except Exception:  # noqa: BLE001
                           pass
                   s = slug(city)
+                  prev_path = os.path.join(DATA, s + ".json")
+                  if report.get("sg", {}).get("err") and os.path.exists(prev_path):
+                      try:
+                          old = json.load(open(prev_path, encoding="utf-8"))
+                          kept = [e for e in old.get("events", []) if e.get("src") == "sg"]
+                          if kept:
+                              events_sg = [e for e in kept if e.get("d") and e["d"] > now.isoformat()[:10]]
+                              keep += events_sg
+                              report["sg"]["kept"] = len(events_sg)
+                      except Exception:  # noqa: BLE001
+                          pass
                   json.dump({"city": city, "updated": now.isoformat(), "sources": report, "events": keep},
                             open(os.path.join(DATA, s + ".json"), "w", encoding="utf-8"), ensure_ascii=False)
                   index["cities"][s] = {"name": city, "updated": now.isoformat(), "n": len(keep), "sources": report}
