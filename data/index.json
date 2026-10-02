@@ -1,0 +1,35 @@
+{
+ "cities": {
+  "paris": {
+   "name": "Paris",
+   "updated": "2026-10-02T13:17:46.340271+00:00",
+   "n": 202,
+   "sources": {
+    "sg": {
+     "n": 0,
+     "err": "HTTP Error 429: Too Many Requests"
+    },
+    "ra": {
+     "n": 168
+    },
+    "br": {
+     "n": 30
+    },
+    "tac": {
+     "n": 13
+    }
+   }
+  },
+  "france": {
+   "name": "France (festivals)",
+   "n": 0,
+   "sources": {
+    "sg": {
+     "n": 0,
+     "err": "HTTP Error 429: Too Many Requests"
+    }
+   }
+  }
+ },
+ "updated": "2026-10-02T13:17:46.340271+00:00"
+}
