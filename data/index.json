@@ -2,8 +2,8 @@
  "cities": {
   "paris": {
    "name": "Paris",
-   "updated": "2026-10-03T16:04:43.809379+00:00",
-   "n": 196,
+   "updated": "2026-10-03T16:22:32.292709+00:00",
+   "n": 832,
    "sources": {
     "sg": {
      "n": 0,
@@ -12,24 +12,64 @@
     "ra": {
      "n": 168
     },
+    "dice": {
+     "n": 375
+    },
+    "fnac": {
+     "n": 0,
+     "err": "HTTP Error 403: Forbidden"
+    },
     "br": {
      "n": 30
     },
     "tac": {
      "n": 13
+    },
+    "offi": {
+     "n": 359
     }
    }
   },
   "france": {
-   "name": "France (festivals)",
+   "name": "Festivals",
+   "updated": "2026-10-03T16:22:32.292709+00:00",
+   "n": 32,
+   "sources": {
+    "festivals": {
+     "n": 32
+    }
+   }
+  },
+  "sports": {
+   "name": "Sport (France)",
+   "updated": "2026-10-03T16:22:32.292709+00:00",
+   "n": 983,
+   "sources": {
+    "sports": {
+     "n": 983
+    }
+   }
+  },
+  "races": {
+   "name": "Courses (France)",
+   "updated": "2026-10-03T16:22:32.292709+00:00",
+   "n": 5516,
+   "sources": {
+    "races": {
+     "n": 5516
+    }
+   }
+  },
+  "artists": {
+   "name": "Dates de tes artistes",
+   "updated": "2026-10-03T16:22:32.292709+00:00",
    "n": 0,
    "sources": {
-    "sg": {
-     "n": 0,
-     "err": "HTTP Error 429: Too Many Requests"
+    "artists": {
+     "n": 0
     }
    }
   }
  },
- "updated": "2026-10-03T16:04:43.809379+00:00"
+ "updated": "2026-10-03T16:22:32.292709+00:00"
 }
