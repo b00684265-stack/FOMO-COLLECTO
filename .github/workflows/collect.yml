@@ -17,7 +17,7 @@ concurrency:
 jobs:
   collect:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 75
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -28,7 +28,8 @@ jobs:
           mkdir -p collector config data
           [ -f config/cities.json ] || echo '{"home": "Paris", "cities": ["Paris"]}' > config/cities.json
           cat > collector/collect.py <<'PYEOF'
-          """FOMO · collecteur gratuit d'événements (Shotgun, Resident Advisor, BilletReduc, Ticketac).
+          """FOMO · collecteur gratuit d'événements (Shotgun, Resident Advisor, DICE, BilletReduc, Ticketac,
+          L'Officiel des spectacles, Fnac Spectacles, sport, courses Finishers, festivals et artistes RA).
 
           Tourne chaque nuit sur GitHub Actions (ou à la demande depuis l'app FOMO).
           Lit config/cities.json, écrit un fichier data/<ville>.json par ville et data/index.json.
@@ -52,7 +53,7 @@ jobs:
                 "(KHTML, like Gecko) Chrome/128.0 Safari/537.36")
           PAUSE = 1.0  # secondes entre deux pages, pour rester discret
 
-          LIMITS = {"sg": 40, "ra": 200, "br": 60, "tac": 30, "fest": 50}
+          LIMITS = {"sg": 40, "ra": 200, "br": 60, "tac": 30, "fest": 50, "dice_venues": 25, "offi_detail": 120, "bit": 60, "ra_art": 40}
           HORIZON_DAYS = 365  # court terme et long terme (festivals, grosses dates)
 
           # FOMO couvre uniquement la France pour l'instant
@@ -188,6 +189,8 @@ jobs:
                   "lineup": [html.unescape(p.get("name", "")) for p in perf if isinstance(p, dict) and p.get("name")][:12],
                   "desc": html.unescape(re.sub(r"<[^>]+>", " ", str(ev.get("description", ""))))[:600],
                   "sale_at": min(future).isoformat() if future and not on_sale_now else None,
+                  "tiers": [len([x for x in offers if isinstance(x, dict)]), len([x for x in offers if isinstance(x, dict) and re.search(r"SoldOut", str(x.get("availability", "")))])],
+                  "lottery": bool(re.search(r"tirage au sort|lottery|ballot", str(ev.get("description", "")), re.I)),
                   "rating": num(rating.get("ratingValue")) if isinstance(rating, dict) else None,
                   "ratingCount": rating.get("ratingCount") if isinstance(rating, dict) else None,
               }
@@ -243,8 +246,8 @@ jobs:
           # ---------------- Resident Advisor ----------------
           RA_Q = """query GET_EVENT_LISTINGS($filters: FilterInputDtoInput, $pageSize: Int, $page: Int){
            eventListings(filters:$filters,pageSize:$pageSize,page:$page){ totalResults data{ id event{
-            id date startTime endTime title contentUrl flyerFront attending isTicketed
-            venue{ id name contentUrl area{ id name } } artists{ id name } pick{ id blurb } } } } }"""
+            id date startTime endTime title contentUrl flyerFront attending isTicketed cost isFestival genres{ name }
+            venue{ id name contentUrl capacity area{ id name } } artists{ id name } pick{ id blurb } } } } }"""
 
 
           def ra_post(payload):
@@ -295,12 +298,462 @@ jobs:
                           "lineup": [a.get("name") for a in (e.get("artists") or []) if a.get("name")][:12],
                           "desc": ((e.get("pick") or {}).get("blurb") or "")[:400],
                           "pop": e.get("attending") or 0, "pick": bool(e.get("pick")),
+                          "genres": [g.get("name") for g in (e.get("genres") or []) if g.get("name")],
+                          "kind": "festival" if e.get("isFestival") else None, "cap": num(v.get("capacity")) or None,
+                          "cost": e.get("cost") or "",
                       })
+                      c = re.findall(r"\d+", e.get("cost") or "")
+                      if c:
+                          out[-1]["p"] = int(c[0])
+                      if re.search(r"complet|sold.?out", e.get("title") or "", re.I):
+                          out[-1]["soldout"] = True
                   if len(rows) < 50:
                       break
                   page += 1
                   time.sleep(PAUSE)
               return out[:cap]
+
+
+          # ---------------- RA : festivals (France + Europe) et dates à venir des artistes suivis ----------------
+          RA_LIST_Q = """query L($filters:[FilterInput],$pageSize:Int,$page:Int,$aggregations:[ListingAggregationType!],$sortOrder:FilterSortOrderType,$sortField:FilterSortFieldType,$indices:[IndexType!]){
+           listing(filters:$filters,pageSize:$pageSize,page:$page,aggregations:$aggregations,sortOrder:$sortOrder,sortField:$sortField,indices:$indices){
+            totalResults data{ ...on Event{ id title date startTime endTime contentUrl flyerFront interestedCount cost genres{ name } artists{ name }
+             venue{ name capacity area{ name country{ name urlCode } } } } } } }"""
+          EUROPE = ["fr", "be", "nl", "de", "es", "pt", "it", "ch", "gb", "at", "hr", "pl", "hu", "gr", "cz", "dk", "se", "no", "ie",
+                    "rs", "ro", "bg", "me", "mt", "si", "sk", "al", "ee", "lv", "lt", "fi", "lu"]
+
+
+          def ra_event_out(e, kind=None, tracked=None):
+              v = e.get("venue") or {}
+              area = v.get("area") or {}
+              ctry = area.get("country") or {}
+              o = {"id": "r-" + str(e.get("id")), "src": "ra", "kind": kind, "t": e.get("title", ""),
+                   "d": e.get("startTime") or e.get("date"), "end": e.get("endTime"),
+                   "v": v.get("name", ""), "a": "", "city": area.get("name") or "", "country": (ctry.get("urlCode") or "FR").upper(),
+                   "lat": None, "lon": None, "p": None, "soldout": False, "img": e.get("flyerFront") or "",
+                   "link": "https://ra.co" + (e.get("contentUrl") or ""),
+                   "lineup": [a.get("name") for a in (e.get("artists") or []) if a.get("name")][:40],
+                   "genres": [g.get("name") for g in (e.get("genres") or []) if g.get("name")],
+                   "pop": e.get("interestedCount") or 0, "cap": num(v.get("capacity")) or None, "cost": e.get("cost") or "", "desc": ""}
+              c = re.findall(r"\d+", e.get("cost") or "")
+              if c:
+                  o["p"] = int(c[0])
+              if tracked:
+                  o["tracked"] = tracked
+              return o
+
+
+          def ra_festivals():
+              out, now = [], dt.datetime.now(dt.timezone.utc)
+              for cc in EUROPE:
+                  page = 1
+                  while True:
+                      time.sleep(PAUSE)
+                      try:
+                          j = ra_post({"query": RA_LIST_Q, "variables": {
+                              "filters": [{"type": "EVENTTYPE", "value": "festival"},
+                                          {"type": "DATERANGE", "value": json.dumps({"gte": now.isoformat()})},
+                                          {"type": "COUNTRY", "value": cc}],
+                              "indices": ["EVENT"], "page": page, "pageSize": 50, "sortField": "EVENTDATE",
+                              "sortOrder": "ASCENDING", "aggregations": []}})
+                      except Exception as e:  # noqa: BLE001
+                          log(f"   ! RA festivals {cc}: {e}")
+                          break
+                      L = ((j.get("data") or {}).get("listing")) or {}
+                      rows = [x for x in (L.get("data") or []) if x]
+                      out += [ra_event_out(e, "festival") for e in rows]
+                      if len(rows) < 50 or page >= 4:
+                          break
+                      page += 1
+              log(f"  RA festivals Europe: {len(out)}")
+              return out
+
+
+          def ra_artists(artists):
+              out = []
+              for a in (artists or [])[:LIMITS["ra_art"]]:
+                  time.sleep(PAUSE)
+                  try:
+                      s = ra_post({"query": "query($q:String){search(searchTerm:$q,limit:3,indices:[ARTIST],includeNonLive:false){value contentUrl}}", "variables": {"q": a}})
+                      hits = [h for h in ((s.get("data") or {}).get("search") or []) if slug(h.get("value") or "") == slug(a)]
+                      if not hits:
+                          continue
+                      sl = (hits[0].get("contentUrl") or "").rstrip("/").split("/")[-1]
+                      time.sleep(PAUSE)
+                      j = ra_post({"query": """query($s:String){artist(slug:$s){events(limit:30,type:LATEST){ id title date startTime endTime contentUrl flyerFront interestedCount cost genres{ name } artists{ name } venue{ name capacity area{ name country{ name urlCode } } } }}}""", "variables": {"s": sl}})
+                      evs = (((j.get("data") or {}).get("artist") or {}).get("events")) or []
+                      for e in evs:
+                          ctry = (((e.get("venue") or {}).get("area") or {}).get("country") or {}).get("urlCode") or ""
+                          if ctry.lower() == "fr":
+                              out.append(ra_event_out(e, None, a))
+                  except Exception as e:  # noqa: BLE001
+                      log(f"   ! RA artiste {a}: {e}")
+              log(f"  RA artistes suivis: {len(out)} dates en France")
+              return out
+
+
+          # ---------------- DICE ----------------
+          DICE_SEED = {"paris": ["trabendo-eo56", "badaboum-9b87", "znith-paris---la-villette-55ed", "la-maroquinerie-76nv",
+                                 "la-machine-du-moulin-rouge-a6ov", "rex-club-76v7", "la-cigale-oyxy", "cabaret-sauvage-ve7v",
+                                 "lolympia-a6g2"]}
+          _DICE_VENUES = None
+
+
+          def next_data(page):
+              m = re.search(r'<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)</script>', page)
+              return json.loads(m.group(1)).get("props", {}).get("pageProps", {}) if m else {}
+
+
+          def dice_venue_slugs():
+              global _DICE_VENUES
+              if _DICE_VENUES is None:
+                  _DICE_VENUES = []
+                  for i in range(1, 9):
+                      try:
+                          xml = get(f"https://dice.fm/sitemaps/venues/sitemap{i}.xml")
+                      except Exception:  # noqa: BLE001
+                          break
+                      _DICE_VENUES += re.findall(r"<loc>https://dice\.fm/venue/([^<]+)</loc>", xml)
+                      time.sleep(PAUSE)
+              return _DICE_VENUES
+
+
+          def dice_norm(e, city, kind):
+              d = e.get("dates") or {}
+              v = (e.get("venues") or [{}])[0] or {}
+              now = dt.datetime.now(dt.timezone.utc)
+
+              def fut(x):
+                  try:
+                      t = dt.datetime.fromisoformat(x)
+                      return x if t > now else None
+                  except Exception:  # noqa: BLE001
+                      return None
+              price = (e.get("price") or {}).get("amount")
+              status = e.get("status") or ""
+              return {"id": "d-" + str(e.get("id")), "src": "dice", "kind": kind, "t": e.get("name", ""),
+                      "d": d.get("event_start_date"), "end": d.get("event_end_date"),
+                      "v": v.get("name", ""), "a": v.get("address", ""), "city": ((v.get("city") or {}).get("name")) or city,
+                      "lat": None, "lon": None, "p": round(price / 100) if isinstance(price, (int, float)) and price > 0 else None,
+                      "soldout": status == "sold-out", "waitlist": status == "sold-out",
+                      "sale_at": fut(d.get("sale_start_date") or ""), "presale_at": fut(d.get("pre_sale_start_date") or ""),
+                      "announced": d.get("announcement_date"), "img": ((e.get("images") or {}).get("square")) or "",
+                      "link": f"https://dice.fm/event/{e.get('id')}", "lineup": [], "desc": e.get("one_liner") or ""}
+
+
+          def dice(city):
+              s = slug(city)
+              base = get(f"https://dice.fm/browse/{s}")
+              pp = next_data(base)
+              c = pp.get("city") or {}
+              if (c.get("country_code") or "") != "FR":
+                  log(f"  DICE {city}: ville non couverte")
+                  return []
+              root = f"https://dice.fm/browse/{s}-{c.get('id')}"
+              out, venues = {}, set()
+              for cat, kind in [("music/gig", "concert"), ("music/party", "soiree"), ("music/dj", "soiree")]:
+                  time.sleep(PAUSE)
+                  try:
+                      for e in next_data(get(f"{root}/{cat}")).get("events") or []:
+                          out[e.get("id")] = dice_norm(e, city, kind)
+                          for v in e.get("venues") or []:
+                              if v.get("name"):
+                                  venues.add(v["name"])
+                  except Exception as e:  # noqa: BLE001
+                      log(f"  DICE {cat}: {e}")
+              # pages des salles : elles listent les dates à plusieurs mois
+              slugs = list(DICE_SEED.get(s, []))
+              known = dice_venue_slugs()
+              for name in venues:
+                  k = slug(name)
+                  if len(k) < 4:
+                      continue
+                  hit = next((x for x in known if x.rsplit("-", 1)[0] == k), None)
+                  if hit and hit not in slugs:
+                      slugs.append(hit)
+              for vs in slugs[:LIMITS["dice_venues"]]:
+                  time.sleep(PAUSE)
+                  try:
+                      prof = next_data(get(f"https://dice.fm/venue/{vs}")).get("profile") or {}
+                      if ((prof.get("venue") or {}).get("city") or {}).get("country_code") not in (None, "FR"):
+                          continue
+                      for sec in prof.get("sections") or []:
+                          for it in sec.get("items") or []:
+                              e = it.get("event") if isinstance(it, dict) else None
+                              if e and e.get("id") not in out:
+                                  txt = (e.get("name") or "").lower()
+                                  out[e["id"]] = dice_norm(e, city, "soiree" if re.search(r"\b(dj|club|rave|techno|house|night|nuit|soir)", txt) else "concert")
+                  except Exception as e:  # noqa: BLE001
+                      log(f"   ! DICE salle {vs}: {e}")
+              log(f"  DICE {city}: {len(out)} événements ({len(slugs)} salles)")
+              return list(out.values())
+
+
+          # ---------------- Expositions (L'Officiel des spectacles, Paris / IDF) ----------------
+          def offi_expos(city):
+              if slug(city) != "paris":
+                  return []
+              out = []
+              for n in range(1, 25):
+                  time.sleep(PAUSE)
+                  try:
+                      page = get(f"https://www.offi.fr/expositions-musees/programme.html?npage={n}")
+                  except Exception as e:  # noqa: BLE001
+                      log(f"  Offi page {n}: {e}")
+                      break
+                  starts = [m.start() for m in re.finditer(r'href="https://www\.offi\.fr/expositions-musees/[^"]+-\d+\.html"\s+class="minifiche-image"', page)]
+                  if not starts:
+                      break
+                  for i, st in enumerate(starts):
+                      ch = page[st:(starts[i + 1] if i + 1 < len(starts) else st + 6000)][:6000]
+                      href = re.search(r'href="(https://www\.offi\.fr/expositions-musees/[^"]+-(\d+)\.html)"', ch)
+                      name = re.search(r'itemprop="name">([^<]+)<', ch)
+                      if not href or not name:
+                          continue
+                      venue = re.search(r'class="event-place[^"]*">\s*<a[^>]*>\s*([^<]+?)\s*</a>', ch)
+                      img = re.search(r'<img[^>]+src="([^"]+)"', ch)
+                      sd = re.search(r'itemprop="startDate" content="([^"]+)"', ch)
+                      ed = re.search(r'itemprop="endDate" content="([^"]+)"', ch)
+                      zipc = re.search(r'itemprop="postalCode" content="([^"]*)"', ch)
+                      text = html.unescape(re.sub(r"<[^>]+>", " ", ch))
+                      text = re.sub(r"\s+", " ", text)
+                      labels = [x for x in ["Beaux-Arts", "Peinture", "Art contemporain", "Photographie", "Architecture", "Design", "Mode",
+                                            "Histoire", "Civilisations", "Sciences", "Techniques", "Enfants", "Sculpture", "Dessin",
+                                            "Arts décoratifs", "Arts graphiques", "Galerie", "Immersi", "Rétrospective"] if x.lower() in text.lower()]
+                      out.append({"id": "o-" + href.group(2), "src": "offi", "kind": "expo", "t": html.unescape(name.group(1)).strip(),
+                                  "d": sd.group(1) if sd else None, "end": ed.group(1) if ed else None,
+                                  "v": html.unescape(venue.group(1)).strip() if venue else "", "a": zipc.group(1) if zipc else "",
+                                  "city": "Paris", "lat": None, "lon": None, "p": None, "soldout": False,
+                                  "img": img.group(1) if img else "", "link": href.group(1), "lineup": [],
+                                  "tags": labels, "pick": "Choix de la rédaction" in text, "desc": ""})
+              # prix : fiche détaillée des premières expositions
+              for e in out[:LIMITS["offi_detail"]]:
+                  time.sleep(PAUSE)
+                  try:
+                      p = get(e["link"])
+                      t = re.sub(r"\s+", " ", html.unescape(re.sub(r"<[^>]+>", " ", p)))
+                      if re.search(r"entr[ée]e libre|gratuit", t, re.I) and not re.search(r"plein tarif\s*:?\s*\d", t, re.I):
+                          e["p"] = 0
+                      else:
+                          m = re.search(r"(?:plein tarif|tarif)\s*:?\s*(\d+(?:[,.]\d+)?)\s*€", t, re.I) or re.search(r"(\d+(?:[,.]\d+)?)\s*€", t)
+                          if m:
+                              e["p"] = round(float(m.group(1).replace(",", ".")))
+                      r = re.search(r'itemprop="ratingValue" content="([\d.]+)"', p)
+                      rc = re.search(r'itemprop="ratingCount" content="(\d+)"', p)
+                      if r:
+                          e["rating"] = round(float(r.group(1)) * 2, 1)
+                          e["ratingCount"] = int(rc.group(1)) if rc else None
+                      d = re.search(r'itemprop="description" content="([^"]{0,500})', p)
+                      if d:
+                          e["desc"] = html.unescape(d.group(1))
+                  except Exception as ex:  # noqa: BLE001
+                      log("   ! offi", e["link"], ex)
+              log(f"  Expos Officiel des spectacles: {len(out)}")
+              return out
+
+
+          # ---------------- Sport (TheSportsDB, clé gratuite) ----------------
+          SDB = "https://www.thesportsdb.com/api/v1/json/123/"
+          LEAGUES = [  # id, sport, compétition, nb de journées, type
+              (4334, "Football", "Ligue 1", 34, "national"),
+              (4430, "Rugby", "Top 14", 26, "national"),
+              (4423, "Basket", "Betclic Élite", 34, "national"),
+              (4536, "Handball", "Starligue", 26, "national"),
+              (4582, "Volley", "Marmara SpikeLigue", 26, "national"),
+              (4714, "Rugby", "Tournoi des Six Nations", 5, "international"),
+              (4550, "Rugby", "Champions Cup", 9, "europe"),
+              (4480, "Football", "Ligue des champions", 8, "europe"),
+              (4481, "Football", "Ligue Europa", 8, "europe"),
+          ]
+
+
+          def sports():
+              now = dt.datetime.now(dt.timezone.utc)
+              y = now.year if now.month >= 7 else now.year - 1
+              out, french = [], set()
+              for lid, sport, comp, rounds, kind in LEAGUES:
+                  season = str(y + 1) if lid == 4714 else f"{y}-{y + 1}"
+                  got, empty = 0, 0
+                  for r in range(1, rounds + 1):
+                      time.sleep(2.2)  # limite de la clé gratuite : 30 requêtes par minute
+                      try:
+                          j = json.loads(get(f"{SDB}eventsround.php?id={lid}&r={r}&s={season}"))
+                      except Exception as e:  # noqa: BLE001
+                          log(f"   ! {comp} J{r}: {e}")
+                          continue
+                      evs = j.get("events") or []
+                      if not evs:
+                          empty += 1
+                          if empty >= 3 and got:
+                              break
+                          continue
+                      for e in evs:
+                          if str(e.get("idLeague")) != str(lid):
+                              continue
+                          home, away = e.get("strHomeTeam") or "", e.get("strAwayTeam") or ""
+                          if kind == "national":
+                              french.update([home, away])
+                          ts = e.get("strTimestamp") or ""
+                          try:
+                              t = dt.datetime.fromisoformat(ts).replace(tzinfo=dt.timezone.utc)
+                          except Exception:  # noqa: BLE001
+                              continue
+                          if t < now or t > now + dt.timedelta(days=HORIZON_DAYS):
+                              continue
+                          if kind != "national" and home not in french and home != "France":
+                              continue  # on garde les matchs joués en France
+                          got += 1
+                          out.append({"id": "sp-" + str(e.get("idEvent")), "src": "sport", "kind": "sport", "sport": sport,
+                                      "comp": comp, "level": kind, "t": f"{home} – {away}", "home": home, "away": away,
+                                      "d": t.isoformat(), "end": None, "v": e.get("strVenue") or "", "a": "",
+                                      "city": e.get("strCity") or "", "lat": None, "lon": None, "p": None, "soldout": False,
+                                      "img": e.get("strThumb") or e.get("strPoster") or "", "round": r,
+                                      "link": "https://www.google.com/search?q=" + urllib.parse.quote(f"billetterie {home} {away} {comp}"),
+                                      "lineup": [], "desc": ""})
+                  log(f"  Sport {comp}: {got} matchs à venir")
+              return out
+
+
+          # ---------------- Compétitions : toutes les courses de France (Finishers) ----------------
+          # Le moteur de recherche public du site Finishers (clé « recherche seule » fournie à tous ses visiteurs)
+          FIN_TS = "https://vn2qtcjsbg0ea481p.a1.typesense.net/multi_search?x-typesense-api-key=G1BPjGr3KDU7n6yylcfOREpRVGUBpKYW"
+          FIN_DISC = {"trail", "road", "triathlon", "cycling", "mountain_biking", "gravel_biking", "duathlon", "swimrun", "bike_and_run",
+                      "aquathlon", "cross_triathlon", "cross", "multisports", "obstacle_race"}
+
+
+          def races_all():
+              """Toutes les courses à venir en France sur 12 mois, en une soixantaine de requêtes (au lieu de 12 000 pages)."""
+              now = dt.datetime.now(dt.timezone.utc)
+              t0, t1 = int(now.timestamp()), int((now + dt.timedelta(days=HORIZON_DAYS)).timestamp())
+              fields = ("eventId,eventName,eventSlug,raceDate,raceEndDate,raceDiscipline,raceDistance,raceDistanceUnit,raceElevationGain,"
+                        "city,level1,level2,coordinates,editionStatus,raceStatus,image,eventLastEditionFinisherCount,raceName,popularity")
+              groups, page, total = {}, 1, None
+              while page <= 120:
+                  body = {"searches": [{"collection": "races", "q": "*", "query_by": "eventName", "include_fields": fields,
+                                        "filter_by": f"raceDate:>={t0} && raceDate:<={t1} && countryCode:=FR",
+                                        "sort_by": "raceDate:asc", "page": page, "per_page": 250}]}
+                  res = json.loads(get(FIN_TS, data=json.dumps(body).encode(), headers={"Content-Type": "application/json"}))["results"][0]
+                  if res.get("error"):
+                      raise RuntimeError(res["error"])
+                  total = res.get("found", 0)
+                  hits = res.get("hits") or []
+                  for h in hits:
+                      r = h.get("document") or {}
+                      disc = r.get("raceDiscipline") or ""
+                      if disc not in FIN_DISC or (r.get("editionStatus") or "") == "cancelled" or (r.get("raceStatus") or "") == "cancelled":
+                          continue
+                      g = groups.setdefault(r["eventId"], {"doc": r, "races": []})
+                      dist = r.get("raceDistance") or 0
+                      km = round(dist / 1000, 1) if (r.get("raceDistanceUnit") or "meters") == "meters" else dist
+                      g["races"].append({"name": (r.get("raceName") or [None])[0] if isinstance(r.get("raceName"), list) else r.get("raceName"),
+                                         "disc": disc, "km": km, "dplus": r.get("raceElevationGain"),
+                                         "date": dt.datetime.fromtimestamp(r["raceDate"], dt.timezone.utc).date().isoformat()})
+                  if len(hits) < 250 or page * 250 >= total:
+                      break
+                  page += 1
+                  time.sleep(0.6)
+              out = []
+              for eid, g in groups.items():
+                  r, rs = g["doc"], sorted(g["races"], key=lambda x: (x["date"], -(x["km"] or 0)))
+                  d0 = min(x["date"] for x in rs)
+                  end = max(x["date"] for x in rs)
+                  co = r.get("coordinates") or [None, None]
+                  out.append({"id": "f-" + (r.get("eventSlug") or eid), "src": "finishers", "kind": "race", "t": r.get("eventName") or "",
+                              "d": d0, "end": end if end != d0 else None, "tba": (r.get("editionStatus") or "") != "confirmed",
+                              "v": r.get("city") or r.get("level2") or "", "a": ", ".join(x for x in [r.get("level2"), r.get("level1")] if x),
+                              "city": r.get("city") or r.get("level2") or "", "lat": co[0], "lon": co[1],
+                              "races": rs[:8], "p": None, "pop": r.get("eventLastEditionFinisherCount") or 0,
+                              "img": ("https://res.cloudinary.com/kavval/image/upload/w_600,q_auto,f_auto/" + r["image"]) if r.get("image") else "",
+                              "link": f"https://www.finishers.com/course/{r.get('eventSlug')}", "lineup": [], "desc": ""})
+              out.sort(key=lambda e: e["d"])
+              log(f"  Finishers: {len(out)} épreuves en France ({total} courses trouvées)")
+              return out
+
+
+          # ---------------- Concerts : Fnac Spectacles (moteur de recherche public d'Eventim, qui opère Fnac Spectacles) ----------------
+          EVENTIM = ("https://public-api.eventim.com/websearch/search/api/exploration/v2/productGroups"
+                     "?webId=web__eventim-fr&language=fr&retail_partner=FS8&tags=DISABLE_FBS")
+
+
+          def fnac(city):
+              now = dt.datetime.now(dt.timezone.utc)
+              out, seen = [], set()
+              cat = urllib.parse.quote("Concerts & Festivals")
+              for w in range(6):  # fenêtres de 2 mois sur 12 mois : le moteur ne renvoie que quelques centaines de résultats par recherche
+                  a = (now + dt.timedelta(days=61 * w)).date().isoformat()
+                  b = (now + dt.timedelta(days=61 * (w + 1))).date().isoformat()
+                  for page in range(1, 16):
+                      time.sleep(0.5)
+                      try:
+                          j = json.loads(get(f"{EVENTIM}&city={urllib.parse.quote(city)}&categories={cat}&date_from={a}&date_to={b}&page={page}",
+                                             headers={"Accept": "application/json", "Origin": "https://www.fnacspectacles.com",
+                                                      "Referer": "https://www.fnacspectacles.com/"}))
+                      except Exception as e:  # noqa: BLE001
+                          if not out and w == 0 and page == 1:
+                              raise
+                          log(f"   Fnac {a}: {e}")
+                          break
+                      gs = j.get("productGroups") or []
+                      if not gs:
+                          break
+                      for g in gs:
+                          subs = [c.get("name") for c in (g.get("categories") or []) if c.get("parentCategory")]
+                          art = (g.get("mainAttraction") or {}).get("name") or ""
+                          fest = any("festival" in (x or "").lower() for x in subs) or "festival" in (g.get("name") or "").lower()
+                          for pr in g.get("products") or []:
+                              le = ((pr.get("typeAttributes") or {}).get("liveEntertainment")) or {}
+                              loc = le.get("location") or {}
+                              pid = pr.get("productId")
+                              if not pid or pid in seen or not le.get("startDate"):
+                                  continue
+                              if slug(loc.get("city") or "") != slug(city) and not slug(loc.get("city") or "").startswith(slug(city)):
+                                  continue
+                              seen.add(pid)
+                              geo = loc.get("geoLocation") or {}
+                              st = pr.get("status") or ""
+                              path = ((pr.get("url") or {}).get("path")) or ""
+                              out.append({"id": "fn-" + str(pid), "src": "fnac", "kind": "festival" if fest else "concert",
+                                          "t": g.get("name") or pr.get("name") or "", "d": le["startDate"], "end": le.get("endDate"),
+                                          "v": loc.get("name") or "", "a": " ".join(x for x in [loc.get("postalCode"), loc.get("city")] if x),
+                                          "city": city, "lat": geo.get("latitude"), "lon": geo.get("longitude"), "p": None,
+                                          "soldout": st.lower() in ("soldout", "sold_out"), "genres": subs,
+                                          "img": (g.get("imageUrl") or "").replace("222x222", "600x600"),
+                                          "rating": round(((pr.get("rating") or {}).get("average") or 0) * 2, 1) or None,
+                                          "ratingCount": (pr.get("rating") or {}).get("count") or None,
+                                          "link": "https://www.fnacspectacles.com" + path if path else pr.get("link"),
+                                          "lineup": [art] if art else [], "desc": (g.get("description") or "")[:300]})
+              log(f"  Fnac Spectacles {city}: {len(out)} dates de concerts")
+              return out
+
+          # ---------------- Concerts de tes artistes (Bandsintown) ----------------
+          def bandsintown(artists, app_id):
+              if not app_id or not artists:
+                  return []
+              out = []
+              for a in artists[:LIMITS["bit"]]:
+                  time.sleep(PAUSE)
+                  try:
+                      evs = json.loads(get(f"https://rest.bandsintown.com/artists/{urllib.parse.quote(a)}/events?app_id={urllib.parse.quote(app_id)}&date=upcoming"))
+                  except Exception as e:  # noqa: BLE001
+                      log(f"   ! Bandsintown {a}: {e}")
+                      continue
+                  if not isinstance(evs, list):
+                      continue
+                  for e in evs:
+                      v = e.get("venue") or {}
+                      if (v.get("country") or "") not in ("France", "FR"):
+                          continue
+                      offers = e.get("offers") or []
+                      out.append({"id": "bit-" + str(e.get("id")), "src": "bit", "kind": "festival" if e.get("festival_start_date") else "concert",
+                                  "artist": a, "t": e.get("title") or a, "d": e.get("datetime"), "end": None,
+                                  "v": v.get("name", ""), "a": v.get("street_address") or "", "city": v.get("city", ""),
+                                  "lat": num(v.get("latitude")), "lon": num(v.get("longitude")), "p": None,
+                                  "soldout": bool(e.get("sold_out")), "sale_at": e.get("on_sale_datetime") or None,
+                                  "presale": any((o.get("type") or "").lower() == "presale" for o in offers),
+                                  "img": "", "link": next((o.get("url") for o in offers if o.get("url")), e.get("url")),
+                                  "lineup": e.get("lineup") or [a], "desc": e.get("description") or ""})
+              log(f"  Bandsintown: {len(out)} dates en France pour {min(len(artists), LIMITS['bit'])} artistes suivis")
+              return out
 
 
           # ---------------- BilletReduc ----------------
@@ -375,7 +828,7 @@ jobs:
               return out
 
 
-          SOURCES = {"sg": shotgun, "ra": resident_advisor, "br": billetreduc, "tac": ticketac}
+          SOURCES = {"sg": shotgun, "ra": resident_advisor, "dice": dice, "fnac": fnac, "br": billetreduc, "tac": ticketac, "offi": offi_expos}
 
 
           def main():
@@ -385,6 +838,12 @@ jobs:
               idx_path = os.path.join(DATA, "index.json")
               index = json.load(open(idx_path, encoding="utf-8")) if os.path.exists(idx_path) else {"cities": {}}
               now = dt.datetime.now(dt.timezone.utc)
+
+              def save_index():
+                  # enregistré après chaque étape : si la collecte est interrompue, ce qui est déjà fait reste lisible par l'app
+                  index["updated"] = dt.datetime.now(dt.timezone.utc).isoformat()
+                  json.dump(index, open(idx_path, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+
               for city in cities:
                   log(f"== {city}")
                   events, report = [], {}
@@ -396,10 +855,16 @@ jobs:
                       except Exception as e:  # noqa: BLE001
                           report[key] = {"n": 0, "err": str(e)[:200]}
                           log(f"  {key} : échec ({e})")
-                  # on garde les événements à venir (et ceux sans date, Ticketac)
-                  keep = []
+                  # on garde les événements à venir (et ceux sans date, Ticketac), sans doublon
+                  keep, seen_ids = [], set()
                   for e in events:
+                      if e.get("id") in seen_ids:
+                          continue
+                      seen_ids.add(e.get("id"))
                       if e.get("noDate"):
+                          keep.append(e)
+                          continue
+                      if e.get("kind") == "expo" and (e.get("end") or "") >= now.isoformat()[:10]:
                           keep.append(e)
                           continue
                       try:
@@ -426,14 +891,41 @@ jobs:
                             open(os.path.join(DATA, s + ".json"), "w", encoding="utf-8"), ensure_ascii=False)
                   index["cities"][s] = {"name": city, "updated": now.isoformat(), "n": len(keep), "sources": report}
                   log(f"  => {len(keep)} événements écrits dans data/{s}.json")
+                  save_index()
               try:
-                  fest = [e for e in shotgun_festivals() if e.get("d")]
-                  json.dump({"city": "France", "updated": now.isoformat(), "sources": {"sg": {"n": len(fest)}}, "events": fest},
+                  fest = []
+                  try:
+                      fest += ra_festivals()
+                  except Exception as e:  # noqa: BLE001
+                      log(f"  RA festivals : échec ({e})")
+                  try:
+                      fest += [e for e in shotgun_festivals() if e.get("d")]
+                  except Exception as e:  # noqa: BLE001
+                      log(f"  Shotgun festivals : échec ({e})")
+                  json.dump({"city": "France", "updated": now.isoformat(), "sources": {"festivals": {"n": len(fest)}}, "events": fest},
                             open(os.path.join(DATA, "france.json"), "w", encoding="utf-8"), ensure_ascii=False)
-                  index["cities"]["france"] = {"name": "France (festivals)", "updated": now.isoformat(), "n": len(fest), "sources": {"sg": {"n": len(fest)}}}
+                  index["cities"]["france"] = {"name": "Festivals", "updated": now.isoformat(), "n": len(fest), "sources": {"festivals": {"n": len(fest)}}}
               except Exception as e:  # noqa: BLE001
                   log(f"  festivals : échec ({e})")
                   index["cities"].setdefault("france", {"name": "France (festivals)", "n": 0})["sources"] = {"sg": {"n": 0, "err": str(e)[:200]}}
+              def save_national(name, label, fn):
+                  try:
+                      seen_ids = set()
+                      evs = [e for e in fn() if not (e.get("id") in seen_ids or seen_ids.add(e.get("id")))]
+                      json.dump({"city": label, "updated": now.isoformat(), "sources": {name: {"n": len(evs)}}, "events": evs},
+                                open(os.path.join(DATA, name + ".json"), "w", encoding="utf-8"), ensure_ascii=False)
+                      index["cities"][name] = {"name": label, "updated": now.isoformat(), "n": len(evs), "sources": {name: {"n": len(evs)}}}
+                  except Exception as e:  # noqa: BLE001
+                      log(f"  {label} : échec ({e})")
+                      index["cities"].setdefault(name, {"name": label, "n": 0})["sources"] = {name: {"n": 0, "err": str(e)[:200]}}
+
+              save_index()
+              save_national("sports", "Sport (France)", sports)
+              save_index()
+              # courses : toutes les épreuves de France sur 12 mois
+              save_national("races", "Courses (France)", races_all)
+              save_index()
+              save_national("artists", "Dates de tes artistes", lambda: ra_artists(cfg.get("artists") or []) + bandsintown(cfg.get("artists") or [], cfg.get("bit_app_id") or ""))
               index["updated"] = now.isoformat()
               json.dump(index, open(idx_path, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
 
@@ -446,8 +938,18 @@ jobs:
         run: |
           git config user.name "fomo-bot"
           git config user.email "fomo-bot@users.noreply.github.com"
-          git add data config
-          git diff --cached --quiet && exit 0
-          git commit -m "Mise à jour des événements"
-          git pull --rebase
-          git push
+          # on met de côté les fichiers produits, puis on les pose sur la dernière version du dépôt :
+          # aucun conflit possible, même si une autre collecte ou l'app FOMO a écrit entre-temps
+          mkdir -p /tmp/fomo-data && cp -r data/. /tmp/fomo-data/
+          for i in 1 2 3 4 5; do
+            git fetch origin main
+            git reset --hard origin/main
+            mkdir -p data && cp -r /tmp/fomo-data/. data/
+            git add data
+            git diff --cached --quiet && exit 0
+            git commit -m "Mise à jour des événements"
+            git push origin HEAD:main && exit 0
+            echo "Le dépôt a changé pendant l'envoi, nouvel essai ($i)"
+            sleep $((i * 5))
+          done
+          exit 1
