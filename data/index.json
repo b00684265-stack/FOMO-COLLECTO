@@ -2,18 +2,14 @@
  "cities": {
   "paris": {
    "name": "Paris",
-   "updated": "2026-10-04T08:49:01.683300+00:00",
-   "n": 919,
+   "updated": "2026-10-04T13:18:50.685085+00:00",
+   "n": 925,
    "sources": {
-    "sg": {
-     "n": 0,
-     "err": "HTTP Error 429: Too Many Requests"
-    },
     "ra": {
      "n": 168
     },
     "dice": {
-     "n": 462
+     "n": 469
     },
     "fnac": {
      "n": 0,
@@ -32,7 +28,7 @@
   },
   "france": {
    "name": "Festivals",
-   "updated": "2026-10-04T08:49:01.683300+00:00",
+   "updated": "2026-10-04T13:18:50.685085+00:00",
    "n": 35,
    "sources": {
     "festivals": {
@@ -42,34 +38,44 @@
   },
   "sports": {
    "name": "Sport (France)",
-   "updated": "2026-10-04T08:49:01.683300+00:00",
-   "n": 978,
+   "updated": "2026-10-04T13:18:50.685085+00:00",
+   "n": 1016,
    "sources": {
     "sports": {
-     "n": 978
+     "n": 1016
     }
    }
   },
   "races": {
    "name": "Courses (France)",
-   "updated": "2026-10-04T08:49:01.683300+00:00",
-   "n": 5433,
+   "updated": "2026-10-04T13:18:50.685085+00:00",
+   "n": 5085,
    "sources": {
     "races": {
-     "n": 5433
+     "n": 5085
     }
    }
   },
   "artists": {
    "name": "Dates de tes artistes",
-   "updated": "2026-10-04T08:49:01.683300+00:00",
+   "updated": "2026-10-04T13:18:50.685085+00:00",
    "n": 0,
    "sources": {
     "artists": {
      "n": 0
     }
    }
+  },
+  "festivals-kb": {
+   "name": "Base festivals",
+   "updated": "2026-10-04T13:18:50.685085+00:00",
+   "n": 504,
+   "sources": {
+    "ra": {
+     "n": 504
+    }
+   }
   }
  },
- "updated": "2026-10-04T08:49:01.683300+00:00"
+ "updated": "2026-10-04T13:18:50.685085+00:00"
 }
