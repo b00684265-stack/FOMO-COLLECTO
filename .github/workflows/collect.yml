@@ -260,8 +260,11 @@ jobs:
               if k in RA_AREA:
                   return RA_AREA[k]
               j = ra_post({"query": 'query($q:String){areas(searchTerm:$q,limit:5){id name country{name}}}', "variables": {"q": city}})
-              areas = [a for a in ((j.get("data") or {}).get("areas") or []) if ((a.get("country") or {}).get("name") or "").lower() == "france"]
-              return int(areas[0]["id"]) if areas else None
+              areas = (j.get("data") or {}).get("areas") or []
+              exact = [a for a in areas if slug(a.get("name") or "") == slug(city)]
+              fr = [a for a in exact or areas if ((a.get("country") or {}).get("name") or "").lower() == "france"]
+              pick = (fr or exact or areas or [None])[0]
+              return int(pick["id"]) if pick else None
 
 
           def resident_advisor(city):
@@ -343,8 +346,11 @@ jobs:
               return o
 
 
-          def ra_festivals():
+          def ra_festivals(gte=None, lte=None, max_pages=4):
               out, now = [], dt.datetime.now(dt.timezone.utc)
+              rng = {"gte": gte or now.isoformat()}
+              if lte:
+                  rng["lte"] = lte
               for cc in EUROPE:
                   page = 1
                   while True:
@@ -352,7 +358,7 @@ jobs:
                       try:
                           j = ra_post({"query": RA_LIST_Q, "variables": {
                               "filters": [{"type": "EVENTTYPE", "value": "festival"},
-                                          {"type": "DATERANGE", "value": json.dumps({"gte": now.isoformat()})},
+                                          {"type": "DATERANGE", "value": json.dumps(rng)},
                                           {"type": "COUNTRY", "value": cc}],
                               "indices": ["EVENT"], "page": page, "pageSize": 50, "sortField": "EVENTDATE",
                               "sortOrder": "ASCENDING", "aggregations": []}})
@@ -362,11 +368,26 @@ jobs:
                       L = ((j.get("data") or {}).get("listing")) or {}
                       rows = [x for x in (L.get("data") or []) if x]
                       out += [ra_event_out(e, "festival") for e in rows]
-                      if len(rows) < 50 or page >= 4:
+                      if len(rows) < 50 or page >= max_pages:
                           break
                       page += 1
-              log(f"  RA festivals Europe: {len(out)}")
+              log(f"  RA festivals Europe ({rng['gte'][:10]}…): {len(out)}")
               return out
+
+
+          def festivals_kb():
+              """Base de reconnaissance : tous les festivals RA d'Europe de l'année en cours (passés compris), allégés."""
+              y = dt.date.today().year
+              rows = ra_festivals(f"{y}-01-01T00:00:00Z", f"{y}-12-31T23:59:59Z", 6)
+              kb = {}
+              for e in rows:
+                  k = slug(re.sub(r"\b(19|20)\d\d\b", "", e["t"]))
+                  if not k or k in kb:
+                      continue
+                  kb[k] = {"n": re.sub(r"\s*\b(19|20)\d\d\b\s*", " ", e["t"]).strip(), "d": e["d"], "end": e.get("end"), "city": e["city"],
+                           "country": e["country"], "v": e["v"], "genres": e["genres"], "cap": e.get("cap"), "pop": e.get("pop"),
+                           "lineup": e["lineup"][:12], "link": e["link"]}
+              return list(kb.values())
 
 
           def ra_artists(artists):
@@ -431,6 +452,12 @@ jobs:
                       return None
               price = (e.get("price") or {}).get("amount")
               status = e.get("status") or ""
+              try:  # festival : le mot, ou un événement de plus de 20 h
+                  long_ev = (dt.datetime.fromisoformat(d.get("event_end_date")) - dt.datetime.fromisoformat(d.get("event_start_date"))).total_seconds() > 20 * 3600
+              except Exception:  # noqa: BLE001
+                  long_ev = False
+              if "festival" in (e.get("name") or "").lower() or long_ev:
+                  kind = "festival"
               return {"id": "d-" + str(e.get("id")), "src": "dice", "kind": kind, "t": e.get("name", ""),
                       "d": d.get("event_start_date"), "end": d.get("event_end_date"),
                       "v": v.get("name", ""), "a": v.get("address", ""), "city": ((v.get("city") or {}).get("name")) or city,
@@ -438,6 +465,7 @@ jobs:
                       "soldout": status == "sold-out", "waitlist": status == "sold-out",
                       "sale_at": fut(d.get("sale_start_date") or ""), "presale_at": fut(d.get("pre_sale_start_date") or ""),
                       "announced": d.get("announcement_date"), "img": ((e.get("images") or {}).get("square")) or "",
+                      "country": (((v.get("city") or {}).get("country_code")) or "FR").upper(),
                       "link": f"https://dice.fm/event/{e.get('id')}", "lineup": [], "desc": e.get("one_liner") or ""}
 
 
@@ -446,7 +474,7 @@ jobs:
               base = get(f"https://dice.fm/browse/{s}")
               pp = next_data(base)
               c = pp.get("city") or {}
-              if (c.get("country_code") or "") != "FR":
+              if not c.get("id"):
                   log(f"  DICE {city}: ville non couverte")
                   return []
               root = f"https://dice.fm/browse/{s}-{c.get('id')}"
@@ -475,8 +503,6 @@ jobs:
                   time.sleep(PAUSE)
                   try:
                       prof = next_data(get(f"https://dice.fm/venue/{vs}")).get("profile") or {}
-                      if ((prof.get("venue") or {}).get("city") or {}).get("country_code") not in (None, "FR"):
-                          continue
                       for sec in prof.get("sections") or []:
                           for it in sec.get("items") or []:
                               e = it.get("event") if isinstance(it, dict) else None
@@ -567,6 +593,497 @@ jobs:
           ]
 
 
+          BIG_EVENTS = [
+          {
+          "sport": "Football",
+          "comp": "Ligue des nations",
+          "t": "France – Belgique",
+          "d": "2026-10-05T20:45",
+          "venue": "Stade de France",
+          "city": "Saint-Denis",
+          "country": "FR",
+          "level": "international",
+          "status": "on_sale",
+          "link": "https://billetterie.fff.fr"
+          },
+          {
+          "sport": "Football",
+          "comp": "Match amical féminin",
+          "t": "France – Lettonie (Bleues)",
+          "d": "2026-10-10T21:00",
+          "venue": "Stade Francis-Le Basser",
+          "city": "Laval",
+          "country": "FR",
+          "level": "international",
+          "status": "on_sale",
+          "link": "https://billetterie.fff.fr"
+          },
+          {
+          "sport": "Tennis",
+          "comp": "Rolex Paris Masters",
+          "t": "Rolex Paris Masters",
+          "d": "2026-10-31T11:00",
+          "end": "2026-11-08",
+          "venue": "Paris La Défense Arena",
+          "city": "Nanterre",
+          "country": "FR",
+          "level": "international",
+          "status": "on_sale",
+          "link": "https://tickets.rolexparismasters.com"
+          },
+          {
+          "sport": "Rugby",
+          "comp": "Nations Championship",
+          "t": "France – Fidji",
+          "d": "2026-11-07T21:10",
+          "venue": "Groupama Stadium",
+          "city": "Lyon",
+          "country": "FR",
+          "level": "international",
+          "status": "announced",
+          "link": "https://billetterie.ffr.fr"
+          },
+          {
+          "sport": "Football",
+          "comp": "Ligue des nations",
+          "t": "Italie – France",
+          "d": "2026-11-12T20:45",
+          "venue": "San Siro",
+          "city": "Milan",
+          "country": "IT",
+          "level": "international",
+          "status": "announced",
+          "link": "https://www.figc.it"
+          },
+          {
+          "sport": "Rugby",
+          "comp": "Nations Championship",
+          "t": "France – Afrique du Sud",
+          "d": "2026-11-13T21:10",
+          "venue": "Stade de France",
+          "city": "Saint-Denis",
+          "country": "FR",
+          "level": "international",
+          "status": "on_sale",
+          "link": "https://www.stadefrance.com/en/groups/ticket/france-south-africa-2026"
+          },
+          {
+          "sport": "Football",
+          "comp": "Ligue des nations",
+          "t": "France – Turquie",
+          "d": "2026-11-15T20:45",
+          "venue": "Stade Atlantique",
+          "city": "Bordeaux",
+          "country": "FR",
+          "level": "international",
+          "status": "on_sale",
+          "link": "https://www.fff.fr/selection/matchs/3773-france-turquie.html",
+          "tbc_time": True
+          },
+          {
+          "sport": "Rugby",
+          "comp": "Nations Championship",
+          "t": "France – Argentine",
+          "d": "2026-11-21T21:10",
+          "venue": "Stade de France",
+          "city": "Saint-Denis",
+          "country": "FR",
+          "level": "international",
+          "status": "announced",
+          "link": "https://billetterie.ffr.fr"
+          },
+          {
+          "sport": "Rugby",
+          "comp": "Nations Championship",
+          "t": "Finales du Nations Championship (France, adversaire à venir)",
+          "d": "2026-11-27T16:00",
+          "end": "2026-11-29",
+          "venue": "Allianz Stadium Twickenham",
+          "city": "Londres",
+          "country": "GB",
+          "level": "international",
+          "status": "announced",
+          "link": "https://en.wikipedia.org/wiki/2026_Nations_Championship"
+          },
+          {
+          "sport": "Handball",
+          "comp": "Euro féminin",
+          "t": "Championnat d'Europe féminin de handball",
+          "d": "2026-12-03T18:00",
+          "end": "2026-12-20",
+          "venue": "Plusieurs salles",
+          "city": "Katowice",
+          "country": "PL",
+          "level": "europe",
+          "status": "on_sale",
+          "link": "https://tickets.eurohandball.com/women2026"
+          },
+          {
+          "sport": "Handball",
+          "comp": "Championnat du monde",
+          "t": "France – Koweït",
+          "d": "2027-01-14T18:00",
+          "venue": "Porsche-Arena",
+          "city": "Stuttgart",
+          "country": "DE",
+          "level": "international",
+          "status": "announced",
+          "link": "https://handball2027.com",
+          "tbc_time": True
+          },
+          {
+          "sport": "Handball",
+          "comp": "Championnat du monde",
+          "t": "France – Brésil",
+          "d": "2027-01-16T18:00",
+          "venue": "Porsche-Arena",
+          "city": "Stuttgart",
+          "country": "DE",
+          "level": "international",
+          "status": "announced",
+          "link": "https://handball2027.com",
+          "tbc_time": True
+          },
+          {
+          "sport": "Handball",
+          "comp": "Championnat du monde",
+          "t": "Argentine – France",
+          "d": "2027-01-18T18:00",
+          "venue": "Porsche-Arena",
+          "city": "Stuttgart",
+          "country": "DE",
+          "level": "international",
+          "status": "announced",
+          "link": "https://handball2027.com",
+          "tbc_time": True
+          },
+          {
+          "sport": "Handball",
+          "comp": "Championnat du monde",
+          "t": "Finale du Mondial de handball",
+          "d": "2027-01-31T18:00",
+          "venue": "Lanxess Arena",
+          "city": "Cologne",
+          "country": "DE",
+          "level": "international",
+          "status": "announced",
+          "link": "https://handball2027.com"
+          },
+          {
+          "sport": "Rugby",
+          "comp": "Tournoi des Six Nations",
+          "t": "France – Pays de Galles",
+          "d": "2027-02-06T17:40",
+          "venue": "Lieu à venir",
+          "city": "France",
+          "country": "FR",
+          "level": "international",
+          "status": "announced",
+          "link": "https://billetterie.ffr.fr"
+          },
+          {
+          "sport": "Rugby",
+          "comp": "Tournoi des Six Nations",
+          "t": "Angleterre – France",
+          "d": "2027-02-14T16:10",
+          "venue": "Allianz Stadium Twickenham",
+          "city": "Londres",
+          "country": "GB",
+          "level": "international",
+          "status": "announced",
+          "link": "https://www.sixnationsrugby.com"
+          },
+          {
+          "sport": "Rugby",
+          "comp": "Tournoi des Six Nations",
+          "t": "France – Écosse",
+          "d": "2027-02-21T16:10",
+          "venue": "Lieu à venir",
+          "city": "France",
+          "country": "FR",
+          "level": "international",
+          "status": "announced",
+          "link": "https://billetterie.ffr.fr"
+          },
+          {
+          "sport": "Rugby",
+          "comp": "Tournoi des Six Nations",
+          "t": "Italie – France",
+          "d": "2027-03-06T15:10",
+          "venue": "Stadio Olimpico",
+          "city": "Rome",
+          "country": "IT",
+          "level": "international",
+          "status": "announced",
+          "link": "https://www.sixnationsrugby.com"
+          },
+          {
+          "sport": "Cyclisme",
+          "comp": "Paris-Nice",
+          "t": "Paris-Nice",
+          "d": "2027-03-07T12:00",
+          "end": "2027-03-14",
+          "venue": "Parcours à venir",
+          "city": "Paris",
+          "country": "FR",
+          "level": "international",
+          "status": "announced",
+          "free": True,
+          "link": "https://www.paris-nice.fr"
+          },
+          {
+          "sport": "Rugby",
+          "comp": "Tournoi des Six Nations",
+          "t": "Irlande – France",
+          "d": "2027-03-13T21:10",
+          "venue": "Aviva Stadium",
+          "city": "Dublin",
+          "country": "IE",
+          "level": "international",
+          "status": "announced",
+          "link": "https://www.sixnationsrugby.com"
+          },
+          {
+          "sport": "Rugby",
+          "comp": "Six Nations féminin",
+          "t": "France – Écosse (Bleues)",
+          "d": "2027-04-24T15:45",
+          "venue": "Lieu à venir",
+          "city": "France",
+          "country": "FR",
+          "level": "international",
+          "status": "announced",
+          "link": "https://www.sixnationsrugby.com"
+          },
+          {
+          "sport": "Cyclisme",
+          "comp": "Paris-Roubaix",
+          "t": "Paris-Roubaix",
+          "d": "2027-04-11T11:00",
+          "venue": "Vélodrome André-Pétrieux",
+          "city": "Roubaix",
+          "country": "FR",
+          "level": "international",
+          "status": "announced",
+          "free": True,
+          "link": "https://www.paris-roubaix.fr"
+          },
+          {
+          "sport": "Rugby",
+          "comp": "Six Nations féminin",
+          "t": "France – Pays de Galles (Bleues)",
+          "d": "2027-05-08T13:30",
+          "venue": "Lieu à venir",
+          "city": "France",
+          "country": "FR",
+          "level": "international",
+          "status": "announced",
+          "link": "https://www.sixnationsrugby.com"
+          },
+          {
+          "sport": "Football",
+          "comp": "Coupe de France",
+          "t": "Finale de la Coupe de France",
+          "d": "2027-05-15T21:00",
+          "venue": "Stade de France",
+          "city": "Saint-Denis",
+          "country": "FR",
+          "level": "international",
+          "status": "announced",
+          "link": "https://billetterie.fff.fr"
+          },
+          {
+          "sport": "Rugby",
+          "comp": "Six Nations féminin",
+          "t": "Angleterre – France (Bleues)",
+          "d": "2027-05-15T18:45",
+          "venue": "Allianz Stadium Twickenham",
+          "city": "Londres",
+          "country": "GB",
+          "level": "international",
+          "status": "announced",
+          "link": "https://www.sixnationsrugby.com"
+          },
+          {
+          "sport": "Tennis",
+          "comp": "Roland-Garros",
+          "t": "Roland-Garros",
+          "d": "2027-05-23T11:00",
+          "end": "2027-06-06",
+          "venue": "Stade Roland-Garros",
+          "city": "Paris",
+          "country": "FR",
+          "level": "international",
+          "status": "announced",
+          "link": "https://www.rolandgarros.com"
+          },
+          {
+          "sport": "Rugby",
+          "comp": "Challenge Cup",
+          "t": "Finale de la Challenge Cup",
+          "d": "2027-05-21T21:00",
+          "venue": "Groupama Stadium",
+          "city": "Lyon",
+          "country": "FR",
+          "level": "europe",
+          "status": "announced",
+          "link": "https://epcrugby.com"
+          },
+          {
+          "sport": "Rugby",
+          "comp": "Champions Cup",
+          "t": "Finale de la Champions Cup",
+          "d": "2027-05-22T17:45",
+          "venue": "Groupama Stadium",
+          "city": "Lyon",
+          "country": "FR",
+          "level": "europe",
+          "status": "announced",
+          "link": "https://epcrugby.com"
+          },
+          {
+          "sport": "Football",
+          "comp": "Ligue Europa",
+          "t": "Finale de la Ligue Europa",
+          "d": "2027-05-26T21:00",
+          "venue": "Deutsche Bank Park",
+          "city": "Francfort",
+          "country": "DE",
+          "level": "europe",
+          "status": "announced",
+          "link": "https://www.uefa.com/uefaeuropaleague/"
+          },
+          {
+          "sport": "Football",
+          "comp": "Ligue des champions",
+          "t": "Finale de la Ligue des champions",
+          "d": "2027-06-05T21:00",
+          "venue": "Estadio Metropolitano",
+          "city": "Madrid",
+          "country": "ES",
+          "level": "europe",
+          "status": "announced",
+          "link": "https://www.uefa.com/uefachampionsleague/"
+          },
+          {
+          "sport": "Rugby",
+          "comp": "Top 14",
+          "t": "Finale du Top 14",
+          "d": "2027-06-26T21:05",
+          "venue": "Stade de France",
+          "city": "Saint-Denis",
+          "country": "FR",
+          "level": "national",
+          "status": "announced",
+          "link": "https://top14.lnr.fr"
+          },
+          {
+          "sport": "Cyclisme",
+          "comp": "Tour de France",
+          "t": "Tour de France 2027 (départ d'Édimbourg)",
+          "d": "2027-07-02T13:00",
+          "end": "2027-07-25",
+          "venue": "Grand Départ Édimbourg, arrivée à Paris",
+          "city": "Paris",
+          "country": "FR",
+          "level": "international",
+          "status": "announced",
+          "free": True,
+          "link": "https://www.letour.fr"
+          },
+          {
+          "sport": "Cyclisme",
+          "comp": "Championnats du monde",
+          "t": "Mondiaux de cyclisme Haute-Savoie Mont-Blanc",
+          "d": "2027-08-24T10:00",
+          "end": "2027-09-05",
+          "venue": "Haute-Savoie",
+          "city": "Annecy",
+          "country": "FR",
+          "level": "international",
+          "status": "announced",
+          "free": True,
+          "link": "https://www.uci.org"
+          },
+          {
+          "sport": "Basket",
+          "comp": "Coupe du monde FIBA",
+          "t": "Coupe du monde de basket",
+          "d": "2027-08-27T18:00",
+          "end": "2027-09-12",
+          "venue": "Plusieurs salles",
+          "city": "Doha",
+          "country": "QA",
+          "level": "international",
+          "status": "announced",
+          "link": "https://www.fiba.basketball"
+          },
+          {
+          "sport": "Rugby",
+          "comp": "Coupe du monde de rugby",
+          "t": "France – États-Unis",
+          "d": "2027-10-02T17:45",
+          "venue": "Docklands Stadium",
+          "city": "Melbourne",
+          "country": "AU",
+          "level": "international",
+          "status": "announced",
+          "link": "https://www.rugbyworldcup.com"
+          },
+          {
+          "sport": "Rugby",
+          "comp": "Coupe du monde de rugby",
+          "t": "France – Japon",
+          "d": "2027-10-09T18:45",
+          "venue": "Brisbane Stadium",
+          "city": "Brisbane",
+          "country": "AU",
+          "level": "international",
+          "status": "announced",
+          "link": "https://www.rugbyworldcup.com"
+          },
+          {
+          "sport": "Rugby",
+          "comp": "Coupe du monde de rugby",
+          "t": "France – Samoa",
+          "d": "2027-10-17T19:45",
+          "venue": "Allianz Stadium",
+          "city": "Sydney",
+          "country": "AU",
+          "level": "international",
+          "status": "announced",
+          "link": "https://www.rugbyworldcup.com"
+          },
+          {
+          "sport": "Rugby",
+          "comp": "Coupe du monde de rugby",
+          "t": "Finale de la Coupe du monde de rugby",
+          "d": "2027-11-13T20:00",
+          "venue": "Stadium Australia",
+          "city": "Sydney",
+          "country": "AU",
+          "level": "international",
+          "status": "announced",
+          "link": "https://www.rugbyworldcup.com"
+          }
+          ]
+
+
+          def big_events():
+              """Grandes affiches vérifiées (équipes de France, Six Nations, Coupe du monde, finales, Tour de France, Roland-Garros…)."""
+              now = dt.datetime.now().isoformat()[:16]
+              out = []
+              for i, b in enumerate(BIG_EVENTS):
+                  if (b.get("end") or b["d"]) < now[:10]:
+                      continue
+                  out.append({"id": "big-" + slug(b["t"] + b["d"][:10]), "src": "sport", "kind": "sport", "sport": b["sport"],
+                              "comp": b["comp"], "level": b.get("level", "international"), "t": b["t"], "d": b["d"], "end": b.get("end"),
+                              "v": b.get("venue", ""), "a": "", "city": b.get("city", ""), "country": b.get("country", "FR"),
+                              "lat": None, "lon": None, "p": 0 if b.get("free") else None, "free": bool(b.get("free")),
+                              "status": b.get("status", "announced"), "big": True, "img": "", "link": b.get("link", ""), "lineup": [], "desc": ""})
+              return out
+
+
           def sports():
               now = dt.datetime.now(dt.timezone.utc)
               y = now.year if now.month >= 7 else now.year - 1
@@ -603,7 +1120,8 @@ jobs:
                           if kind != "national" and home not in french and home != "France":
                               continue  # on garde les matchs joués en France
                           got += 1
-                          out.append({"id": "sp-" + str(e.get("idEvent")), "src": "sport", "kind": "sport", "sport": sport,
+                          out.append({"status": "on_sale" if t < now + dt.timedelta(days=35) else "announced",
+                                      "id": "sp-" + str(e.get("idEvent")), "src": "sport", "kind": "sport", "sport": sport,
                                       "comp": comp, "level": kind, "t": f"{home} – {away}", "home": home, "away": away,
                                       "d": t.isoformat(), "end": None, "v": e.get("strVenue") or "", "a": "",
                                       "city": e.get("strCity") or "", "lat": None, "lon": None, "p": None, "soldout": False,
@@ -611,20 +1129,22 @@ jobs:
                                       "link": "https://www.google.com/search?q=" + urllib.parse.quote(f"billetterie {home} {away} {comp}"),
                                       "lineup": [], "desc": ""})
                   log(f"  Sport {comp}: {got} matchs à venir")
-              return out
+              big = big_events()
+              log(f"  Grandes affiches : {len(big)}")
+              return big + out
 
 
           # ---------------- Compétitions : toutes les courses de France (Finishers) ----------------
           # Le moteur de recherche public du site Finishers (clé « recherche seule » fournie à tous ses visiteurs)
           FIN_TS = "https://vn2qtcjsbg0ea481p.a1.typesense.net/multi_search?x-typesense-api-key=G1BPjGr3KDU7n6yylcfOREpRVGUBpKYW"
-          FIN_DISC = {"trail", "road", "triathlon", "cycling", "mountain_biking", "gravel_biking", "duathlon", "swimrun", "bike_and_run",
-                      "aquathlon", "cross_triathlon", "cross", "multisports", "obstacle_race"}
+          # FOMO affiche : course sur route, trail, Hyrox (et courses fitness), triathlon
+          FIN_DISC = {"trail", "road", "triathlon", "cross_triathlon", "duathlon", "aquathlon", "swimrun", "fitnessrace"}
 
 
           def races_all():
               """Toutes les courses à venir en France sur 12 mois, en une soixantaine de requêtes (au lieu de 12 000 pages)."""
               now = dt.datetime.now(dt.timezone.utc)
-              t0, t1 = int(now.timestamp()), int((now + dt.timedelta(days=HORIZON_DAYS)).timestamp())
+              t0, t1 = int(now.timestamp()), int((now + dt.timedelta(days=730)).timestamp())  # N+1 au minimum
               fields = ("eventId,eventName,eventSlug,raceDate,raceEndDate,raceDiscipline,raceDistance,raceDistanceUnit,raceElevationGain,"
                         "city,level1,level2,coordinates,editionStatus,raceStatus,image,eventLastEditionFinisherCount,raceName,popularity")
               groups, page, total = {}, 1, None
@@ -641,6 +1161,8 @@ jobs:
                       r = h.get("document") or {}
                       disc = r.get("raceDiscipline") or ""
                       if disc not in FIN_DISC or (r.get("editionStatus") or "") == "cancelled" or (r.get("raceStatus") or "") == "cancelled":
+                          continue
+                      if disc == "fitnessrace" and "hyrox" not in (r.get("eventName") or "").lower():
                           continue
                       g = groups.setdefault(r["eventId"], {"doc": r, "races": []})
                       dist = r.get("raceDistance") or 0
@@ -667,6 +1189,58 @@ jobs:
                               "link": f"https://www.finishers.com/course/{r.get('eventSlug')}", "lineup": [], "desc": ""})
               out.sort(key=lambda e: e["d"])
               log(f"  Finishers: {len(out)} épreuves en France ({total} courses trouvées)")
+              return out
+
+
+          # ---------------- HYROX (site officiel) ----------------
+          HYROX_FR = ["paris", "lyon", "nice", "bordeaux", "toulouse", "marseille", "lille", "nantes", "montpellier", "strasbourg", "rennes"]
+          MON_EN = {"jan": 1, "feb": 2, "mar": 3, "apr": 4, "may": 5, "jun": 6, "jul": 7, "aug": 8, "sep": 9, "oct": 10, "nov": 11, "dec": 12}
+
+
+          def hyrox():
+              out = []
+              for page in range(1, 6):
+                  time.sleep(PAUSE)
+                  try:
+                      rows = json.loads(get(f"https://hyrox.com/wp-json/wp/v2/event?per_page=100&page={page}&_fields=id,title,link"))
+                  except Exception as e:  # noqa: BLE001
+                      if page == 1:
+                          log(f"  HYROX: {e}")
+                      break
+                  for r in rows:
+                      name = html.unescape((r.get("title") or {}).get("rendered") or "")
+                      city = next((c for c in HYROX_FR if re.search(r"\b" + c + r"\b", name.lower())), None)
+                      if not city:
+                          continue
+                      time.sleep(PAUSE)
+                      try:
+                          pg = get(r["link"])
+                      except Exception:  # noqa: BLE001
+                          continue
+                      ds = re.findall(r"(\d{1,2})\. ([A-Z][a-z]{2})\.? (20\d\d)", pg)
+                      if not ds:
+                          continue
+                      def iso(x):
+                          return f"{x[2]}-{MON_EN.get(x[1].lower(), 1):02d}-{int(x[0]):02d}"
+                      img = re.search(r'<meta property="og:image" content="([^"]+)"', pg)
+                      out.append({"id": "hx-" + str(r["id"]), "src": "hyrox", "kind": "race", "t": name.title().replace("Hyrox", "HYROX"),
+                                  "d": iso(ds[0]), "end": iso(ds[1]) if len(ds) > 1 else None, "tba": False,
+                                  "v": city.title(), "a": "", "city": city.title(), "lat": None, "lon": None,
+                                  "races": [{"name": "HYROX", "disc": "hyrox", "km": 8, "dplus": 0, "date": iso(ds[0])}],
+                                  "p": None, "pop": 0, "img": img.group(1) if img else "", "link": r["link"], "lineup": [], "desc": ""})
+                  if len(rows) < 100:
+                      break
+              log(f"  HYROX: {len(out)} étapes en France")
+              return out
+
+
+          def races_all_plus():
+              out = races_all()
+              try:
+                  out += hyrox()
+              except Exception as e:  # noqa: BLE001
+                  log(f"  HYROX: {e}")
+              out.sort(key=lambda e: e["d"])
               return out
 
 
@@ -828,12 +1402,13 @@ jobs:
               return out
 
 
-          SOURCES = {"sg": shotgun, "ra": resident_advisor, "dice": dice, "fnac": fnac, "br": billetreduc, "tac": ticketac, "offi": offi_expos}
+          SOURCES = {"ra": resident_advisor, "dice": dice, "fnac": fnac, "br": billetreduc, "tac": ticketac, "offi": offi_expos}
 
 
           def main():
               cfg = json.load(open(os.path.join(ROOT, "config", "cities.json"), encoding="utf-8"))
-              cities = [c for c in uniq([cfg.get("home", "Paris")] + cfg.get("cities", [])) if slug(c) in FR_CITIES][:6] or ["Paris"]
+              # villes françaises : toutes les sources ; villes étrangères (choisies dans Soirées) : RA et DICE seulement
+              cities = [c for c in uniq([cfg.get("home", "Paris")] + cfg.get("cities", [])) if c][:8] or ["Paris"]
               os.makedirs(DATA, exist_ok=True)
               idx_path = os.path.join(DATA, "index.json")
               index = json.load(open(idx_path, encoding="utf-8")) if os.path.exists(idx_path) else {"cities": {}}
@@ -848,6 +1423,8 @@ jobs:
                   log(f"== {city}")
                   events, report = [], {}
                   for key, fn in SOURCES.items():
+                      if slug(city) not in FR_CITIES and key not in ("ra", "dice"):
+                          continue
                       try:
                           got = fn(city)
                           report[key] = {"n": len(got)}
@@ -898,10 +1475,6 @@ jobs:
                       fest += ra_festivals()
                   except Exception as e:  # noqa: BLE001
                       log(f"  RA festivals : échec ({e})")
-                  try:
-                      fest += [e for e in shotgun_festivals() if e.get("d")]
-                  except Exception as e:  # noqa: BLE001
-                      log(f"  Shotgun festivals : échec ({e})")
                   json.dump({"city": "France", "updated": now.isoformat(), "sources": {"festivals": {"n": len(fest)}}, "events": fest},
                             open(os.path.join(DATA, "france.json"), "w", encoding="utf-8"), ensure_ascii=False)
                   index["cities"]["france"] = {"name": "Festivals", "updated": now.isoformat(), "n": len(fest), "sources": {"festivals": {"n": len(fest)}}}
@@ -920,10 +1493,22 @@ jobs:
                       index["cities"].setdefault(name, {"name": label, "n": 0})["sources"] = {name: {"n": 0, "err": str(e)[:200]}}
 
               save_index()
+              # base de reconnaissance des festivals (année en cours, passés compris) : une fois par semaine
+              kbp = os.path.join(DATA, "festivals-kb.json")
+              try:
+                  old = json.load(open(kbp, encoding="utf-8")) if os.path.exists(kbp) else {}
+                  if not old.get("updated") or (now - dt.datetime.fromisoformat(old["updated"])).days >= 7 or not old.get("festivals"):
+                      kb = festivals_kb()
+                      if kb:
+                          json.dump({"updated": now.isoformat(), "festivals": kb}, open(kbp, "w", encoding="utf-8"), ensure_ascii=False)
+                          index["cities"]["festivals-kb"] = {"name": "Base festivals", "updated": now.isoformat(), "n": len(kb), "sources": {"ra": {"n": len(kb)}}}
+              except Exception as e:  # noqa: BLE001
+                  log(f"  base festivals : échec ({e})")
+              save_index()
               save_national("sports", "Sport (France)", sports)
               save_index()
               # courses : toutes les épreuves de France sur 12 mois
-              save_national("races", "Courses (France)", races_all)
+              save_national("races", "Courses (France)", races_all_plus)
               save_index()
               save_national("artists", "Dates de tes artistes", lambda: ra_artists(cfg.get("artists") or []) + bandsintown(cfg.get("artists") or [], cfg.get("bit_app_id") or ""))
               index["updated"] = now.isoformat()
@@ -945,6 +1530,7 @@ jobs:
             git fetch origin main
             git reset --hard origin/main
             mkdir -p data && cp -r /tmp/fomo-data/. data/
+            git checkout origin/main -- data/announcements.json data/veille-state.json 2>/dev/null || true  # gérés par la veille
             git add data
             git diff --cached --quiet && exit 0
             git commit -m "Mise à jour des événements"
