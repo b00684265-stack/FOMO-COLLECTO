@@ -24,6 +24,8 @@ jobs:
         with:
           python-version: "3.12"
       - name: Collecter les événements
+        env:
+          DATATOURISME_KEY: ${{ secrets.DATATOURISME_KEY }}
         run: |
           mkdir -p collector config data
           [ -f config/cities.json ] || echo '{"home": "Paris", "cities": ["Paris"]}' > config/cities.json
@@ -53,7 +55,7 @@ jobs:
                 "(KHTML, like Gecko) Chrome/128.0 Safari/537.36")
           PAUSE = 1.0  # secondes entre deux pages, pour rester discret
 
-          LIMITS = {"sg": 40, "ra": 200, "br": 60, "tac": 30, "fest": 50, "dice_venues": 25, "offi_detail": 120, "bit": 60, "ra_art": 40}
+          LIMITS = {"sg": 40, "ra": 200, "br": 120, "tac": 30, "fest": 50, "dice_venues": 25, "offi_detail": 120, "bit": 60, "ra_art": 40}
           HORIZON_DAYS = 365  # court terme et long terme (festivals, grosses dates)
 
           # FOMO couvre uniquement la France pour l'instant
@@ -322,7 +324,7 @@ jobs:
            listing(filters:$filters,pageSize:$pageSize,page:$page,aggregations:$aggregations,sortOrder:$sortOrder,sortField:$sortField,indices:$indices){
             totalResults data{ ...on Event{ id title date startTime endTime contentUrl flyerFront interestedCount cost genres{ name } artists{ name }
              venue{ name capacity area{ name country{ name urlCode } } } } } } }"""
-          EUROPE = ["fr", "be", "nl", "de", "es", "pt", "it", "ch", "gb", "at", "hr", "pl", "hu", "gr", "cz", "dk", "se", "no", "ie",
+          EUROPE = ["fr", "be", "nl", "de", "es", "pt", "it", "ch", "uk", "at", "hr", "pl", "hu", "gr", "cz", "dk", "se", "no", "ie",
                     "rs", "ro", "bg", "me", "mt", "si", "sk", "al", "ee", "lv", "lt", "fi", "lu"]
 
 
@@ -378,7 +380,7 @@ jobs:
           def festivals_kb():
               """Base de reconnaissance : tous les festivals RA d'Europe de l'année en cours (passés compris), allégés."""
               y = dt.date.today().year
-              rows = ra_festivals(f"{y}-01-01T00:00:00Z", f"{y}-12-31T23:59:59Z", 6)
+              rows = ra_festivals(f"{y - 1}-01-01T00:00:00Z", f"{y + 1}-12-31T23:59:59Z", 10)
               kb = {}
               for e in rows:
                   k = slug(re.sub(r"\b(19|20)\d\d\b", "", e["t"]))
@@ -1244,6 +1246,97 @@ jobs:
               return out
 
 
+          # ---------------- Local : fêtes de village, brocantes, animations (DATAtourisme, open data officiel) ----------------
+          # Clé gratuite à créer sur https://info.datatourisme.fr puis à mettre dans le secret GitHub DATATOURISME_KEY
+          CITY_GEO = {"paris": (48.8566, 2.3522), "lyon": (45.764, 4.8357), "marseille": (43.2965, 5.3698), "toulouse": (43.6047, 1.4442),
+                      "bordeaux": (44.8378, -0.5792), "lille": (50.6292, 3.0573), "nantes": (47.2184, -1.5536), "nice": (43.7102, 7.262),
+                      "montpellier": (43.6108, 3.8767), "strasbourg": (48.5734, 7.7521), "rennes": (48.1173, -1.6778), "grenoble": (45.1885, 5.7245),
+                      "rouen": (49.4431, 1.0993), "tours": (47.3941, 0.6848), "dijon": (47.322, 5.0415), "angers": (47.4784, -0.5632),
+                      "reims": (49.2583, 4.0317), "metz": (49.1193, 6.1757), "nancy": (48.6921, 6.1844), "clermont-ferrand": (45.7772, 3.087),
+                      "toulon": (43.1242, 5.928), "le-havre": (49.4944, 0.1079), "brest": (48.3904, -4.4861), "caen": (49.1829, -0.3707),
+                      "orleans": (47.9029, 1.9093), "perpignan": (42.6887, 2.8948), "avignon": (43.9493, 4.8055), "annecy": (45.8992, 6.1294),
+                      "biarritz": (43.4832, -1.5586), "la-rochelle": (46.1603, -1.1511), "saint-etienne": (45.4397, 4.3872), "amiens": (49.894, 2.2957)}
+
+
+          def _lbl(x):
+              if isinstance(x, dict):
+                  v = x.get("fr") or x.get("@value") or next(iter(x.values()), "")
+                  return v[0] if isinstance(v, list) and v else v if isinstance(v, str) else ""
+              if isinstance(x, list):
+                  return _lbl(x[0]) if x else ""
+              return x if isinstance(x, str) else ""
+
+
+          def _find(o, keys, depth=0):
+              """Première valeur trouvée pour une des clés, en profondeur (le format DATAtourisme est très imbriqué)."""
+              if depth > 6:
+                  return None
+              if isinstance(o, dict):
+                  for k in keys:
+                      if k in o and o[k] not in (None, "", []):
+                          return o[k]
+                  for v in o.values():
+                      r = _find(v, keys, depth + 1)
+                      if r is not None:
+                          return r
+              elif isinstance(o, list):
+                  for v in o:
+                      r = _find(v, keys, depth + 1)
+                      if r is not None:
+                          return r
+              return None
+
+
+          def datatourisme(city):
+              key = os.environ.get("DATATOURISME_KEY", "").strip()
+              if not key or slug(city) not in CITY_GEO:
+                  return []
+              lat, lon = CITY_GEO[slug(city)]
+              today = dt.date.today().isoformat()
+              base = f"https://api.datatourisme.fr/v1/entertainmentAndEvent?geo_distance={lat},{lon},25km&page_size=100"
+              out, url, pages = [], base + f"&takesPlaceAt.endDate[gte]={today}", 0
+              while url and pages < 15:
+                  pages += 1
+                  time.sleep(0.4)
+                  try:
+                      j = json.loads(get(url, headers={"X-API-Key": key, "Accept": "application/json"}))
+                  except Exception as e:  # noqa: BLE001
+                      if pages == 1 and "[gte]" in url:
+                          url = base  # filtre de date non accepté : on filtre nous-mêmes
+                          continue
+                      log(f"  DATAtourisme {city}: {e}")
+                      break
+                  items = j.get("objects") or j.get("results") or j.get("data") or j.get("hydra:member") or (j if isinstance(j, list) else [])
+                  for o in items:
+                      start = _find(o, ["startDate", "schema:startDate"])
+                      end = _find(o, ["endDate", "schema:endDate"]) or start
+                      start, end = _lbl(start) or start, _lbl(end) or end
+                      if not isinstance(start, str) or (isinstance(end, str) and end[:10] < today):
+                          continue
+                      t = _lbl(o.get("label") or o.get("rdfs:label") or _find(o, ["label", "rdfs:label"]))
+                      if not t:
+                          continue
+                      la = _find(o, ["latitude", "schema:latitude"])
+                      lo = _find(o, ["longitude", "schema:longitude"])
+                      town = _lbl(_find(o, ["addressLocality", "schema:addressLocality"])) or city
+                      types = o.get("type") or o.get("@type") or []
+                      tags = [x.split("#")[-1].split(":")[-1] for x in (types if isinstance(types, list) else [types]) if isinstance(x, str)]
+                      desc = _lbl(_find(o, ["shortDescription", "dc:description", "description"]))
+                      st = _find(o, ["startTime", "schema:startTime"])
+                      d = start[:10] + ("T" + str(st)[:5] if isinstance(st, str) and re.match(r"\d\d:\d\d", str(st)) else "T10:00")
+                      if d[:10] < today:
+                          d = today + "T10:00"
+                      out.append({"id": "dt-" + str(o.get("uuid") or o.get("@id") or slug(t + start))[-40:], "src": "datatourisme", "kind": "local",
+                                  "t": t, "d": d, "end": end if isinstance(end, str) and end[:10] != start[:10] else None,
+                                  "v": town, "a": town, "city": town, "lat": float(la) if la else None, "lon": float(lo) if lo else None,
+                                  "p": None, "tags": tags, "desc": (desc or "")[:300], "img": "", "lineup": [],
+                                  "link": _lbl(_find(o, ["homepage", "foaf:homepage", "url"])) or ""})
+                  nxt = (j.get("meta") or {}).get("next") if isinstance(j, dict) else None
+                  url = nxt if nxt and nxt.startswith("http") else None
+              log(f"  DATAtourisme {city}: {len(out)} fêtes, brocantes et animations")
+              return out
+
+
           # ---------------- Concerts : Fnac Spectacles (moteur de recherche public d'Eventim, qui opère Fnac Spectacles) ----------------
           EVENTIM = ("https://public-api.eventim.com/websearch/search/api/exploration/v2/productGroups"
                      "?webId=web__eventim-fr&language=fr&retail_partner=FS8&tags=DISABLE_FBS")
@@ -1402,7 +1495,7 @@ jobs:
               return out
 
 
-          SOURCES = {"ra": resident_advisor, "dice": dice, "fnac": fnac, "br": billetreduc, "tac": ticketac, "offi": offi_expos}
+          SOURCES = {"ra": resident_advisor, "dice": dice, "fnac": fnac, "dtour": datatourisme, "br": billetreduc, "tac": ticketac, "offi": offi_expos}
 
 
           def main():
