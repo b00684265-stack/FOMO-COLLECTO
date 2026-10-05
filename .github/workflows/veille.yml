@@ -1,0 +1,328 @@
+# FOMO · boîte de veille (newsletters d'artistes, tourneurs, salles, alertes Songkick / Bandsintown)
+# Chemin à respecter dans GitHub : .github/workflows/veille.yml
+# Il faut deux secrets dans le dépôt (Settings → Secrets and variables → Actions) : FOMO_MAIL et FOMO_MAIL_PASSWORD
+name: FOMO veille
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"   # toutes les 15 minutes
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: veille
+  cancel-in-progress: false
+
+jobs:
+  veille:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Lire la boîte de veille
+        env:
+          FOMO_MAIL: ${{ secrets.FOMO_MAIL }}
+          FOMO_MAIL_PASSWORD: ${{ secrets.FOMO_MAIL_PASSWORD }}
+        run: |
+          mkdir -p collector data
+          cat > collector/veille.py <<'PYEOF'
+          """FOMO · boîte de veille : lit la boîte mail FOMO (newsletters d'artistes, tourneurs, salles, alertes Songkick / Bandsintown)
+          et en extrait les annonces de concerts en France : artiste, ville, salle, date, prévente, mise en vente, lien.
+
+          Tourne toutes les 15 minutes sur GitHub Actions. Les identifiants de la boîte sont dans les « Secrets » du dépôt
+          (FOMO_MAIL et FOMO_MAIL_PASSWORD, un mot de passe d'application Google) : ils ne sont jamais écrits dans le dépôt.
+          Seuls des faits sont conservés (artiste, lieu, dates, lien), jamais le texte ni les visuels des mails.
+          Uniquement la bibliothèque standard de Python.
+          """
+          import datetime as dt
+          import email
+          import email.header
+          import email.utils
+          import hashlib
+          import html
+          import imaplib
+          import json
+          import os
+          import re
+          import sys
+          import unicodedata
+
+          ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+          DATA = os.path.join(ROOT, "data")
+          OUT = os.path.join(DATA, "announcements.json")
+          STATE = os.path.join(DATA, "veille-state.json")
+          KEEP_DAYS = 400
+
+          CITIES = ["Paris", "Lyon", "Marseille", "Bordeaux", "Lille", "Nantes", "Toulouse", "Nice", "Montpellier", "Strasbourg", "Rennes",
+                    "Grenoble", "Annecy", "Biarritz", "Brest", "Rouen", "Caen", "Reims", "Dijon", "Tours", "Angers", "La Rochelle", "Avignon",
+                    "Aix-en-Provence", "Cannes", "Metz", "Nancy", "Clermont-Ferrand", "Le Havre", "Toulon", "Orléans", "Le Mans", "Limoges",
+                    "Poitiers", "Perpignan", "Nîmes", "Besançon", "Saint-Étienne", "Amiens", "Lorient", "Vannes", "Pau", "Bayonne",
+                    "Saint-Denis", "Nanterre", "Boulogne-Billancourt", "Montreuil", "Décines", "Floirac", "Villeurbanne", "Cenon",
+                    "Mérignac", "Trélazé", "Amnéville", "Rezé", "Saint-Herblain", "Chambéry", "Valence", "Colmar", "Mulhouse", "Arras"]
+          VENUES = {"accor arena": "Paris", "bercy": "Paris", "zenith paris": "Paris", "zénith paris": "Paris", "olympia": "Paris",
+                    "la cigale": "Paris", "bataclan": "Paris", "elysee montmartre": "Paris", "élysée montmartre": "Paris", "salle pleyel": "Paris",
+                    "trabendo": "Paris", "la maroquinerie": "Paris", "le trianon": "Paris", "adidas arena": "Paris", "la seine musicale": "Boulogne-Billancourt",
+                    "paris la defense arena": "Nanterre", "paris la défense arena": "Nanterre", "stade de france": "Saint-Denis", "philharmonie": "Paris",
+                    "le zenith": None, "ldlc arena": "Décines", "halle tony garnier": "Lyon", "le transbordeur": "Lyon", "arkea arena": "Floirac",
+                    "le dome": "Marseille", "le dôme": "Marseille", "zenith de lille": "Lille", "zénith de lille": "Lille", "zenith nantes": "Saint-Herblain",
+                    "zénith nantes": "Saint-Herblain", "zenith toulouse": "Toulouse", "zénith toulouse": "Toulouse", "palais nikaia": "Nice",
+                    "sud de france arena": "Montpellier", "zenith de strasbourg": "Strasbourg", "zénith de strasbourg": "Strasbourg",
+                    "le liberte": "Rennes", "le liberté": "Rennes", "rockhal": None}
+          MONTHS = {"jan": 1, "janv": 1, "janvier": 1, "january": 1, "feb": 2, "fev": 2, "fevr": 2, "fevrier": 2, "february": 2,
+                    "mar": 3, "mars": 3, "march": 3, "apr": 4, "avr": 4, "avril": 4, "april": 4, "may": 5, "mai": 5, "jun": 6, "juin": 6,
+                    "june": 6, "jul": 7, "juil": 7, "juillet": 7, "july": 7, "aug": 8, "aou": 8, "aout": 8, "august": 8, "sep": 9, "sept": 9,
+                    "septembre": 9, "september": 9, "oct": 10, "octobre": 10, "october": 10, "nov": 11, "novembre": 11, "november": 11,
+                    "dec": 12, "decembre": 12, "december": 12}
+          RELEVANT = re.compile(r"tourn[ée]e|\btour\b|concert|nouvelle[s]? date|date[s]? suppl|en live|live in|on sale|pr[ée]-?vente|presale|"
+                                r"pre-sale|billetterie|mise en vente|tickets?|announce|annonc|show|zenith|zénith|arena|olympia", re.I)
+          JUNK = re.compile(r"confirm(e|ez|ation) (ton|votre|your) (inscription|adresse|email|subscription)|verify|v[ée]rifi|bienvenue|welcome|"
+                            r"password|mot de passe|unsubscribe confirmation|d[ée]sinscri|receipt|re[çc]u de paiement|facture|invoice", re.I)
+          TICKET_DOMAINS = ("ticketmaster", "fnacspectacles", "dice.fm", "seetickets", "livenation", "shotgun", "eventim", "digitick",
+                            "weezevent", "billetweb", "axs", "ra.co", "festicket", "songkick", "bandsintown", "lnfr", "gdp.fr", "corida")
+
+
+          def norm(s):
+              s = unicodedata.normalize("NFD", str(s or "")).encode("ascii", "ignore").decode().lower()
+              return re.sub(r"\s+", " ", s).strip()
+
+
+          def dec(h):
+              try:
+                  return str(email.header.make_header(email.header.decode_header(h or "")))
+              except Exception:  # noqa: BLE001
+                  return h or ""
+
+
+          def body_of(msg):
+              """Texte du mail (texte brut de préférence, sinon HTML nettoyé) et liens."""
+              plain, htm = [], []
+              for part in msg.walk() if msg.is_multipart() else [msg]:
+                  ct = part.get_content_type()
+                  if ct not in ("text/plain", "text/html") or part.get("Content-Disposition", "").startswith("attachment"):
+                      continue
+                  try:
+                      t = part.get_payload(decode=True).decode(part.get_content_charset() or "utf-8", "replace")
+                  except Exception:  # noqa: BLE001
+                      continue
+                  (plain if ct == "text/plain" else htm).append(t)
+              links = []
+              for h in htm:
+                  links += re.findall(r'href="(https?://[^"]+)"[^>]*>([\s\S]{0,120}?)</a>', h)
+              txt = "\n".join(plain)
+              if not txt.strip() and htm:
+                  t = re.sub(r"(?is)<(script|style)[^>]*>.*?</\1>", " ", "\n".join(htm))
+                  t = re.sub(r"(?i)<br\s*/?>|</(p|div|tr|li|h\d)>", "\n", t)
+                  txt = html.unescape(re.sub(r"<[^>]+>", " ", t))
+              links += [(u, "") for u in re.findall(r"https?://[^\s<>\"')]+", txt)]
+              return re.sub(r"[ \t\xa0]+", " ", txt), links
+
+
+          def parse_date(s, ref):
+              """Première date trouvée dans s (formats français et anglais). Renvoie (date, heure ou None)."""
+              t = norm(s).replace(".", " ").replace(",", " ")
+              m = re.search(r"\b(\d{1,2})[/.-](\d{1,2})(?:[/.-](\d{2,4}))?\b", t)
+              y = mo = d = None
+              if m and 1 <= int(m.group(2)) <= 12 and 1 <= int(m.group(1)) <= 31:
+                  d, mo = int(m.group(1)), int(m.group(2))
+                  y = int(m.group(3)) if m.group(3) else None
+              else:
+                  m = re.search(r"\b(\d{1,2})(?:er|st|nd|rd|th)?\s+([a-z]{3,9})\s*(\d{4})?\b", t)
+                  if m and m.group(2) in MONTHS:
+                      d, mo, y = int(m.group(1)), MONTHS[m.group(2)], (int(m.group(3)) if m.group(3) else None)
+                  else:
+                      m = re.search(r"\b([a-z]{3,9})\s+(\d{1,2})(?:st|nd|rd|th)?\s*(\d{4})?\b", t)
+                      if m and m.group(1) in MONTHS:
+                          d, mo, y = int(m.group(2)), MONTHS[m.group(1)], (int(m.group(3)) if m.group(3) else None)
+              if not d:
+                  return None, None
+              if y and y < 100:
+                  y += 2000
+              if not y:
+                  y = ref.year
+                  if dt.date(y, mo, min(d, 28)) < ref.date() - dt.timedelta(days=7):
+                      y += 1
+              try:
+                  day = dt.date(y, mo, d)
+              except ValueError:
+                  return None, None
+              hm = re.search(r"\b(\d{1,2})\s*(?:h|:)\s*(\d{2})?\b|\b(\d{1,2})\s*(am|pm)\b", t[m.end():m.end() + 14])
+              hour = None
+              if hm:
+                  if hm.group(4):
+                      hour = (int(hm.group(3)) % 12 + (12 if hm.group(4) == "pm" else 0), 0)
+                  else:
+                      hour = (int(hm.group(1)), int(hm.group(2) or 0))
+                  if not (0 <= hour[0] < 24 and 0 <= hour[1] < 60):
+                      hour = None
+              return day, hour
+
+
+          def city_in(s):
+              n = norm(s)
+              for v, c in VENUES.items():
+                  if c and norm(v) in n:
+                      return c, " ".join(w[:1].upper() + w[1:] for w in v.split())
+              best = None
+              for c in CITIES:
+                  if re.search(r"(^|[^a-z])" + re.escape(norm(c)) + r"($|[^a-z])", n) and (not best or len(c) > len(best)):
+                      best = c
+              return best, None
+
+
+          def artist_of(subject, sender, txt):
+              s = re.sub(r"^\s*((re|tr|fwd?)\s*:\s*)+", "", subject, flags=re.I)
+              pats = [r"^(.+?)\s+(?:just announced|announced|a annonc[ée]|vient d'annoncer|annonce (?:sa|une|de nouvelles)|est en (?:concert|tourn[ée]e)|"
+                      r"en concert|en tourn[ée]e|in concert|on tour|live (?:in|à)|will play|is coming|arrive)\b",
+                      r"(?:nouvelle[s]? date[s]?|new (?:show|date|concert)s?|pr[ée]-?vente|presale|on sale|en vente|tourn[ée]e|tour)\s*[:\-–|]\s*(.+?)(?:\s+(?:à|at|in|@|au|-|–)\s+.*)?$",
+                      r"^(.+?)\s*[:\-–|]\s*(?:nouvelle|new|tourn[ée]e|tour|concert|pr[ée]-?vente|presale|date)"]
+              for p in pats:
+                  m = re.search(p, s, re.I)
+                  if m:
+                      a = re.sub(r"^(ton|votre|your)\s+(artiste|artist)\s*", "", m.group(1).strip(" \"'«»!"), flags=re.I)
+                      if 1 < len(a) <= 60 and not re.match(r"(?i)^(you|vous|tu|new|nouv|les?|la|ce|cette|this|our|notre|nos)\b", a):
+                          return a
+              name = re.sub(r"(?i)\b(newsletter|team|official|officiel|news|via .*|music|musique|fans?|club)\b", "", sender).strip(" -|·\"'")
+              if name and len(name) <= 40 and not re.search(r"(?i)live ?nation|ticketmaster|fnac|dice|songkick|bandsintown|zenith|z[ée]nith|arena|"
+                                                             r"olympia|production|prod\b|agency|booking|festival|salle|theatre|théâtre|noreply|no-reply", name):
+                  return name
+              return None
+
+
+          def ticket_link(links):
+              for u, label in links:
+                  lu = u.lower()
+                  if any(d in lu for d in TICKET_DOMAINS) or re.search(r"(?i)billet|ticket|pr[ée]vente|presale|r[ée]serv|register|inscri", label + " " + u):
+                      if not re.search(r"(?i)unsubscribe|d[ée]sinscri|preferences|privacy|facebook|instagram|twitter|tiktok|youtube|spotify", lu):
+                          return u
+              return links[0][0] if links else ""
+
+
+          def extract(msg_date, subject, sender, txt, links):
+              """Annonces (une par date française trouvée) d'un mail."""
+              if JUNK.search(subject) or not RELEVANT.search(subject + " " + txt[:3000]):
+                  return []
+              artist = artist_of(subject, sender, txt)
+              if not artist:
+                  return []
+              ref = msg_date
+              presale = sale = None
+              for kind, rx in (("presale", r"(?i)(pr[ée]-?vente|presale|pre-sale)[^\n]{0,80}"), ("sale", r"(?i)(mise en vente|vente g[ée]n[ée]rale|general sale|on sale|billetterie (?:ouvre|ouverte)|tickets (?:go )?on sale|en vente)[^\n]{0,80}")):
+                  m = re.search(rx, txt) or re.search(rx, subject)
+                  if m:
+                      day, hour = parse_date(m.group(0), ref)
+                      if day:
+                          v = dt.datetime.combine(day, dt.time(*(hour or (10, 0))))
+                          if kind == "presale":
+                              presale = v
+                          else:
+                              sale = v
+              link = ticket_link(links)
+              out, seen = [], set()
+              lines = [subject] + [l.strip() for l in txt.split("\n") if l.strip()]
+              for line in lines[:400]:
+                  if len(line) > 220:
+                      continue
+                  city, venue = city_in(line)
+                  if not city:
+                      continue
+                  day, hour = parse_date(line, ref)
+                  if not day or day < ref.date():
+                      continue
+                  if presale and day == presale.date() or sale and day == sale.date():
+                      continue  # c'est la date de mise en vente, pas celle du concert
+                  k = (norm(artist), day.isoformat(), city)
+                  if k in seen:
+                      continue
+                  seen.add(k)
+                  when = dt.datetime.combine(day, dt.time(*(hour or (20, 0))))
+                  out.append({"id": "an-" + hashlib.sha1("|".join(k).encode()).hexdigest()[:12], "artist": artist, "city": city,
+                              "venue": venue or "", "d": when.isoformat(), "presale_at": presale.isoformat() if presale else None,
+                              "sale_at": sale.isoformat() if sale else None, "link": link, "from": sender[:60],
+                              "at": msg_date.isoformat(), "country": "FR"})
+              if not out:  # annonce sans date précise (« tournée 2027 », « nouvelles dates bientôt ») : on garde l'artiste et la ville
+                  city, venue = city_in(subject + "\n" + txt[:1500])
+                  if city and re.search(r"(?i)tourn[ée]e|tour|nouvelle[s]? date|new (show|date)", subject):
+                      k = (norm(artist), "tba", city)
+                      out.append({"id": "an-" + hashlib.sha1("|".join(k).encode()).hexdigest()[:12], "artist": artist, "city": city,
+                                  "venue": venue or "", "d": None, "presale_at": presale.isoformat() if presale else None,
+                                  "sale_at": sale.isoformat() if sale else None, "link": link, "from": sender[:60],
+                                  "at": msg_date.isoformat(), "country": "FR"})
+              return out
+
+
+          def main():
+              user, pwd = os.environ.get("FOMO_MAIL"), os.environ.get("FOMO_MAIL_PASSWORD")
+              if not user or not pwd:
+                  print("Secrets FOMO_MAIL / FOMO_MAIL_PASSWORD absents : rien à faire.")
+                  return 0
+              os.makedirs(DATA, exist_ok=True)
+              state = json.load(open(STATE, encoding="utf-8")) if os.path.exists(STATE) else {"last_uid": 0}
+              old = json.load(open(OUT, encoding="utf-8")).get("announcements", []) if os.path.exists(OUT) else []
+              box = imaplib.IMAP4_SSL("imap.gmail.com")
+              box.login(user, pwd.replace(" ", ""))
+              box.select("INBOX", readonly=True)
+              last = int(state.get("last_uid") or 0)
+              if last:
+                  typ, data = box.uid("search", None, f"UID {last + 1}:*")
+              else:  # première fois : les 60 derniers jours
+                  since = (dt.date.today() - dt.timedelta(days=60)).strftime("%d-%b-%Y")
+                  typ, data = box.uid("search", None, f"SINCE {since}")
+              uids = [int(x) for x in (data[0] or b"").split() if int(x) > last]
+              found = []
+              for uid in uids[-500:]:
+                  typ, md = box.uid("fetch", str(uid), "(RFC822)")
+                  if not md or not md[0]:
+                      continue
+                  msg = email.message_from_bytes(md[0][1])
+                  subject = dec(msg.get("Subject"))
+                  name, addr = email.utils.parseaddr(dec(msg.get("From")))
+                  try:
+                      when = email.utils.parsedate_to_datetime(msg.get("Date")).replace(tzinfo=None)
+                  except Exception:  # noqa: BLE001
+                      when = dt.datetime.now()
+                  txt, links = body_of(msg)
+                  got = extract(when, subject, name or addr.split("@")[0], txt, links)
+                  for g in got:
+                      g["via"] = addr.split("@")[-1].lower()
+                  found += got
+                  last = max(last, uid)
+              box.logout()
+              now = dt.datetime.now()
+              keep = {a["id"]: a for a in old}
+              for a in found:
+                  prev = keep.get(a["id"])
+                  keep[a["id"]] = {**(prev or {}), **{k: v for k, v in a.items() if v}} if prev else a
+              lim = (now - dt.timedelta(days=KEEP_DAYS)).isoformat()
+              res = [a for a in keep.values() if (a.get("d") or "9999") >= now.isoformat()[:10] and a.get("at", "") >= lim]
+              res.sort(key=lambda a: a.get("at", ""), reverse=True)
+              json.dump({"updated": now.isoformat(), "announcements": res}, open(OUT, "w", encoding="utf-8"), ensure_ascii=False)
+              json.dump({"last_uid": last, "updated": now.isoformat()}, open(STATE, "w", encoding="utf-8"))
+              print(f"{len(uids)} nouveaux mails, {len(found)} annonces extraites, {len(res)} annonces à venir en base")
+              return 0
+
+
+          if __name__ == "__main__":
+              sys.exit(main())
+          PYEOF
+          python collector/veille.py
+      - name: Enregistrer les annonces
+        run: |
+          git config user.name "fomo-bot"
+          git config user.email "fomo-bot@users.noreply.github.com"
+          mkdir -p /tmp/fomo-veille && cp data/announcements.json data/veille-state.json /tmp/fomo-veille/ 2>/dev/null || exit 0
+          for i in 1 2 3 4 5; do
+            git fetch origin main
+            git reset --hard origin/main
+            mkdir -p data && cp /tmp/fomo-veille/* data/
+            git add data/announcements.json data/veille-state.json
+            git diff --cached --quiet && exit 0
+            git commit -m "Nouvelles annonces de concerts"
+            git push origin HEAD:main && exit 0
+            sleep $((i * 5))
+          done
+          exit 1
