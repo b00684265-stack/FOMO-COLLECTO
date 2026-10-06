@@ -5,6 +5,7 @@ name: FOMO collecte
 on:
   schedule:
     - cron: "17 4 * * *"   # chaque nuit vers 6 h (heure de Paris)
+    - cron: "17 15 * * *"  # et l'après-midi vers 17 h : les grandes villes passent à tour de rôle
   workflow_dispatch: {}     # lancement à la demande (bouton Run workflow, ou depuis l'app FOMO)
 
 permissions:
@@ -17,7 +18,7 @@ concurrency:
 jobs:
   collect:
     runs-on: ubuntu-latest
-    timeout-minutes: 75
+    timeout-minutes: 150
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -26,6 +27,7 @@ jobs:
       - name: Collecter les événements
         env:
           DATATOURISME_KEY: ${{ secrets.DATATOURISME_KEY }}
+          TM_KEY: ${{ secrets.TM_KEY }}
         run: |
           mkdir -p collector config data
           [ -f config/cities.json ] || echo '{"home": "Paris", "cities": ["Paris"]}' > config/cities.json
@@ -261,7 +263,13 @@ jobs:
                   "Content-Type": "application/json", "Referer": "https://ra.co/events", "Origin": "https://ra.co"}))
 
 
+          RA_EN = {"londres": "London", "bruxelles": "Brussels", "barcelone": "Barcelona", "lisbonne": "Lisbon", "anvers": "Antwerp", "gand": "Ghent",
+                   "cologne": "Cologne", "munich": "Munich", "geneve": "Geneva", "milan": "Milan", "rome": "Rome", "vienne": "Vienna", "prague": "Prague",
+                   "copenhague": "Copenhagen", "varsovie": "Warsaw", "cracovie": "Krakow", "budapest": "Budapest", "athenes": "Athens", "dublin": "Dublin"}
+
+
           def ra_area(city):
+              city = RA_EN.get(slug(city), city)
               k = slug(city).replace("-", " ")
               if k in RA_AREA:
                   return RA_AREA[k]
@@ -583,6 +591,102 @@ jobs:
               geocode_venues(out, "Paris")
               log(f"  Expos Officiel des spectacles: {len(out)}")
               return out
+
+
+          # ---------------- Ticketmaster (API Discovery, clé dans le secret GitHub TM_KEY : jamais dans l'app) ----------------
+          TM_API = "https://app.ticketmaster.com/discovery/v2/events.json"
+
+
+          def tm_norm(e):
+              st = (e.get("dates") or {}).get("start") or {}
+              d = st.get("dateTime") or (st.get("localDate") and st["localDate"] + "T" + (st.get("localTime") or "20:00:00"))
+              if not d:
+                  return None
+              code = ((e.get("dates") or {}).get("status") or {}).get("code")
+              if code == "cancelled":
+                  return None
+              cl = (e.get("classifications") or [{}])[0]
+              seg = (cl.get("segment") or {}).get("name") or ""
+              gen = (cl.get("genre") or {}).get("name") or ""
+              sub = (cl.get("subGenre") or {}).get("name") or ""
+              name = e.get("name") or ""
+              if re.search(r"(?i)sport", seg):
+                  return None  # le sport vient du calendrier officiel
+              txt = (name + " " + gen + " " + sub).lower()
+              if re.search(r"(?i)music", seg):
+                  kind = "festival" if "festival" in txt else "concert"
+              elif re.search(r"(?i)arts|theatre", seg):
+                  kind = "humour" if re.search(r"comed|humou?r", txt) else "theatre"
+              else:
+                  return None
+              v = ((e.get("_embedded") or {}).get("venues") or [{}])[0]
+              loc = v.get("location") or {}
+              sales = e.get("sales") or {}
+              pub = (sales.get("public") or {}).get("startDateTime")
+              now = dt.datetime.now(dt.timezone.utc).isoformat()
+              pres = sorted([p for p in sales.get("presales") or [] if (p.get("startDateTime") or "") > now], key=lambda p: p["startDateTime"])
+              imgs = sorted([i for i in e.get("images") or [] if i.get("ratio") == "16_9"], key=lambda i: -(i.get("width") or 0))
+              img = next((i["url"] for i in imgs if (i.get("width") or 0) <= 1100), imgs[0]["url"] if imgs else "")
+              pr = (e.get("priceRanges") or [{}])[0]
+              att = [a.get("name") for a in ((e.get("_embedded") or {}).get("attractions") or []) if a.get("name")]
+              return {"id": "tm-" + e["id"], "src": "tm", "kind": kind, "t": name, "d": d, "end": None,
+                      "v": v.get("name") or "", "a": " ".join(x for x in [v.get("postalCode"), (v.get("city") or {}).get("name")] if x),
+                      "city": (v.get("city") or {}).get("name") or "", "country": (v.get("country") or {}).get("countryCode") or "FR",
+                      "lat": float(loc["latitude"]) if loc.get("latitude") else None, "lon": float(loc["longitude"]) if loc.get("longitude") else None,
+                      "p": round(pr["min"]) if pr.get("min") else None, "genres": [x for x in [gen, sub] if x and x not in ("Undefined", "Other")],
+                      "sale_at": pub if pub and pub > now else None, "presale_at": pres[0]["startDateTime"] if pres else None,
+                      "presale_name": pres[0].get("name") if pres else None,
+                      "soldout": code == "offsale" and not (pub and pub > now), "img": img, "link": e.get("url") or "", "lineup": att, "desc": ""}
+
+
+          def tm_search(params, months=12, pages=1):
+              key = os.environ.get("TM_KEY", "").strip()
+              if not key:
+                  return []
+              out, seen = [], set()
+              today = dt.datetime.now(dt.timezone.utc).replace(microsecond=0)
+              for m in range(months):
+                  a = today if m == 0 else (today.replace(day=1) + dt.timedelta(days=32 * m)).replace(day=1, hour=0, minute=0, second=0)
+                  b = (a.replace(day=1) + dt.timedelta(days=32)).replace(day=1, hour=0, minute=0, second=0)
+                  for page in range(pages):
+                      time.sleep(0.25)  # 5 requêtes par seconde au plus
+                      q = f"{TM_API}?apikey={key}&size=200&page={page}&sort=date,asc&locale=*&{params}&startDateTime={a.strftime('%Y-%m-%dT%H:%M:%SZ')}&endDateTime={b.strftime('%Y-%m-%dT%H:%M:%SZ')}"
+                      try:
+                          j = json.loads(get(q))
+                      except Exception as ex:  # noqa: BLE001
+                          log(f"   ! Ticketmaster : {str(ex)[:80]}")
+                          break
+                      for e in (j.get("_embedded") or {}).get("events") or []:
+                          n = tm_norm(e)
+                          if n and n["id"] not in seen:
+                              seen.add(n["id"])
+                              out.append(n)
+                      if (j.get("page") or {}).get("totalPages", 0) <= page + 1:
+                          break
+              return out
+
+
+          def ticketmaster(city):
+              if not os.environ.get("TM_KEY"):
+                  log(f"  Ticketmaster {city}: pas de clé (secret TM_KEY)")
+                  return []
+              if slug(city) not in CITY_GEO:
+                  return []
+              lat, lon = CITY_GEO[slug(city)]
+              near = f"countryCode=FR&latlong={lat},{lon}&radius=40&unit=km"
+              out = tm_search(near + "&classificationName=music", 12, 2) + tm_search(near + "&classificationName=arts%20%26%20theatre", 6, 1)
+              log(f"  Ticketmaster {city}: {len(out)} concerts et spectacles")
+              return out
+
+
+          def tm_france():
+              """Grandes dates et festivals en France vendus sur Ticketmaster (pour tous les utilisateurs)."""
+              out = tm_search("countryCode=FR&classificationName=music&keyword=festival", 12, 1)
+              for e in out:
+                  e["kind"] = "festival"
+              big = [e for e in tm_search("countryCode=FR&classificationName=music&sort=relevance,desc", 12, 1)]
+              log(f"  Ticketmaster France : {len(out)} festivals, {len(big)} grandes dates")
+              return out + big
 
 
           # ---------------- Position précise des lieux (OpenStreetMap / Nominatim, avec mémoire) ----------------
@@ -1700,13 +1804,26 @@ jobs:
               return out
 
 
-          SOURCES = {"ra": resident_advisor, "dice": dice, "fnac": fnac, "dtour": datatourisme, "marches": marches, "br": billetreduc, "tac": ticketac, "offi": offi_expos}
+          SOURCES = {"ra": resident_advisor, "dice": dice, "tm": ticketmaster, "fnac": fnac, "dtour": datatourisme, "marches": marches, "br": billetreduc, "tac": ticketac, "offi": offi_expos}
+
+
+          ROTATE_FR = ["Lyon", "Marseille", "Toulouse", "Bordeaux", "Lille", "Nantes", "Nice", "Montpellier", "Strasbourg", "Rennes", "Grenoble", "Rouen",
+                       "Tours", "Dijon", "Angers", "Reims", "Metz", "Nancy", "Clermont-Ferrand", "Saint-Étienne", "Toulon", "Le Havre", "Brest", "Caen",
+                       "Orléans", "Perpignan", "Avignon", "Annecy", "Biarritz", "La Rochelle"]
+          ROTATE_EU = ["Berlin", "Amsterdam", "Bruxelles", "Londres", "Barcelone", "Lisbonne", "Madrid", "Milan", "Rome", "Vienne", "Prague", "Copenhague",
+                       "Anvers", "Gand", "Rotterdam", "Cologne", "Munich", "Hambourg", "Genève", "Zurich", "Dublin", "Varsovie", "Budapest", "Athènes"]
 
 
           def main():
               cfg = json.load(open(os.path.join(ROOT, "config", "cities.json"), encoding="utf-8"))
               # villes françaises : toutes les sources ; villes étrangères (choisies dans Soirées) : RA et DICE seulement
-              cities = [c for c in uniq([cfg.get("home", "Paris")] + cfg.get("cities", [])) if c][:8] or ["Paris"]
+              # FOMO collecte pour tous ses utilisateurs : Paris à chaque passage, et les autres grandes villes à tour de rôle
+              # (4 villes françaises et 2 européennes par passage, deux passages par jour : chaque ville est rafraîchie tous les 2 à 3 jours)
+              n = dt.datetime.now(dt.timezone.utc)
+              turn = n.timetuple().tm_yday * 2 + (1 if n.hour >= 12 else 0)
+              def pick(lst, k):
+                  return [lst[(turn * k + i) % len(lst)] for i in range(min(k, len(lst)))]
+              cities = uniq(["Paris"] + [cfg.get("home", "Paris")] + cfg.get("cities", [])[:3] + pick(ROTATE_FR, 4) + pick(ROTATE_EU, 2))
               os.makedirs(DATA, exist_ok=True)
               idx_path = os.path.join(DATA, "index.json")
               index = json.load(open(idx_path, encoding="utf-8")) if os.path.exists(idx_path) else {"cities": {}}
@@ -1773,6 +1890,10 @@ jobs:
                       fest += ra_festivals()
                   except Exception as e:  # noqa: BLE001
                       log(f"  RA festivals : échec ({e})")
+                  try:
+                      fest += tm_france()
+                  except Exception as e:  # noqa: BLE001
+                      log(f"  Ticketmaster France : échec ({e})")
                   json.dump({"city": "France", "updated": now.isoformat(), "sources": {"festivals": {"n": len(fest)}}, "events": fest},
                             open(os.path.join(DATA, "france.json"), "w", encoding="utf-8"), ensure_ascii=False)
                   index["cities"]["france"] = {"name": "Festivals", "updated": now.isoformat(), "n": len(fest), "sources": {"festivals": {"n": len(fest)}}}
