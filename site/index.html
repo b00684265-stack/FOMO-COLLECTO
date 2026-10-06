@@ -1801,7 +1801,7 @@ function sportPickerHTML(id){
   const sv=S.prof.strava;
   return`<div class="picker" id="${id}">
     ${sv?`<div class="fb">✓ Strava : ${sv.n} activités lues${sv.maxRunKm?", sortie la plus longue "+sv.maxRunKm+" km":""}. <button class="linkbtn" data-ps-st="off">Retirer</button></div>`
-      :`<button class="strava-btn" data-ps-st="on"><span aria-hidden="true">▲</span> Se connecter avec Strava</button><div class="small" data-ps-msg>${typeof STATUS!=="undefined"&&STATUS.strava&&STATUS.strava.err?esc(STATUS.strava.msg):""}</div>`}
+      :`<button class="strava-btn" data-ps-st="on"><span aria-hidden="true">▲</span> Se connecter avec Strava</button><div class="small" data-ps-msg>${S.stravaK?"En attente de Strava… Autorise FOMO puis reviens ici.":typeof STATUS!=="undefined"&&STATUS.strava&&STATUS.strava.err?esc(STATUS.strava.msg):""}</div>`}
     <div class="lab">Tu pratiques</div>
     <div class="opts">${PLAY_D.map(([k,n])=>`<button class="chip" data-ps-d="${k}" aria-pressed="${(d[k]||0)>0}">${n}</button>`).join("")}<button class="chip" data-ps-d="none" aria-pressed="${!!S.noPlay}">Aucun</button></div>
     <div class="lab">Tes distances</div>
@@ -1821,7 +1821,7 @@ function bindSportPicker(id){
     PROF_V++;save();box.outerHTML=sportPickerHTML(id);bindSportPicker(id);});
   box.querySelectorAll("[data-ps-st]").forEach(b=>b.onclick=async()=>{
     if(b.dataset.psSt==="off"){S.prof.strava=null;delete S.conn.strava;PROF_V++;save();box.outerHTML=sportPickerHTML(id);bindSportPicker(id);return;}
-    const m=box.querySelector("[data-ps-msg]");m.textContent="Ouverture de Strava…";
+    const m=box.querySelector("[data-ps-msg]");m.textContent="Ouverture de Strava… Autorise FOMO puis reviens ici.";
     try{if(!$("ob").hidden){S.obStep=OB.indexOf("sports");save();}await startStrava();}catch(e){m.textContent=e.message;}});
   box.querySelectorAll("[data-ps-k]").forEach(b=>b.onclick=()=>{const k=b.dataset.psK;R.kz=R.kz||{};if(R.kz[k])delete R.kz[k];else R.kz[k]=1;applyKz(R);PROF_V++;save();b.setAttribute("aria-pressed",!!R.kz[k]);});
   box.querySelectorAll("[data-ps-s]").forEach(b=>b.onclick=()=>{const k=b.dataset.psS;S.sportw=S.sportw||{};if((S.sportw[k]||0)>0)delete S.sportw[k];else{S.sportw[k]=1.2;S.vw.sport=Math.max(S.vw.sport||0,1);}PROF_V++;save();b.setAttribute("aria-pressed",(S.sportw[k]||0)>0);});
@@ -2085,11 +2085,29 @@ async function finishSC(code,state){const saved=savedState("fomo-sc",state);
 const STRAVA_FN="/.netlify/functions/strava";
 async function startStrava(){
   if(isFile)throw new Error("Strava ne marche que depuis l'adresse web de FOMO.");
-  let id=(CFG.stravaId||"").trim();
-  if(!id){try{id=(await getJSON(STRAVA_FN)).client_id||"";}catch(e){}}
+  let id="";try{id=(await getJSON(STRAVA_FN)).client_id||"";}catch(e){}
   if(!id)throw new Error("La connexion Strava arrive très bientôt. En attendant, touche tes sports ci-dessous.");
-  const st="st"+b64url(crypto.getRandomValues(new Uint8Array(8)));sessionStorage.setItem("fomo-st",JSON.stringify({st}));
-  location.href="https://www.strava.com/oauth/authorize?client_id="+encodeURIComponent(id)+"&redirect_uri="+encodeURIComponent(scRedirect())+"&response_type=code&approval_prompt=auto&scope=activity:read&state="+st;}
+  // le serveur FOMO reçoit la réponse de Strava : ça marche aussi depuis l'app installée (iPhone et Android)
+  const k=b64url(crypto.getRandomValues(new Uint8Array(15)));S.stravaK={k,at:Date.now()};save();
+  const url="https://www.strava.com/oauth/authorize?client_id="+encodeURIComponent(id)+"&redirect_uri="+encodeURIComponent(location.origin+STRAVA_FN)+"&response_type=code&approval_prompt=auto&scope=activity:read&state=st"+k;
+  const standalone=matchMedia("(display-mode: standalone)").matches||navigator.standalone;
+  if(standalone){const w=window.open(url,"_blank");if(!w)location.href=url;}else location.href=url;
+  startStravaWatch();
+}
+// au retour dans l'app (ou dès que la page Strava se ferme), on récupère le résumé
+let STW=null;
+async function checkStrava(){
+  if(!S.stravaK)return;if(Date.now()-S.stravaK.at>15*60e3){S.stravaK=null;save();return;}
+  try{const r=await fetch(STRAVA_FN+"?k="+encodeURIComponent(S.stravaK.k),{cache:"no-store"});if(r.status===404)return;
+    const j=await r.json().catch(()=>({}));S.stravaK=null;save();clearInterval(STW);
+    if(!r.ok){STATUS.strava={err:true,msg:j.error||"Strava ne répond pas, réessaie."};}
+    else{const m=applyStrava(j);STATUS.strava={msg:m};notify("Strava connecté",m);}
+    if(!$("ob").hidden)renderOb();else renderAll(true);if(typeof renderConns==="function"&&!$("v-settings").hidden)renderConns();}catch(e){}
+}
+function startStravaWatch(){clearInterval(STW);STW=setInterval(checkStrava,2500);setTimeout(()=>clearInterval(STW),15*60e3);}
+document.addEventListener("visibilitychange",()=>{if(!document.hidden)checkStrava();});
+addEventListener("focus",checkStrava);
+addEventListener("message",ev=>{if(ev.data&&ev.data.fomoStrava)checkStrava();});
 function applyStrava(sum){
   const c=sum.counts||{},n=x=>c[x]||0,R=S.race=S.race||{disc:{}};R.disc=R.disc||{};
   if(n("Run"))R.disc.route=Math.max(R.disc.route||0,Math.min(2,.5+n("Run")/15));if(n("TrailRun"))R.disc.trail=Math.max(R.disc.trail||0,Math.min(2,.5+n("TrailRun")/8));
@@ -2485,6 +2503,7 @@ window.__fomo={get S(){return S},set S(v){S=v},get CFG(){return CFG},get EVENTS(
       catch(e){STATUS[k]={err:true,msg:e.message};back=e.message;}}
   }
   show("discover");
+  if(S.stravaK){startStravaWatch();checkStrava();}
   if(!S.onboarded){OB_FB=back?esc(back):"";runOnboarding(S.obStep||0);}
   else if(back)show("settings");
   await loadEvents();
