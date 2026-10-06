@@ -1630,7 +1630,9 @@ jobs:
                   return []
               lat, lon = CITY_GEO[slug(city)]
               today = dt.date.today().isoformat()
-              base = f"https://api.datatourisme.fr/v1/entertainmentAndEvent?geo_distance={lat},{lon},25km&page_size=100"
+              # « fields » remplace la sélection par défaut de l'API, qui ne contient pas les dates (takesPlaceAt)
+              base = (f"https://api.datatourisme.fr/v1/entertainmentAndEvent?geo_distance={lat},{lon},25km&page_size=100"
+                      "&fields=uuid,label,type,takesPlaceAt,isLocatedAt,hasDescription,hasContact,hasMainRepresentation")
               out, url, pages, total, seen_n, past, sample = [], base + f"&takesPlaceAt.endDate%5Bgte%5D={today}", 0, None, 0, 0, None
               while url and pages < 15:
                   pages += 1
