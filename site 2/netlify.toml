@@ -1,0 +1,7 @@
+# FOMO · réglages Netlify (le site est dans le dossier « site » du dépôt GitHub)
+[build]
+  publish = "."
+  functions = "netlify/functions"
+  # le robot de collecte enregistre ses données toutes les 15 minutes dans le même dépôt :
+  # on ne republie le site que si un fichier du dossier « site » a changé
+  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- ."
