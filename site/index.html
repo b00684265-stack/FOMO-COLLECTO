@@ -2445,7 +2445,7 @@ function mkFiltered(){
 /* --- petite carte interactive (tuiles OpenStreetMap / CARTO), sans bibliothèque externe --- */
 function SlippyMap(el,onPin){
   const T=256,st={z:14,lat:48.8566,lon:2.3522,w:0,h:0,pins:[],me:null,sel:null};
-  el.innerHTML=`<div class="tiles"></div><div class="pins"></div><div class="zoom"><button aria-label="Zoomer">+</button><button aria-label="Dézoomer">−</button></div><div class="attr">© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> · © CARTO</div>`;
+  el.innerHTML=`<div class="tiles"></div><div class="pins"></div><div class="zoom"><button aria-label="Zoomer">+</button><button aria-label="Dézoomer">−</button></div><div class="attr">© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">contributeurs OpenStreetMap</a></div>`;
   const tl=el.querySelector(".tiles"),pl=el.querySelector(".pins");
   const px=(lat,lon,z)=>{const n=T*2**z,s=Math.sin(lat*Math.PI/180);return{x:(lon+180)/360*n,y:(.5-Math.log((1+s)/(1-s))/(4*Math.PI))*n};};
   const ll=(x,y,z)=>{const n=T*2**z,lon=x/n*360-180,k=Math.PI-2*Math.PI*y/n;return{lat:180/Math.PI*Math.atan(.5*(Math.exp(k)-Math.exp(-k))),lon};};
@@ -2454,7 +2454,10 @@ function SlippyMap(el,onPin){
     st.w=el.clientWidth;st.h=el.clientHeight;const c=px(st.lat,st.lon,st.z),x0=c.x-st.w/2,y0=c.y-st.h/2,n=2**st.z,want=new Set();
     for(let tx=Math.floor(x0/T);tx<=Math.floor((x0+st.w)/T);tx++)for(let ty=Math.floor(y0/T);ty<=Math.floor((y0+st.h)/T);ty++){
       if(ty<0||ty>=n)continue;const wx=((tx%n)+n)%n,k=st.z+"/"+wx+"/"+ty;want.add(k+"@"+tx);
-      let im=tiles.get(k+"@"+tx);if(!im){im=new Image();im.alt="";im.onerror=()=>{im.style.visibility="hidden";};im.src=`https://${"abcd"[(wx+ty)%4]}.basemaps.cartocdn.com/rastertiles/voyager/${k}.png`;tiles.set(k+"@"+tx,im);tl.appendChild(im);}
+      let im=tiles.get(k+"@"+tx);if(!im){im=new Image();im.alt="";
+        // fond OpenStreetMap (sans clé) ; si une tuile ne répond pas, on essaie le serveur d'OpenStreetMap France
+        im.onerror=()=>{if(!im.dataset.fb){im.dataset.fb=1;im.src=`https://${"abc"[(wx+ty)%3]}.tile.openstreetmap.fr/osmfr/${k}.png`;}else im.style.visibility="hidden";};
+        im.src=`https://tile.openstreetmap.org/${k}.png`;tiles.set(k+"@"+tx,im);tl.appendChild(im);}
       im.style.left=(tx*T-x0)+"px";im.style.top=(ty*T-y0)+"px";}
     tiles.forEach((im,k)=>{if(!want.has(k)){im.remove();tiles.delete(k);}});
     pl.innerHTML=st.pins.map(p=>{const q=px(p.lat,p.lon,st.z);return`<button class="pin ${p.cls}${st.sel===p.id?" sel":""}" data-pin="${esc(p.id)}" style="left:${q.x-x0}px;top:${q.y-y0}px" aria-label="${esc(p.label)}"><i></i></button>`;}).join("")
