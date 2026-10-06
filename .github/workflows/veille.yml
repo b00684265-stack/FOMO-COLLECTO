@@ -63,7 +63,7 @@ jobs:
                     "Aix-en-Provence", "Cannes", "Metz", "Nancy", "Clermont-Ferrand", "Le Havre", "Toulon", "Orléans", "Le Mans", "Limoges",
                     "Poitiers", "Perpignan", "Nîmes", "Besançon", "Saint-Étienne", "Amiens", "Lorient", "Vannes", "Pau", "Bayonne",
                     "Saint-Denis", "Nanterre", "Boulogne-Billancourt", "Montreuil", "Décines", "Floirac", "Villeurbanne", "Cenon",
-                    "Mérignac", "Trélazé", "Amnéville", "Rezé", "Saint-Herblain", "Chambéry", "Valence", "Colmar", "Mulhouse", "Arras"]
+                    "Mérignac", "Trélazé", "Amnéville", "Chamonix", "Font-Romeu", "Vichy", "Les Sables-d'Olonne", "Deauville", "Embrun", "Millau", "Rezé", "Saint-Herblain", "Chambéry", "Valence", "Colmar", "Mulhouse", "Arras"]
           VENUES = {"accor arena": "Paris", "bercy": "Paris", "zenith paris": "Paris", "zénith paris": "Paris", "olympia": "Paris",
                     "la cigale": "Paris", "bataclan": "Paris", "elysee montmartre": "Paris", "élysée montmartre": "Paris", "salle pleyel": "Paris",
                     "trabendo": "Paris", "la maroquinerie": "Paris", "le trianon": "Paris", "adidas arena": "Paris", "la seine musicale": "Boulogne-Billancourt",
@@ -123,21 +123,21 @@ jobs:
 
 
           def parse_date(s, ref):
-              """Première date trouvée dans s (formats français et anglais). Renvoie (date, heure ou None)."""
+              """Première date valide trouvée dans s (formats français et anglais, « du 19 au 22 mars » donne le 19). Renvoie (date, heure ou None)."""
               t = norm(s).replace(".", " ").replace(",", " ")
-              m = re.search(r"\b(\d{1,2})[/.-](\d{1,2})(?:[/.-](\d{2,4}))?\b", t)
+              cands = []
+              for m in re.finditer(r"\b(\d{1,2})[/.-](\d{1,2})(?:[/.-](\d{2,4}))?\b", t):
+                  if 1 <= int(m.group(2)) <= 12 and 1 <= int(m.group(1)) <= 31:
+                      cands.append((m.start(), int(m.group(1)), int(m.group(2)), int(m.group(3)) if m.group(3) else None, m))
+              for m in re.finditer(r"\b(\d{1,2})(?:er|st|nd|rd|th)?(?:\s*(?:au|-|–|to|et|and)\s*\d{1,2}(?:er|st|nd|rd|th)?)?\s+([a-z]{3,9})\s*(\d{4})?\b", t):
+                  if m.group(2) in MONTHS and 1 <= int(m.group(1)) <= 31:
+                      cands.append((m.start(), int(m.group(1)), MONTHS[m.group(2)], int(m.group(3)) if m.group(3) else None, m))
+              for m in re.finditer(r"\b([a-z]{3,9})\s+(\d{1,2})(?:st|nd|rd|th)?\s*(\d{4})?\b", t):
+                  if m.group(1) in MONTHS and 1 <= int(m.group(2)) <= 31:
+                      cands.append((m.start(), int(m.group(2)), MONTHS[m.group(1)], int(m.group(3)) if m.group(3) else None, m))
               y = mo = d = None
-              if m and 1 <= int(m.group(2)) <= 12 and 1 <= int(m.group(1)) <= 31:
-                  d, mo = int(m.group(1)), int(m.group(2))
-                  y = int(m.group(3)) if m.group(3) else None
-              else:
-                  m = re.search(r"\b(\d{1,2})(?:er|st|nd|rd|th)?\s+([a-z]{3,9})\s*(\d{4})?\b", t)
-                  if m and m.group(2) in MONTHS:
-                      d, mo, y = int(m.group(1)), MONTHS[m.group(2)], (int(m.group(3)) if m.group(3) else None)
-                  else:
-                      m = re.search(r"\b([a-z]{3,9})\s+(\d{1,2})(?:st|nd|rd|th)?\s*(\d{4})?\b", t)
-                      if m and m.group(1) in MONTHS:
-                          d, mo, y = int(m.group(2)), MONTHS[m.group(1)], (int(m.group(3)) if m.group(3) else None)
+              if cands:
+                  _, d, mo, y, m = min(cands, key=lambda c: c[0])
               if not d:
                   return None, None
               if y and y < 100:
@@ -255,6 +255,51 @@ jobs:
               return out
 
 
+          # ---------- courses : HYROX, UTMB, IRONMAN, plateformes d'inscription ----------
+          RACE_SENDERS = re.compile(r"hyrox|utmb|ironman|protiming|klikego|njuko|nextrun|tickrace|sportips|onsinscrit|ikinoa|finishers|"
+                                    r"espace-competition|fftri|marathon|trail|triathlon", re.I)
+          RACE_OPEN = re.compile(r"(ouverture des inscriptions|inscriptions? (?:ouvre|ouvrent|ouvertes?|open)|registration (?:opens?|is open|now open)|"
+                                 r"registrations? open|tickets? (?:go )?on sale|early bird|pr[ée]-?inscription|pre-?registration|pre-?sale)", re.I)
+          RACE_NAME = re.compile(r"(HYROX|IRONMAN 70\.3|IRONMAN|[A-Z][\w'’-]+(?: [A-Z][\w'’-]+){0,3} by UTMB|UTMB(?: Mont-Blanc)?|"
+                                 r"(?:Marathon|Semi-marathon|Trail|Triathlon) (?:de |du |des |d')?[A-ZÉ][\w'’-]+(?: [A-ZÉ][\w'’-]+)?)"
+                                 r"(?:\s+(?!Paris\b)(?:[A-ZÉ][\w'’-]+))?(?:\s+(Paris|Lyon|Nice|Bordeaux|Marseille|Toulouse|Lille|Nantes|Montpellier|Strasbourg|Rennes))?")
+          REG_LINK = ("hyrox.com", "utmb.world", "ironman.com", "njuko", "protiming", "klikego", "nextrun", "tickrace", "sportips", "onsinscrit",
+                      "ikinoa", "espace-competition", "fftri", "inscription", "registration", "register", "tickets")
+
+
+          def extract_race(msg_date, subject, sender, txt, links):
+              """Annonce d'ouverture d'inscriptions (une course, sa ville, sa date et la date d'ouverture)."""
+              blob = subject + "\n" + txt[:4000]
+              if JUNK.search(subject) or not (RACE_SENDERS.search(sender + " " + subject) and RACE_OPEN.search(blob)):
+                  return []
+              m = RACE_NAME.search(subject) or RACE_NAME.search(txt[:2000])
+              name = re.sub(r"\s+", " ", m.group(0)).strip() if m else re.sub(r"(?i)^(re|fwd?)\s*:\s*", "", subject).strip()[:60]
+              city, venue = city_in(subject + "\n" + txt[:2500])
+              ref = msg_date
+              opening = None
+              for mo in RACE_OPEN.finditer(blob):
+                  seg = re.split(r"[\n!?]|\.\s", blob[mo.start():mo.start() + 140])[0]
+                  day, hour = parse_date(seg, ref)
+                  if day and day >= ref.date():
+                      opening = dt.datetime.combine(day, dt.time(*(hour or (10, 0))))
+                      break
+              when = None
+              for line in [subject] + [l for l in txt.split("\n") if l.strip()][:300]:
+                  if len(line) > 220 or RACE_OPEN.search(line):
+                      continue
+                  day, hour = parse_date(line, ref)
+                  if day and day > ref.date() and (not opening or day != opening.date()):
+                      when = dt.datetime.combine(day, dt.time(*(hour or (9, 0))))
+                      break
+              urls = [l[0] if isinstance(l, (list, tuple)) else l for l in links]
+              link = next((u for u in urls if any(d in u.lower() for d in REG_LINK)), None) or (urls[0] if urls else "")
+              k = (norm(name), city or "", when.date().isoformat() if when else "tba")
+              return [{"id": "rc-" + hashlib.sha1("|".join(k).encode()).hexdigest()[:12], "kind": "race", "artist": name, "city": city or "",
+                       "venue": venue or "", "d": when.isoformat() if when else None, "presale_at": None,
+                       "sale_at": opening.isoformat() if opening else None, "link": link, "from": sender[:60],
+                       "at": msg_date.isoformat(), "country": "FR"}]
+
+
           def main():
               user, pwd = os.environ.get("FOMO_MAIL"), os.environ.get("FOMO_MAIL_PASSWORD")
               if not user or not pwd:
@@ -286,7 +331,7 @@ jobs:
                   except Exception:  # noqa: BLE001
                       when = dt.datetime.now()
                   txt, links = body_of(msg)
-                  got = extract(when, subject, name or addr.split("@")[0], txt, links)
+                  got = extract_race(when, subject, (name or "") + " " + addr, txt, links) or extract(when, subject, name or addr.split("@")[0], txt, links)
                   for g in got:
                       g["via"] = addr.split("@")[-1].lower()
                   found += got
