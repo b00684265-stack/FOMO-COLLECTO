@@ -163,7 +163,7 @@ h1,h2,h3{margin:0;line-height:1.1}
 .why li{display:flex;gap:6px}
 .why li::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--vc);margin-top:7px;flex:none}
 .why li.warn{color:var(--warn)}
-.fcard .acts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.fcard .acts{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) 46px;gap:6px;margin-top:12px}.fcard .acts .like-btn,.fcard .acts .nope-btn{font-size:13.5px;white-space:nowrap;padding:0 6px;overflow:hidden;text-overflow:ellipsis;gap:5px}.fcard .acts .cal-btn{width:46px;height:46px}
 .like-btn{border:1px solid var(--line);background:var(--card);border-radius:999px;min-height:46px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer}
 .like-btn svg{width:18px;height:18px}
 .like-btn[aria-pressed="true"]{background:var(--hot);border-color:var(--hot);color:#fff}
@@ -303,11 +303,11 @@ details.more summary{cursor:pointer;font-weight:650;font-size:14.5px}
 .linkbtn{border:0;background:none;color:var(--ink2);text-decoration:underline;font:inherit;cursor:pointer;padding:0}
 .mhead.sep{color:var(--ink);border-top:1px solid var(--line);padding-top:14px;margin-top:6px}
 .mkmap{position:relative;height:min(56vh,440px);border-radius:var(--r-md);overflow:hidden;background:#E8ECE6;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab}
-.mkmap .tiles img{position:absolute;width:256px;height:256px;max-width:none;pointer-events:none;-webkit-user-drag:none}
-.mkmap .pin{position:absolute;width:26px;height:26px;margin:-26px 0 0 -13px;border:0;padding:0;background:none;cursor:pointer}
+.mkmap .tiles img{position:absolute;left:0;top:0;width:256px;height:256px;max-width:none;pointer-events:none;-webkit-user-drag:none;transform-origin:0 0}
+.mkmap .pin{position:absolute;left:0;top:0;width:26px;height:26px;margin:-26px 0 0 -13px;border:0;padding:0;background:none;cursor:pointer}
 .mkmap .pin i{display:block;width:22px;height:22px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:#9AA0B4;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35);margin:0 auto}
 .mkmap .pin.open i{background:var(--v-marche)}.mkmap .pin.soon i{background:#E0A100}.mkmap .pin.sel i{transform:rotate(-45deg) scale(1.3)}
-.mkmap .me{position:absolute;width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:50%;background:#2F6BFF;border:3px solid #fff;box-shadow:0 0 0 6px rgba(47,107,255,.2)}
+.mkmap .me{position:absolute;left:0;top:0;width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:50%;background:#2F6BFF;border:3px solid #fff;box-shadow:0 0 0 6px rgba(47,107,255,.2)}
 .mkmap .zoom{position:absolute;right:10px;top:10px;display:flex;flex-direction:column;gap:6px;z-index:3}
 .mkmap .zoom button{width:38px;height:38px;border-radius:10px;border:0;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.25);font-size:20px;font-weight:700;cursor:pointer;color:#15162B}
 .mkmap .attr{position:absolute;right:0;bottom:0;background:rgba(255,255,255,.85);font-size:10px;padding:2px 6px;color:#444;z-index:3}
@@ -317,6 +317,27 @@ details.more summary{cursor:pointer;font-weight:650;font-size:14.5px}
 .mk-item .st{font-size:13px;font-weight:650}.mk-item .st.open{color:var(--v-marche)}.mk-item .st.soon{color:#B27A00}
 .mk-item .days{display:flex;gap:4px;margin-top:5px;flex-wrap:wrap}.mk-item .days span{font-size:11.5px;padding:2px 7px;border-radius:999px;background:var(--sunk);color:var(--ink3)}.mk-item .days span.on{background:var(--ink);color:var(--paper)}
 .mk-item .go{font-size:13px;font-weight:650;color:var(--ink);text-decoration:none;white-space:nowrap}
+.mkmap.grab{cursor:grabbing}
+.mkmap .zoom button[data-z="me"]{font-size:18px;color:#2F6BFF}
+.mkcard{position:absolute;left:10px;right:10px;bottom:22px;z-index:5;background:var(--card);color:var(--ink);border-radius:14px;padding:12px 14px;box-shadow:0 6px 24px rgba(0,0,0,.25)}
+.mkcard b{display:block;font-size:16px;padding-right:28px}.mkcard .st{font-size:13.5px;font-weight:650;margin-top:2px}.mkcard .st.open{color:var(--v-marche)}.mkcard .st.soon{color:#B27A00}
+.mkcard .x{position:absolute;right:8px;top:8px;border:0;background:var(--sunk);width:28px;height:28px;border-radius:50%;cursor:pointer;color:var(--ink)}
+.mkcard .days{display:flex;gap:4px;margin-top:6px;flex-wrap:wrap}.mkcard .days span{font-size:11.5px;padding:2px 7px;border-radius:999px;background:var(--sunk);color:var(--ink3)}.mkcard .days span.on{background:var(--ink);color:var(--paper)}
+.pickb{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;padding:8px 0}
+.pb{width:96px;height:96px;border-radius:50%;border:2px dashed var(--line);background:var(--sunk);color:var(--ink3);font:inherit;cursor:pointer;display:grid;place-items:center;padding:6px;transition:transform .15s, background .2s, color .2s}
+.pb.big{width:118px;height:118px}.pb b{font-size:14.5px;line-height:1.15}.pb.big b{font-size:16px}
+.pb.on{background:var(--vc);border:2px solid var(--vc);color:#fff;transform:scale(1.04);box-shadow:0 6px 18px rgba(0,0,0,.18)}
+.v-marche.pb.on,.pb.v-festival.on{color:#1d1d1d}
+.why-box,.intro-box{background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);padding:12px 14px;font-size:14.5px}
+.why-box p,.intro-box p{margin:6px 0 0;color:var(--ink2)}.intro-box p:first-child{margin-top:0}.intro-box b{color:var(--ink)}
+.ob .lab{font-size:14px;font-weight:700;color:var(--ink);margin-top:10px}
+.ob select.txt{appearance:auto}
+.iacts{grid-column:1 / -1;display:flex;gap:6px;margin-top:2px;flex-wrap:nowrap;justify-content:flex-end}
+.iacts button{border:1px solid var(--line);background:var(--card);border-radius:999px;font:inherit;font-size:12.5px;font-weight:650;padding:5px 10px;cursor:pointer;color:var(--ink2);display:inline-flex;align-items:center;gap:4px}
+.iacts button[aria-pressed="true"]{background:var(--hot-soft);border-color:var(--hot);color:var(--hot)}
+.iacts button.cal[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+.cal-btn{border:1px solid var(--line);background:var(--card);border-radius:999px;width:44px;height:44px;font-size:19px;cursor:pointer;flex:none}
+.cal-btn[aria-pressed="true"]{background:var(--ink);border-color:var(--ink)}
 </style>
 </head>
 <body>
@@ -399,8 +420,8 @@ details.more summary{cursor:pointer;font-weight:650;font-size:14.5px}
 <div class="ask-bar" id="ask-bar" hidden><form class="in" id="ask-form"><input class="txt" id="ask-in" placeholder="Un festival techno en août 2027…" autocomplete="off" enterkeyhint="send" aria-label="Ta demande"><button class="btn" type="submit">Chercher</button></form></div>
 
 <nav class="tabs"><div class="in" role="tablist">
-  <button role="tab" data-v="discover" aria-selected="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="9" r="5"/><circle cx="17" cy="15" r="4"/><circle cx="16" cy="5" r="2"/></svg>Découverte</button>
-  <button role="tab" data-v="foryou" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 5.6-7 10-7 10z"/></svg>Pour toi</button>
+  <button role="tab" data-v="foryou" aria-selected="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 5.6-7 10-7 10z"/></svg>Pour toi</button>
+  <button role="tab" data-v="discover" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="9" r="5"/><circle cx="17" cy="15" r="4"/><circle cx="16" cy="5" r="2"/></svg>Découverte</button>
   <button role="tab" data-v="agenda" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Agenda<span class="badge" id="bd-ag" hidden></span></button>
   <button role="tab" data-v="ask" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/><path d="M9 11h.01M12 11h.01M15 11h.01"/></svg>Demande-moi</button>
 </div></nav>
@@ -621,6 +642,8 @@ function fresh(){return{name:"",onboarded:false,qdone:false,home:null,radius:15,
 const load=(k,f)=>{try{const r=localStorage.getItem(k);if(r)return Object.assign(f(),JSON.parse(r));}catch(e){}return f();};
 let CFG=load(CFG_KEY,freshCfg),S=load(ST_KEY,fresh);
 // le robot FOMO collecte pour tous les utilisateurs : son dépôt public est lu directement, sans compte ni réglage
+// « Pourquoi pas » (goûts) et agenda sont désormais séparés : les anciens ♥ comptent comme des « Pourquoi pas »
+if(!S.interest)S.interest=Object.assign({},S.liked||{});
 const FOMO_REPO="b00684265-stack/FOMO-COLLECTO";
 if(!CFG.ghRepo)CFG.ghRepo=FOMO_REPO;
 // réglages avancés (robot, clés) : seulement pour le fondateur, en ouvrant l'app une fois avec ?admin à la fin de l'adresse
@@ -889,6 +912,7 @@ function collectorEvents(){
       if(s===ns&&s!==hs){if(e.cat!=="soiree"&&e.cat!=="festival")return;e.picked=1;}
       else if(!["france","sports","races","artists",hs].includes(s)){if(e.noDate)return;const tr=tripAt(e.d);if(!tr||citySlug(tr.city)!==s)return;e.trip=tr.city;}
       out.push(e);});}
+  (S.dreamRaw||[]).forEach(x=>{const e=collNorm(x,{city:""});if(e)out.push(e);});
   return out.concat(veilleEvents());
 }
 // base de reconnaissance des festivals (RA, année en cours) pour l'accueil et Demande-moi
@@ -1105,7 +1129,14 @@ function score(e){
   const cl=clash(e);if(cl){s-=2.5;r0.unshift("Occupé : « "+cl.t+" »");warn=true;}
   if(dd>(HORIZON[c]||366))block=true;
   if(c==="soiree"&&dd<10)s+=.3;
-  return{s,pct:pctOf(s),r:[...r0,...r].slice(0,3),warn,ok:sig&&!block,block,hit:!!m};
+  // réponses du calibrage
+  let dream=false;
+  if(m&&(S.dream||[]).some(d=>norm(d)===m.k)){s+=6;dream=true;sig=true;r0.unshift(m.n+" : l'artiste que tu rêves de voir");}
+  if(c==="theatre"&&S.tgw){const hit=tgenresOf(e).find(g=>S.tgw[g]);if(hit){s+=1.6;sig=true;r.push(THEATRE_G[hit].n+", ton genre");}}
+  if(c==="soiree"&&S.soireeType&&S.soireeType!=="both"){const day=isOpenAir(e)||D(e.d).getHours()<19&&D(e.d).getHours()>=10;if((S.soireeType==="day")===day){s+=1.2;r.push(day?"Teuf de jour, comme tu aimes":"Soirée en club, comme tu aimes");}else s-=1;}
+  if(c==="expo"&&e.etypes&&S.expow&&e.etypes.some(t=>(S.expow[t]||0)>=1.4))sig=true;
+  if(c==="sport"&&(S.sportw||{})[e.sport]>=1)sig=true;
+  return{s,pct:pctOf(s),r:[...r0,...r].slice(0,3),warn,ok:sig&&!block,block,hit:!!m,dream};
 }
 function raceFit(e){
   const R=S.race||{},kms=e.kms||[],dp=e.dplus||[];if(!kms.length)return 0;
@@ -1156,15 +1187,23 @@ async function refreshRelated(max){
 
 /* ================= Pour toi : le fil classé ================= */
 let FEED_T0=Date.now();
+const FREQW={4:4,3:3,2:2,1:1};
+const vertOn=k=>!S.verts||!S.verts.length||S.verts.includes(k);
 function feedItems(cat){
-  const cand=EVENTS.filter(e=>!(VERTS[e.cat]||{}).noDeck&&!S.disliked[e.id]&&(!cat||cat==="all"||e.cat===cat)&&!e.noDate&&(e.approx||D(e.d)>NOW)
-    &&!(S.liked[e.id]&&S.liked[e.id].likedAt<FEED_T0)).map(e=>{const x=Object.assign({e},score(e));const im=(S.impr||{})[e.id]||0;if(im>3&&!S.liked[e.id])x.s-=Math.min(2,(im-3)*.25);return x;});
+  const cand=EVENTS.filter(e=>!(VERTS[e.cat]||{}).noDeck&&vertOn(e.cat)&&!S.disliked[e.id]&&(!cat||cat==="all"||e.cat===cat)&&!e.noDate&&(e.approx||D(e.d)>NOW)
+    &&!(S.interest&&S.interest[e.id]&&!S.interest[e.id].auto&&S.interest[e.id].likedAt<FEED_T0)&&!(S.liked[e.id]&&S.liked[e.id].likedAt<FEED_T0)).map(e=>{const x=Object.assign({e},score(e));const im=(S.impr||{})[e.id]||0;if(im>3&&!(S.interest||{})[e.id])x.s-=Math.min(2,(im-3)*.25);return x;});
   const match=cand.filter(x=>x.ok&&x.pct>=45).sort((a,b)=>b.s-a.s);
-  // pas plus de deux propositions d'affilée du même univers
-  const ordered=[],pool=match.slice();
-  while(pool.length){const last=ordered.slice(-2).map(x=>x.e.cat);let i=pool.findIndex(x=>!(!cat||cat==="all")||!(last.length===2&&last[0]===x.e.cat&&last[1]===x.e.cat));if(i<0)i=0;ordered.push(pool.splice(i,1)[0]);}
+  // dosage par univers selon la fréquence donnée au calibrage (plusieurs fois par semaine = 4 parts, une fois par an = 1 part)
+  let ordered=[];
+  if(cat&&cat!=="all")ordered=match;
+  else{const by={};match.forEach(x=>(by[x.e.cat]=by[x.e.cat]||[]).push(x));
+    const ks=Object.keys(by),w=k=>FREQW[(S.freq||{})[k]]||2,cur={};ks.forEach(k=>cur[k]=0);
+    // l'artiste de rêve et les grosses correspondances passent devant
+    match.filter(x=>x.dream).forEach(x=>{ordered.push(x);by[x.e.cat].splice(by[x.e.cat].indexOf(x),1);});
+    for(;;){const live=ks.filter(k=>by[k].length);if(!live.length)break;const tot=live.reduce((a,k)=>a+w(k),0);
+      live.forEach(k=>cur[k]+=w(k));const k=live.reduce((a,b)=>cur[b]>cur[a]?b:a);cur[k]-=tot;ordered.push(by[k].shift());}}
   // exploration : large au début, de plus en plus rare quand FOMO te connaît
-  const nl=Object.keys(S.liked).length,rate=clamp(.35-nl*.012,.08,.35),every=Math.max(3,Math.round(1/rate));
+  const nl=Object.keys(S.interest||S.liked).length,rate=clamp(.35-nl*.012,.08,.35),every=Math.max(3,Math.round(1/rate));
   const used=new Set(ordered.map(x=>x.e.id));
   const ex=cand.filter(x=>!used.has(x.e.id)&&!x.block&&!S.never[x.e.cat]&&!x.e.approx&&(D(x.e.d)-NOW)/864e5<150);
   const pickEx=()=>{let best=null,bs=-1e9;const cnt={};Object.values(S.liked).forEach(l=>cnt[l.cat]=(cnt[l.cat]||0)+1);
@@ -1197,24 +1236,36 @@ function infoPills(e){
   return p;
 }
 const GRP={};
-const byId=id=>GRP[id]||EVENTS.find(x=>x.id===id)||S.liked[id]||(typeof PROJ!=="undefined"?PROJ[id]:null);
+const byId=id=>GRP[id]||EVENTS.find(x=>x.id===id)||S.liked[id]||(S.interest||{})[id]||(typeof PROJ!=="undefined"?PROJ[id]:null);
 const SNAP=["id","src","cat","kind","t","w","d","end","until","venue","addr","city","country","lat","lon","p","free","img","link","more","lineup","genres","tags","soldout","waitlist","lottery","saleAt","presaleAt","presaleName","pop","cap","size","sizeGuess","sport","comp","level","home","away","disc","kms","dplus","etypes","approx","tracked","ann","tba","ltype","trip","rating","status","big","races","picked"];
 const snapOf=e=>{const o={};SNAP.forEach(k=>{if(e[k]!=null)o[k]=e[k];});o.likedAt=Date.now();return o;};
 // un seul geste dans toute l'app : ♥ (ajoute à l'agenda, alertes billetterie prévues) ou le retirer
-function toggleLike(id){
+// « Pourquoi pas ! » : FOMO apprend tes goûts (ça ne va plus dans l'agenda)
+function toggleInterest(id){
+  const e=byId(id);if(!e)return false;S.interest=S.interest||{};
+  if(S.interest[id]){learn(e,"unlike","app");delete S.interest[id];}
+  else{learn(e,"yes","app");S.interest[id]=Object.assign(snapOf(e),{likedAt:Date.now()});delete S.disliked[id];}
+  const n=Object.keys(S.interest).length;if(n%6===0)refreshRelated(6);
+  save();PROF_V++;return !!S.interest[id];
+}
+// 📅 : dans ton agenda FOMO, avec les alertes billetterie
+function toggleCal(id){
   const e=byId(id);if(!e)return false;
-  if(S.liked[id]){learn(e,"unlike","app");delete S.liked[id];notify("Retiré de ton agenda",e.t);}
-  else{learn(e,"yes","app");S.liked[id]=snapOf(e);const a=alertsFor(S.liked[id]);
-    notify(a.length?"Ajouté, alerte billetterie prévue":"Ajouté à ton agenda",a.length?a[0].tx:e.t);}
-  if(Object.keys(S.liked).length%6===0)refreshRelated(6);
-  if(Object.keys(S.liked).length%10===0)ghSyncConfig().catch(()=>{});
+  if(S.liked[id]){delete S.liked[id];notify("Retiré de ton agenda",e.t);}
+  else{S.liked[id]=Object.assign(snapOf(e),{likedAt:Date.now()});const a=alertsFor(S.liked[id]);
+    notify(a.length?"Dans ton agenda, alerte billetterie prévue":"Ajouté à ton agenda",a.length?a[0].tx:e.t);
+    if(!(S.interest||{})[id]){S.interest=S.interest||{};S.interest[id]=S.liked[id];learn(e,"yes","app");}}
   save();renderBadges();scheduleNotifs();return !!S.liked[id];
 }
+const toggleLike=toggleCal;
 
 /* ================= éléments partagés : lignes, cartes, fiche Infos ================= */
 const HEART='<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-7.5-4.6-7.5-10.4A4.4 4.4 0 0 1 12 8a4.4 4.4 0 0 1 7.5 2.6C19.5 16.4 12 21 12 21z"/></svg>';
 const HEART_O='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 21s-7.5-4.6-7.5-10.4A4.4 4.4 0 0 1 12 8a4.4 4.4 0 0 1 7.5 2.6C19.5 16.4 12 21 12 21z"/></svg>';
-const isLiked=id=>!!S.liked[id];
+const isLiked=id=>!!(S.interest||{})[id];
+const inCal=id=>!!S.liked[id];
+function calBtn(e,cls){return`<button class="${cls||"cal-btn"}" data-cal="${esc(e.id)}" aria-pressed="${inCal(e.id)}" aria-label="${inCal(e.id)?"Retirer de mon agenda":"Ajouter à mon agenda"}" title="Agenda">📅</button>`;}
+function actsHTML(e){return`<div class="iacts"><button data-like="${esc(e.id)}" aria-pressed="${isLiked(e.id)}">♥ Pourquoi pas</button><button data-nope="${esc(e.id)}">✕ Pas pour moi</button><button class="cal" data-cal="${esc(e.id)}" aria-pressed="${inCal(e.id)}" aria-label="Agenda">📅</button></div>`;}
 const capital=s=>s?s[0].toUpperCase()+s.slice(1):s;
 function whenText(e){
   const d=D(e.d);
@@ -1247,7 +1298,7 @@ function placeOf(e){
   const c=e.country&&e.country!=="FR"?COUNTRY[e.country]||e.country:"";
   return [e.venue,e.city&&!String(e.venue||"").includes(e.city)?e.city:"",c].filter(Boolean).join(", ");
 }
-function heartBtn(e,cls){return`<button class="${cls||"heart"}" data-like="${esc(e.id)}" aria-pressed="${isLiked(e.id)}" aria-label="${isLiked(e.id)?"Retirer de mon agenda":"Ajouter à mon agenda"}">${isLiked(e.id)?HEART:HEART_O}${cls==="like-btn"?`<span>${isLiked(e.id)?"Dans l'agenda":"Pourquoi pas !"}</span>`:""}</button>`;}
+function heartBtn(e,cls){return`<button class="${cls||"heart"}" data-like="${esc(e.id)}" aria-pressed="${isLiked(e.id)}" aria-label="Pourquoi pas">${isLiked(e.id)?HEART:HEART_O}${cls==="like-btn"?`<span>${isLiked(e.id)?"Ça m'intéresse":"Pourquoi pas !"}</span>`:""}</button>`;}
 function itemHTML(e,opt){
   opt=opt||{};const p=infoPills(e).filter(x=>!(opt.when&&/date à confirmer|Date estimée/.test(x.t))).slice(0,opt.pills||2);
   const sub=e.cat==="sport"?[e.comp,placeOf(e)].filter(Boolean).join(", "):e.cat==="competition"?[(e.w||"").split(" / ").slice(0,2).join(" / "),e.city].filter(Boolean).join(", "):placeOf(e);
@@ -1255,7 +1306,7 @@ function itemHTML(e,opt){
   return`<div class="item${sp?" sp":""}" data-info="${esc(e.id)}" role="button" tabindex="0">${dateBlock(e)}
     <div style="min-width:0"><div class="ti">${esc(e.t)}</div>${rg?`<div class="pl rg">${esc(rg)}</div>`:""}<div class="pl">${esc(opt.when?[whenText(e),placeOf(e)].filter(Boolean).join(", "):sub)}</div>${opt.dist!=null&&e.cat==="local"?`<div class="pl">${opt.dist<1?Math.round(opt.dist*1000)+" m":String(Math.round(opt.dist*10)/10).replace(".",",")+" km"} de toi</div>`:""}
     ${p.length||opt.pct?`<div class="pills">${opt.pct?`<span class="pill hot">${opt.pct} % pour toi</span>`:""}${p.map(x=>`<span class="pill ${x.c}">${esc(x.t)}</span>`).join("")}</div>`:""}</div>
-    ${sp?`<div class="spt" title="${esc(sp.n)}"><span aria-hidden="true">${sp.e}</span><small>${esc(sp.n)}</small></div>`:""}${heartBtn(e)}</div>`;
+    ${sp?`<div class="spt" title="${esc(sp.n)}"><span aria-hidden="true">${sp.e}</span><small>${esc(sp.n)}</small></div>`:"<span></span>"}${opt.agenda?`<div class="iacts"><button class="cal" data-cal="${esc(e.id)}" aria-pressed="${inCal(e.id)}">📅 Retirer de l'agenda</button></div>`:actsHTML(e)}</div>`;
 }
 function ring(pct){const r=26,c=2*Math.PI*r;return`<div class="score" aria-label="${pct} % pour toi"><svg viewBox="0 0 58 58"><circle cx="29" cy="29" r="${r}" fill="none" stroke="var(--line)" stroke-width="4"/><circle cx="29" cy="29" r="${r}" fill="none" stroke="var(--hot)" stroke-width="4" stroke-linecap="round" stroke-dasharray="${c*pct/100} ${c}" transform="rotate(-90 29 29)"/></svg><b>${pct}<small>%</small></b></div>`;}
 function imgStyle(e){return e.img?`background-image:linear-gradient(180deg,rgba(0,0,0,0) 50%,rgba(0,0,0,.25)),url('${esc(e.img).replace(/'/g,"%27")}')`:"";}
@@ -1268,7 +1319,7 @@ function fcardHTML(x){
     <div class="bd"><h3>${esc(e.t)}</h3><div class="when">${esc(whenText(e))}${placeOf(e)?", "+esc(placeOf(e)):""}</div>
       ${!x.explore&&x.r.length?`<ul class="why">${x.r.map((r,i)=>`<li${i===0&&x.warn?' class="warn"':""}>${esc(r)}</li>`).join("")}</ul>`:""}
       <div class="row" style="margin-top:8px">${infoPills(e).slice(0,3).map(p=>`<span class="pill ${p.c}">${esc(p.t)}</span>`).join("")}</div>
-      <div class="acts">${heartBtn(e,"like-btn")}<button class="nope-btn" data-nope="${esc(e.id)}">Ça m'intéresse pas</button></div>
+      <div class="acts">${heartBtn(e,"like-btn")}<button class="nope-btn" data-nope="${esc(e.id)}">✕ Pas pour moi</button>${calBtn(e)}</div>
       <button class="info-link" data-info="${esc(e.id)}">Infos</button></div></article>`;
 }
 /* --- feuille du bas (Infos, filtres) --- */
@@ -1299,9 +1350,9 @@ function openInfo(id){
     <dl class="facts">${facts.map(([a,b])=>`<dt>${esc(a)}</dt><dd>${esc(b)}</dd>`).join("")}</dl>
     ${(e.lineup||[]).length>1?`<div class="lineup"><b>Line-up :</b> ${esc(e.lineup.slice(0,24).join(", "))}${e.lineup.length>24?"…":""}</div>`:""}
     ${x.r.length?`<ul class="why">${x.r.map(r=>`<li>${esc(r)}</li>`).join("")}</ul>`:""}
-    ${al.length&&!isLiked(e.id)?`<p class="note">Avec ♥, FOMO te prévient avant l'ouverture : ${esc(al[0].tx)}</p>`:""}
-    ${(e.ann||e.tba||e.status==="announced")&&!al.length?`<p class="note">Billetterie pas encore ouverte. Avec ♥, FOMO te prévient dès qu'elle ouvre.</p>`:""}
-    <div class="cta">${heartBtn(e,"like-btn")}${e.link?`<a class="btn" href="${esc(e.link)}" target="_blank" rel="noopener">${e.cat==="competition"?"S'inscrire":e.ann||e.status==="announced"?"Voir l'annonce":"Billetterie"}</a>`:`<button class="btn ghost" onclick="">Pas de lien</button>`}</div>
+    ${al.length&&!inCal(e.id)?`<p class="note">Avec 📅, FOMO te prévient avant l'ouverture : ${esc(al[0].tx)}</p>`:""}
+    ${(e.ann||e.tba||e.status==="announced")&&!al.length?`<p class="note">Billetterie pas encore ouverte. Avec 📅, FOMO te prévient dès qu'elle ouvre.</p>`:""}
+    <div class="cta">${heartBtn(e,"like-btn")}${calBtn(e)}${e.link?`<a class="btn" href="${esc(e.link)}" target="_blank" rel="noopener">${e.cat==="competition"?"S'inscrire":e.ann||e.status==="announced"?"Voir l'annonce":"Billetterie"}</a>`:`<button class="btn ghost" onclick="">Pas de lien</button>`}</div>
     ${e.reg&&e.more&&e.more!==e.link?`<div class="small">Détails de la course sur <a href="${esc(e.more)}" target="_blank" rel="noopener">Finishers</a></div>`:""}
     ${(e.alt||[]).length?`<div class="small">Aussi sur ${e.alt.map(a=>`<a href="${esc(a.link)}" target="_blank" rel="noopener">${esc(SRC_LABEL[a.src]||a.src)}</a>`).join(", ")}</div>`:""}
   </div>`,"info");
@@ -1309,10 +1360,15 @@ function openInfo(id){
 /* --- un seul gestionnaire de clics pour toute l'app --- */
 document.addEventListener("click",ev=>{
   const lk=ev.target.closest("[data-like]");
-  if(lk){ev.stopPropagation();const id=lk.dataset.like,on=toggleLike(id);
-    document.querySelectorAll(`[data-like="${CSS.escape(id)}"]`).forEach(b=>{b.setAttribute("aria-pressed",on);const t=b.classList.contains("like-btn");b.innerHTML=(on?HEART:HEART_O)+(t?`<span>${on?"Dans l'agenda":"Pourquoi pas !"}</span>`:"");});
+  if(lk){ev.stopPropagation();const id=lk.dataset.like,on=toggleInterest(id);
+    document.querySelectorAll(`[data-like="${CSS.escape(id)}"]`).forEach(b=>{b.setAttribute("aria-pressed",on);if(b.classList.contains("like-btn"))b.innerHTML=(on?HEART:HEART_O)+`<span>${on?"Ça m'intéresse":"Pourquoi pas !"}</span>`;else if(b.classList.contains("heart"))b.innerHTML=on?HEART:HEART_O;});
+    return;}
+  const cb=ev.target.closest("[data-cal]");
+  if(cb){ev.stopPropagation();const id=cb.dataset.cal,on=toggleCal(id);document.querySelectorAll(`[data-cal="${CSS.escape(id)}"]`).forEach(b=>b.setAttribute("aria-pressed",on));
+    document.querySelectorAll(`[data-like="${CSS.escape(id)}"]`).forEach(b=>b.setAttribute("aria-pressed",isLiked(id)));
     if(!$("v-agenda").hidden)renderAgenda();return;}
   const np=ev.target.closest("[data-nope]");if(np){const id=np.dataset.nope,e=byId(id);if(e){learn(e,"no","foryou");S.disliked[id]=1;S.seen[id]=1;delete S.liked[id];save();renderBadges();}
+    const it=np.closest(".item");if(it&&!np.closest(".fcard")){it.style.transition="opacity .2s";it.style.opacity="0";setTimeout(()=>it.remove(),200);}
     const card=np.closest(".fcard");if(card){card.style.transition="opacity .2s, transform .2s";card.style.opacity="0";card.style.transform="translateX(-30px)";setTimeout(()=>{card.remove();if(!$("feed").children.length)renderForYou();},200);}return;}
   const inf=ev.target.closest("[data-info]");if(inf){openInfo(inf.dataset.info);return;}
   const g=ev.target.closest("[data-go]");if(g){if(!$("sheet").hidden)closeSheet();show(g.dataset.go);return;}
@@ -1332,11 +1388,11 @@ const VCONF={
   expo:{segs:null,filters:["loc","radius","last","date","etype","free"],radius:30,near:true},
   local:{segs:null,filters:["loc","radius","date","ltype","free"],radius:25,near:true}
 };
-const SEG_HELP={concert:{soon:"Annoncés, billetterie pas encore ouverte. Avec ♥, FOMO te prévient à l'ouverture.",last:"Grandes salles et stades (Accor Arena, La Défense Arena, Stade de France, Zénith…) dont la billetterie est ouverte : les places partent vite."},
-  sport:{soon:"Les grandes affiches dont la billetterie n'est pas encore ouverte. Avec ♥, FOMO te prévient à l'ouverture."},
-  festival:{soon:"Billetterie pas encore ouverte, annonces reçues par FOMO et éditions probables. Avec ♥, FOMO te prévient."},
-  competition:{soon:"Inscriptions pas encore ouvertes. Avec ♥, FOMO te prévient."},
-  theatre:{soon:"Billetterie pas encore ouverte. Avec ♥, FOMO te prévient."}};
+const SEG_HELP={concert:{soon:"Annoncés, billetterie pas encore ouverte. Avec 📅, FOMO te prévient à l'ouverture.",last:"Grandes salles et stades (Accor Arena, La Défense Arena, Stade de France, Zénith…) dont la billetterie est ouverte : les places partent vite."},
+  sport:{soon:"Les grandes affiches dont la billetterie n'est pas encore ouverte. Avec 📅, FOMO te prévient à l'ouverture."},
+  festival:{soon:"Billetterie pas encore ouverte, annonces reçues par FOMO et éditions probables. Avec 📅, FOMO te prévient."},
+  competition:{soon:"Inscriptions pas encore ouvertes. Avec 📅, FOMO te prévient."},
+  theatre:{soon:"Billetterie pas encore ouverte. Avec 📅, FOMO te prévient."}};
 const RADII=[1,2,5,10];
 // grandes villes du menu de lieu (le même partout)
 const BIG_CITIES=["Paris","Lyon","Marseille","Toulouse","Bordeaux","Lille","Nantes","Nice","Montpellier","Strasbourg","Rennes","Grenoble","Rouen","Tours","Dijon","Angers","Reims","Metz","Nancy","Clermont-Ferrand","Saint-Étienne","Toulon","Le Havre","Brest","Caen","Orléans","Perpignan","Avignon","Annecy","Biarritz","La Rochelle"];
@@ -1505,7 +1561,7 @@ function festProjected(real){
 }
 /* --- bulles --- */
 function bubbleData(){
-  return VKEYS.map(k=>{let n=0;if(k==="marche"){n=MK.items.filter(m=>km(locMk(),m)<=5).length;return{k,n,mine:0,main:false};}try{n=vItems(k,null).filter(e=>!e.proj).length;}catch(e){}
+  return VKEYS.filter(vertOn).map(k=>{let n=0;if(k==="marche"){n=MK.items.filter(m=>km(locMk(),m)<=5).length;return{k,n,mine:0,main:false};}try{n=vItems(k,null).filter(e=>!e.proj).length;}catch(e){}
     const mine=VERTS[k].noDeck?0:feedCount(k);return{k,n,mine,main:!!VERTS[k].main};});
 }
 let FEEDC={v:-1,c:{}};
@@ -1782,7 +1838,9 @@ async function connectDeezer(link){
 }
 
 /* --- l'accueil, écran par écran --- */
-const OB=["hello","music","concert","festival","match","race","sports","done"];
+let OB=[];
+const OB_ORDER=["soiree","concert","festival","sport","competition","theatre","expo","local","marche"];
+function obSteps(){OB=["hello","intro","verts"].concat(OB_ORDER.filter(k=>(S.verts||[]).includes(k)).map(k=>"q:"+k),["done"]);return OB;}
 let OB_FB="";
 function obShell(i,title,lead,body,foot){
   $("ob-wrap").innerHTML=`<div class="bar"><div class="prog"><i style="width:${Math.round(i/(OB.length-1)*100)}%"></i></div><button class="later" id="ob-later">Plus tard</button></div>
@@ -1790,7 +1848,7 @@ function obShell(i,title,lead,body,foot){
   $("ob-later").onclick=()=>finishOnboarding();
 }
 function obGo(i){S.obStep=i;save();OB_FB="";renderOb();}
-function finishOnboarding(){S.onboarded=true;S.obStep=0;save();$("ob").hidden=true;document.body.style.overflow="";PROF_V++;show("discover");ghSyncConfig().catch(()=>{});}
+function finishOnboarding(){if(!S.verts||!S.verts.length)S.verts=null;S.onboarded=true;S.obStep=0;save();$("ob").hidden=true;document.body.style.overflow="";PROF_V++;show("foryou");ghSyncConfig().catch(()=>{});}
 function runOnboarding(step){$("ob").hidden=false;document.body.style.overflow="hidden";S.obStep=step||0;save();renderOb();}
 function srcBtn(k,name,sub,color,done,extra){return`<button class="src-btn${done?" done":""}" data-src="${k}"><span class="lg" style="background:${color}">${name.slice(0,2)}</span><span><b>${name}</b><small>${sub}</small></span><span class="st">${done?"Connecté":""}</span></button>${extra||""}`;}
 function textStep(i,o){
@@ -1864,51 +1922,139 @@ function bindSportPicker(id){
   box.querySelectorAll("[data-ps-st]").forEach(b=>b.onclick=async()=>{
     if(b.dataset.psSt==="off"){S.prof.strava=null;delete S.conn.strava;PROF_V++;save();box.outerHTML=sportPickerHTML(id);bindSportPicker(id);return;}
     const m=box.querySelector("[data-ps-msg]");m.textContent="Ouverture de Strava… Autorise FOMO puis reviens ici.";
-    try{if(!$("ob").hidden){S.obStep=OB.indexOf("sports");save();}await startStrava();}catch(e){m.textContent=e.message;}});
+    try{if(!$("ob").hidden){obSteps();S.obStep=OB.indexOf("q:competition");save();}await startStrava();}catch(e){m.textContent=e.message;}});
   box.querySelectorAll("[data-ps-k]").forEach(b=>b.onclick=()=>{const k=b.dataset.psK;R.kz=R.kz||{};if(R.kz[k])delete R.kz[k];else R.kz[k]=1;applyKz(R);PROF_V++;save();b.setAttribute("aria-pressed",!!R.kz[k]);});
   box.querySelectorAll("[data-ps-s]").forEach(b=>b.onclick=()=>{const k=b.dataset.psS;S.sportw=S.sportw||{};if((S.sportw[k]||0)>0)delete S.sportw[k];else{S.sportw[k]=1.2;S.vw.sport=Math.max(S.vw.sport||0,1);}PROF_V++;save();b.setAttribute("aria-pressed",(S.sportw[k]||0)>0);});
 }
+/* --- briques du calibrage --- */
+const FREQ_OPTS=[["4","Plusieurs fois par semaine"],["3","Une fois par semaine"],["2","Une fois par mois"],["1","Une fois par an"]];
+function freqHTML(cat,label){const v=String((S.freq||{})[cat]||"");return`<div class="fld"><label for="fq-${cat}">${label}</label><select class="txt" id="fq-${cat}" data-freq="${cat}"><option value="">Choisis…</option>${FREQ_OPTS.map(([k,n])=>`<option value="${k}"${v===k?" selected":""}>${n}</option>`).join("")}</select></div>`;}
+function chipsHTML(key,opts,isOn,label){return`${label?`<div class="lab">${label}</div>`:""}<div class="opts">${opts.map(([k,n])=>`<button class="chip" data-ch="${key}" data-v="${esc(k)}" aria-pressed="${!!isOn(k)}">${n}</button>`).join("")}</div>`;}
+function fieldHTML(id,label,ph){return`<div class="fld"><label for="${id}">${label}</label><div class="row" style="flex-wrap:nowrap"><input class="txt" id="${id}" placeholder="${esc(ph)}" autocomplete="off" enterkeyhint="done"><button class="btn sm" data-ok="${id}">OK</button></div><div class="sugg" id="${id}-s" hidden></div><div id="${id}-fb">${(OB_FBS[id]||"")?`<div class="fb">${OB_FBS[id]}</div>`:""}</div></div>`;}
+let OB_FBS={};
+function bindField(id,suggest,recog){
+  const inp=$(id),box=$(id+"-s");if(!inp)return;let tm=null,last=[];
+  const showS=l=>{last=l.slice(0,6);box.hidden=!last.length;box.innerHTML=last.map((x,j)=>`<button data-si="${j}"><span>${esc(x.label)}</span><small>${esc(x.sub||"")}</small></button>`).join("");};
+  inp.oninput=()=>{clearTimeout(tm);const q=inp.value.trim();if(q.length<2){showS([]);return;}tm=setTimeout(()=>suggest(q,showS).catch(()=>{}),220);};
+  const send=async sugg=>{const text=sugg?sugg.label:inp.value.trim();if(!text)return;box.hidden=true;inp.value=text;$(id+"-fb").innerHTML=`<div class="fb">Je regarde…</div>`;
+    let r=null;try{r=await recog({text,sugg});}catch(e){}OB_FBS[id]=r||`Je ne connais pas encore <b>${esc(text)}</b>, mais je le garde en tête.`;save();$(id+"-fb").innerHTML=`<div class="fb">${OB_FBS[id]}</div>`;};
+  inp.onkeydown=ev=>{if(ev.key==="Enter"){ev.preventDefault();send(null);}};
+  document.querySelector(`[data-ok="${id}"]`).onclick=()=>send(null);
+  box.onclick=ev=>{const b=ev.target.closest("[data-si]");if(b)send(last[+b.dataset.si]);};
+}
+function musicHTML(){
+  return`<div class="why-box"><b>Connecte ta musique</b><p>Je repère les soirées et les concerts de tes artistes, et de ceux qui leur ressemblent. C'est ce qui rend tes propositions vraiment personnelles.</p></div>
+    <details class="more" ${S.prof.dz?"":"open"}><summary>${S.prof.dz?"✓ Deezer importé : "+esc(S.prof.dz.n+" artistes"):"Importer depuis Deezer (un lien suffit)"}</summary>${S.prof.dz?"":`<div class="fld"><div class="row" style="flex-wrap:nowrap"><input class="txt" id="ob-dz" placeholder="https://www.deezer.com/fr/profile/…"><button class="btn sm" id="ob-dz-go">Importer</button></div><p class="small">Dans Deezer : ton profil → Partager → Copier le lien.</p><div id="ob-dz-fb"></div></div>`}</details>
+    <div class="lab">Ou ajoute tes artistes</div>${artistPickerHTML("ob-pa")}`;
+}
+function bindMusic(redraw){bindArtistPicker("ob-pa",redraw);const go=$("ob-dz-go");if(go)go.onclick=async()=>{$("ob-dz-fb").innerHTML=`<div class="fb">Import depuis Deezer…</div>`;try{await connectDeezer($("ob-dz").value);redraw();}catch(e){$("ob-dz-fb").innerHTML=`<div class="fb">${esc(e.message)}</div>`;}};}
+// l'artiste que tu rêves de voir : on cherche tout de suite ses prochaines dates
+const TM_FN="/.netlify/functions/tm-artist";
+async function dreamArtist(a){
+  const name=a.sugg&&a.sugg.kind==="artist"?a.sugg.label:a.text;S.dream=[...new Set((S.dream||[]).concat([name]))];
+  try{await learnArtist(name,a.sugg&&a.sugg.id);}catch(e){}
+  S.qa=(S.qa||[]).map(x=>norm(x.n)===norm(name)?Object.assign(x,{w:5}):x);
+  let found=[];
+  try{const r=await fetch(TM_FN+"?q="+encodeURIComponent(name));if(r.ok){const j=await r.json();
+    // gardées avec ton profil : elles restent dans Pour toi même quand les sources se rechargent
+    S.dreamRaw=(S.dreamRaw||[]).filter(x=>!(j.events||[]).some(y=>y.id===x.id)).concat(j.events||[]).slice(-40);
+    (j.events||[]).forEach(x=>{const e=collNorm(x,{city:""});if(e&&!EVENTS.some(y=>y.id===e.id)){EVENTS.push(e);}});}}catch(e){}
+  const n=norm(name);found=EVENTS.filter(e=>["concert","festival"].includes(e.cat)&&(norm(e.t).includes(n)||(e.lineup||[]).some(x=>norm(x)===n))&&D(e.d)>NOW).sort((x,y)=>D(x.d)-D(y.d));
+  S.interest=S.interest||{};found.slice(0,6).forEach(e=>{S.interest[e.id]=Object.assign(snapOf(e),{likedAt:Date.now(),auto:1});});
+  PROF_V++;save();
+  return found.length?`<b>${esc(name)}</b> : ${found.length} date${found.length>1?"s":""} trouvée${found.length>1?"s":""} (${found.slice(0,3).map(e=>esc((e.city||"")+" "+dshort(D(e.d)))).join(", ")}). C'est en tête de Pour toi, marqué « Ça m'intéresse ».`
+    :`<b>${esc(name)}</b> : pas de date annoncée en France pour l'instant. Je te préviens dès qu'il en annonce une.`;
+}
+function compHTML(){
+  const R=S.race||{},d=R.disc||{},on=k=>(d[k]||0)>0,sv=S.prof.strava;
+  let h=`<div class="why-box"><b>Connecte ton Strava</b><p>Avec tes sorties (course, vélo, natation), je repère les courses de ta distance et de ton niveau. Je lis seulement un résumé, une seule fois, puis je rends l'accès à Strava.</p></div>`;
+  h+=sv?`<div class="fb">✓ Strava : ${sv.n} activités lues${sv.maxRunKm?", sortie la plus longue "+sv.maxRunKm+" km":""}.</div>`
+       :`<button class="strava-btn" id="ob-st"><span aria-hidden="true">▲</span> Se connecter avec Strava</button><div class="small" id="ob-st-m">${S.stravaK?"En attente de Strava… Autorise FOMO puis reviens ici.":STATUS.strava&&STATUS.strava.err?esc(STATUS.strava.msg):""}</div>`;
+  if(sv)return h;
+  h+=`<div class="lab" style="margin-top:6px">Pas de Strava ? Dis-moi ce que tu pratiques</div>`+chipsHTML("disc",[["route","Course à pied"],["trail","Trail"],["velo","Cyclisme"],["triathlon","Triathlon"],["hyrox","Hyrox"]],on);
+  if(on("route"))h+=chipsHTML("kz",[["s","5 à 10 km"],["m","Semi"],["l","Marathon"],["u","Ultra"]],k=>(R.kz||{})[k],"Tes distances sur route");
+  if(on("trail"))h+=chipsHTML("tk",[["s","Moins de 20 km"],["m","20 à 42 km"],["l","42 à 80 km"],["u","Plus de 80 km"]],k=>(R.tk||{})[k],"Tes distances en trail")+chipsHTML("dpk",[["a","Moins de 500 m D+"],["b","500 à 1 500 m"],["c","Plus de 1 500 m"]],k=>(R.dpk||{})[k],"Le dénivelé que tu vises");
+  if(on("triathlon"))h+=chipsHTML("tri",[["XS","XS"],["S","S"],["M","M"],["L","L"]],k=>(R.tri||{})[k],"Ton format de triathlon");
+  if(on("hyrox"))h+=chipsHTML("hx",[["solo","Solo"],["duo","Duo"],["relay","Relais"]],k=>(R.hyrox||{})[k],"Ton format Hyrox");
+  return h;
+}
+function applyTrail(R){const tk=R.tk||{},a=[];if(tk.s)a.push(8,20);if(tk.m)a.push(20,42);if(tk.l)a.push(42,80);if(tk.u)a.push(80,200);R.trailKm=a.length?[Math.min(...a),Math.max(...a)]:R.trailKm;
+  const dp=R.dpk||{},b=[];if(dp.a)b.push(0,500);if(dp.b)b.push(500,1500);if(dp.c)b.push(1500,6000);R.dplusR=b.length?[Math.min(...b),Math.max(...b)]:undefined;}
+// réponses à un choix multiple
+function chToggle(key,v){
+  const R=S.race=S.race||{disc:{}};R.disc=R.disc||{};const flip=(o,k,val)=>{if(o[k])delete o[k];else o[k]=val;};
+  if(key==="disc"){flip(R.disc,v,2);if(R.disc[v])S.vw.competition=Math.max(S.vw.competition||0,1.5);}
+  else if(key==="kz"){R.kz=R.kz||{};flip(R.kz,v,1);applyKz(R);}
+  else if(key==="tk"){R.tk=R.tk||{};flip(R.tk,v,1);applyTrail(R);}
+  else if(key==="dpk"){R.dpk=R.dpk||{};flip(R.dpk,v,1);applyTrail(R);}
+  else if(key==="tri"){R.tri=R.tri||{};flip(R.tri,v,1);}
+  else if(key==="hx"){R.hyrox=R.hyrox||{};flip(R.hyrox,v,1);}
+  else if(key==="et"){S.expow=S.expow||{};if((S.expow[v]||0)>=1.4)delete S.expow[v];else S.expow[v]=1.5;}
+  else if(key==="tg"){S.tgw=S.tgw||{};flip(S.tgw,v,1);}
+  else if(key==="sw"){S.sportw=S.sportw||{};if((S.sportw[v]||0)>0)delete S.sportw[v];else{S.sportw[v]=1.4;S.vw.sport=Math.max(S.vw.sport||0,1);}}
+  else if(key==="lt"){S.ltw=S.ltw||{};flip(S.ltw,v,1);}
+  else if(key==="md"){S.marketDays=S.marketDays||[];const n=+v;S.marketDays=S.marketDays.includes(n)?S.marketDays.filter(x=>x!==n):S.marketDays.concat([n]);}
+  else if(key==="st"){S.soireeType=v;}
+  PROF_V++;save();
+}
+const Q_TITLE={soiree:"Tes soirées",concert:"Tes concerts",festival:"Tes festivals",sport:"Le sport que tu regardes",competition:"Tes compétitions",theatre:"Ton théâtre",expo:"Tes expos",local:"Ce qui se passe près de chez toi",marche:"Tes marchés"};
 function renderOb(){
-  const i=S.obStep||0,st=OB[i];
+  obSteps();
+  const i=Math.min(S.obStep||0,OB.length-1),st=OB[i];
   if(st==="hello"){
-    obShell(i,"Salut, moi c'est FOMO.","Je repère pour toi les concerts, soirées, festivals, matchs et courses qui te ressemblent, et je te préviens quand la billetterie ouvre.",
+    obShell(i,"Salut, moi c'est FOMO.","Je repère pour toi les sorties qui te ressemblent, et je te préviens quand la billetterie ouvre.",
       `<div class="fld"><label for="ob-name">Ton prénom</label><input class="txt" id="ob-name" value="${esc(S.name||"")}" autocomplete="given-name" placeholder="Léa"></div>
-       <div class="fld"><label for="ob-city">Ta ville</label><div class="row" style="flex-wrap:nowrap"><input class="txt" id="ob-city" list="ob-cities" placeholder="Paris, Lyon…" value="${esc(S.home?homeCity():"")}"><button class="btn ghost sm" id="ob-loc">Me localiser</button></div>
+       <div class="fld"><label for="ob-age">Ton âge</label><input class="txt" id="ob-age" type="number" inputmode="numeric" min="12" max="99" value="${esc(S.age||"")}" placeholder="27"></div>
+       <div class="fld"><label for="ob-city">Ta ville</label><div class="row" style="flex-wrap:nowrap"><input class="txt" id="ob-city" list="ob-cities" placeholder="Paris, Lyon…" value="${esc(S.home?homeCity():"")}"><button class="btn sm ghost" id="ob-loc">📍 Me localiser</button></div>
        <datalist id="ob-cities">${CITIES.map(c=>`<option value="${esc(c)}">`).join("")}</datalist></div><div id="ob-fb"></div>`,
-      `<button class="btn wide" id="ob-next">C'est parti</button>`);
-    $("ob-loc").onclick=async()=>{try{const h=await locate();$("ob-city").value=h.city==="Autour de moi"?h.near:h.city;}catch(e){$("ob-fb").innerHTML=`<div class="fb">${esc(e.message)}</div>`;}};
-    $("ob-next").onclick=()=>{S.name=$("ob-name").value.trim().split(/\s+/)[0]||"";const c=$("ob-city").value.trim();
+      `<button class="btn wide" id="ob-next">Continuer</button>`);
+    $("ob-loc").onclick=async()=>{$("ob-fb").innerHTML=`<div class="fb">Localisation…</div>`;try{const h=await locate();$("ob-city").value=h.city==="Autour de moi"?h.near:h.city;$("ob-fb").innerHTML=`<div class="fb">📍 Position trouvée : ${esc(h.city==="Autour de moi"?"près de "+h.near:h.city)}</div>`;}catch(e){$("ob-fb").innerHTML=`<div class="fb">${esc(e.message)}</div>`;}};
+    $("ob-next").onclick=()=>{S.name=$("ob-name").value.trim().split(/\s+/)[0]||"";const ag=parseInt($("ob-age").value,10);S.age=ag>=12&&ag<100?ag:null;const c=$("ob-city").value.trim();
       if(c&&!(S.home&&S.home.src==="gps"&&(S.home.city===c||S.home.near===c))){const p=cityPos(c);if(!p){$("ob-fb").innerHTML=`<div class="fb">Je ne connais pas cette ville : choisis-la dans la liste.</div>`;return;}S.home={lat:p.lat,lon:p.lon,city:p.city,src:"manual",at:Date.now()};}
       if(!S.home){const p=cityPos("Paris");S.home={lat:p.lat,lon:p.lon,city:"Paris",src:"default",at:Date.now()};}
       save();loadEvents(true);obGo(i+1);};
     return;}
-  if(st==="music"){
-    const draw=()=>{obShell(i,(S.name?S.name+", q":"Q")+"u'est-ce que tu écoutes ?","Ajoute quelques artistes et tes styles : je pars de là pour les concerts, les soirées et les festivals.",
-      artistPickerHTML("ob-pa")+`<details class="more"><summary>Tu es sur Deezer ? Importe tes artistes en un lien</summary><div class="fld"><label for="ob-dz">Lien de ton profil Deezer</label><div class="row" style="flex-wrap:nowrap"><input class="txt" id="ob-dz" placeholder="https://www.deezer.com/fr/profile/…"><button class="btn sm" id="ob-dz-go">Importer</button></div><p class="small">Dans Deezer : ton profil → Partager → Copier le lien.</p></div></details>
-       <div id="ob-fb">${OB_FB?`<div class="fb">${OB_FB}</div>`:""}</div>`,
-      `<button class="btn wide" id="ob-next">${(S.qa||[]).length||Object.keys(S.qg||{}).length||S.prof.dz?"Continuer":"Passer cette étape"}</button>`);
-      bindArtistPicker("ob-pa",draw);
-      $("ob-dz-go").onclick=async()=>{OB_FB="Import depuis Deezer…";$("ob-fb").innerHTML=`<div class="fb">${OB_FB}</div>`;try{OB_FB=await connectDeezer($("ob-dz").value);}catch(e){OB_FB=esc(e.message);}draw();};
-      $("ob-next").onclick=()=>obGo(i+1);};
-    draw();return;}
-  if(st==="concert")return textStep(i,{title:"Ton dernier concert, c'était qui ?",lead:"Un nom suffit, je m'occupe du reste.",ph:"Un artiste ou un groupe",suggest:sArtist,
-    recog:async a=>{const r=await recogNight(a);if(r)S.vw.concert=Math.max(S.vw.concert||0,1);return r;},chips:[["idk","Je ne m'en souviens plus"],["never","Je ne vais pas en concert"]],
-    chip:k=>{if(k==="never"){S.vw.concert=(S.vw.concert||0)-1.5;}else S.vw.concert=Math.max(S.vw.concert||0,.5);PROF_V++;save();},keepUnknown:t=>{S.qa=(S.qa||[]).concat([{n:t,w:2}]);}});
-  if(st==="festival")return textStep(i,{title:"Et ton dernier festival ?",lead:"Je connais tous les festivals listés sur Resident Advisor cette année, même les plus petits.",ph:"MIMO Festival, Dekmantel, Solidays…",suggest:sFest,
-    recog:async a=>{const r=await recogFest(a);if(r)S.vw.festival=Math.max(S.vw.festival||0,1);return r;},chips:[["idk","Je ne m'en souviens plus"],["never","Je ne fais pas de festival"]],
-    chip:k=>{if(k==="never")S.vw.festival=(S.vw.festival||0)-1.5;PROF_V++;save();}});
-  if(st==="match")return textStep(i,{title:"Passons au sport. Le dernier match que tu as vu ?",lead:"Au stade ou à la télé : une équipe, une compétition, un match.",ph:"PSG – OM, XV de France, Roland-Garros…",suggest:sMatch,
-    recog:async a=>{const r=recogMatch(a);if(r)S.vw.sport=Math.max(S.vw.sport||0,1.2);return r;},chips:[["never","Je ne regarde pas de sport"]],
-    chip:k=>{S.vw.sport=(S.vw.sport||0)-1.5;PROF_V++;save();}});
-  if(st==="race")return textStep(i,{title:"La dernière compétition à laquelle tu as participé ?",lead:"Course sur route, trail, Hyrox, triathlon…",ph:"Semi de Paris, trail de 30 km, Hyrox…",suggest:sRace,
-    recog:async a=>recogRace(a),chips:[["never","Je n'en fais pas"]],chip:k=>{S.vw.competition=(S.vw.competition||0)-1.5;PROF_V++;save();}});
-  if(st==="sports"){
-    obShell(i,"Et côté sport ?","Les courses que tu fais, et les matchs que tu aimes regarder. Connecte Strava ou touche ce qui te correspond.",(OB_FB?`<div class="fb">${OB_FB}</div>`:"")+sportPickerHTML("ob-ps"),`<button class="btn wide" id="ob-next">Continuer</button>`);
-    bindSportPicker("ob-ps");$("ob-next").onclick=()=>obGo(i+1);return;}
+  if(st==="intro"){
+    obShell(i,"Prenons 1 minute pour apprendre à se connaître"+(S.name?", "+esc(S.name):"")+".","",
+      `<div class="intro-box"><p>Je vais te poser quelques questions pour façonner ton app. Elles me permettent d'affiner les propositions d'événements en fonction de ce que tu aimes.</p><p><b>C'est la seule et unique fois.</b> Ensuite, tout se fait automatiquement : chaque « Pourquoi pas ! » ou « Ça m'intéresse pas » m'apprend un peu plus.</p></div>`,
+      `<button class="btn wide hot" id="ob-next">Façonnons ton app</button>`);
+    $("ob-next").onclick=()=>obGo(i+1);return;}
+  if(st==="verts"){
+    S.verts=S.verts||[];
+    const big=["soiree","concert","festival","sport","competition"];
+    obShell(i,"Quels événements veux-tu que je te recommande ?","Touche les bulles qui te parlent. Les autres disparaîtront de ton app (tu pourras les rajouter dans Réglages).",
+      `<div class="pickb">${OB_ORDER.map(k=>`<button class="pb v-${k}${S.verts.includes(k)?" on":""}${big.includes(k)?" big":""}" data-pb="${k}" aria-pressed="${S.verts.includes(k)}"><b>${esc(VERTS[k].n)}</b></button>`).join("")}</div>`,
+      `<button class="btn wide" id="ob-next"${S.verts.length?"":" disabled"}>${S.verts.length?"Continuer ("+S.verts.length+")":"Choisis au moins une bulle"}</button>`);
+    $("ob-wrap").querySelectorAll("[data-pb]").forEach(b=>b.onclick=()=>{const k=b.dataset.pb;S.verts=S.verts.includes(k)?S.verts.filter(x=>x!==k):S.verts.concat([k]);save();renderOb();});
+    $("ob-next").onclick=()=>{if(S.verts.length)obGo(i+1);};return;}
+  if(st&&st.startsWith("q:")){
+    const k=st.slice(2),redraw=()=>renderOb();let body="";
+    if(k==="expo")body=chipsHTML("et",Object.keys(EXPO_TYPES).map(t=>[t,EXPO_TYPES[t].n]),t=>(S.expow||{})[t]>=1.4,"Quelles expos apprécies-tu ?")+freqHTML("expo","À quelle fréquence vas-tu voir une expo ?");
+    if(k==="soiree")body=musicHTML()+chipsHTML("st",[["club","Soirée en club"],["day","Teuf de jour"],["both","Les deux"]],v=>S.soireeType===v,"Tu préfères…")+freqHTML("soiree","À quelle fréquence sors-tu en soirée ?");
+    if(k==="concert")body=((S.verts||[]).includes("soiree")?"":musicHTML())+fieldHTML("ob-lc","Ton dernier concert, c'était qui ?","Un artiste ou un groupe")+fieldHTML("ob-dream","L'artiste que tu rêves de voir sur scène ?","Beyoncé, Daft Punk, Rosalía…")+freqHTML("concert","À quelle fréquence vas-tu en concert ?");
+    if(k==="festival")body=fieldHTML("ob-lf","Le dernier festival où tu es allé ?","MIMO, Solidays, Dekmantel…")+fieldHTML("ob-if","Ton festival idéal, ce serait lequel ?","Écris son nom")+freqHTML("festival","Combien de festivals fais-tu ?");
+    if(k==="theatre")body=chipsHTML("tg",Object.keys(THEATRE_G).map(g=>[g,THEATRE_G[g].n]),g=>(S.tgw||{})[g],"Quel type de pièce apprécies-tu ?")+freqHTML("theatre","À quelle fréquence vas-tu au théâtre ?");
+    if(k==="sport")body=fieldHTML("ob-lm","Le dernier match ou événement auquel tu as assisté ?","PSG – OM, XV de France, Roland-Garros…")+chipsHTML("sw",Object.keys(SPORTS).map(x=>[x,SPORTS[x].e+" "+SPORTS[x].n]),x=>(S.sportw||{})[x]>0,"Quels sports veux-tu que je surveille pour toi ?")+freqHTML("sport","À quelle fréquence vas-tu voir du sport ?");
+    if(k==="competition")body=compHTML();
+    if(k==="local")body=chipsHTML("lt",[...Object.keys(LOCAL_T).filter(x=>x!=="marche").map(g=>[g,LOCAL_T[g].n]),["exp","Ateliers et expériences"]],g=>(S.ltw||{})[g],"Qu'est-ce qui t'intéresse près de chez toi ?")+freqHTML("local","À quelle fréquence sors-tu dans ton quartier ?");
+    if(k==="marche")body=freqHTML("marche","À quelle fréquence vas-tu au marché ?")+chipsHTML("md",DAYS_FRL.map((d,n)=>[String(n),capital(d)]),n=>(S.marketDays||[]).includes(+n),"Pour toi, marché rime avec…");
+    obShell(i,Q_TITLE[k],"",body,`<button class="btn wide" id="ob-next">Continuer</button>`);
+    $("ob-wrap").querySelectorAll("[data-ch]").forEach(b=>b.onclick=()=>{chToggle(b.dataset.ch,b.dataset.v);if(["disc","st"].includes(b.dataset.ch))redraw();else b.setAttribute("aria-pressed",b.getAttribute("aria-pressed")!=="true");});
+    $("ob-wrap").querySelectorAll("[data-freq]").forEach(sel=>sel.onchange=()=>{S.freq=S.freq||{};if(sel.value)S.freq[sel.dataset.freq]=+sel.value;else delete S.freq[sel.dataset.freq];
+      const f=+sel.value;if(f)S.vw[sel.dataset.freq]=Math.max(S.vw[sel.dataset.freq]||0,f>=3?1.6:f===2?1.1:.6);PROF_V++;save();});
+    if(k==="soiree"||(k==="concert"&&!(S.verts||[]).includes("soiree")))bindMusic(redraw);
+    bindField("ob-lc",sArtist,async a=>{const r=await recogNight(a);if(r)S.vw.concert=Math.max(S.vw.concert||0,1);return r;});
+    bindField("ob-dream",sArtist,dreamArtist);
+    bindField("ob-lf",sFest,async a=>{const r=await recogFest(a);if(r)S.vw.festival=Math.max(S.vw.festival||0,1);return r;});
+    bindField("ob-if",sFest,async a=>{const r=await recogFest(a);S.festIdeal=a.text;if(r){S.vw.festival=Math.max(S.vw.festival||0,1.4);await recogFest(a);}return r?r.replace("Noté","Je m'en inspire pour te proposer des festivals de ce genre"):null;});
+    bindField("ob-lm",sMatch,async a=>{const r=recogMatch(a);if(r)S.vw.sport=Math.max(S.vw.sport||0,1.2);return r;});
+    const stb=$("ob-st");if(stb)stb.onclick=async()=>{$("ob-st-m").textContent="Ouverture de Strava… Autorise FOMO puis reviens ici.";try{S.obStep=i;save();await startStrava();}catch(e){$("ob-st-m").textContent=e.message;}};
+    $("ob-next").onclick=()=>{OB_FBS={};obGo(i+1);};return;}
   if(st==="done"){
-    obShell(i,"C'est prêt"+(S.name?", "+esc(S.name):"")+".","Touche une bulle pour explorer un univers. Pour toi rassemble ce qui te correspond le plus, et chaque ♥ part dans ton agenda avec ses alertes billetterie.",
-      `<div class="fb">Tu peux aussi me demander directement : « un festival house à taille humaine en août 2027 », dans Demande-moi.</div>`,
-      `<button class="btn wide hot" id="ob-next">Découvrir</button>`);
+    const n=(S.verts||[]).length;
+    obShell(i,"C'est prêt"+(S.name?", "+esc(S.name):"")+" !","Ton app est façonnée : "+n+" univers, et un Pour toi calibré sur tes réponses.",
+      `<div class="intro-box"><p><b>♥ Pourquoi pas !</b> : j'apprends que ça te plaît.</p><p><b>✕ Ça m'intéresse pas</b> : je l'enlève et j'apprends aussi.</p><p><b>📅</b> : je l'ajoute à ton agenda avec les alertes billetterie.</p></div>`,
+      `<button class="btn wide hot" id="ob-next">Voir mon Pour toi</button>`);
     $("ob-next").onclick=()=>finishOnboarding();return;}
 }
 // notification système : via le service worker (obligatoire quand l'app est installée sur Android), sinon directement
@@ -2178,12 +2324,12 @@ let FY_N=12;
 function renderForYou(){
   $("fy-title").textContent=S.name?"Pour toi, "+S.name:"Pour toi";
   // pas de « Tout » : sans univers choisi, on mélange tout ; un univers se décoche en le retouchant
-  const cats=VKEYS.filter(k=>!VERTS[k].noDeck);
+  const cats=VKEYS.filter(k=>!VERTS[k].noDeck&&vertOn(k));
   $("fy-filter").innerHTML=cats.map(k=>`<button class="chip" data-fy="${k}" aria-pressed="${S.fyF===k}">${esc(VERTS[k].n)}</button>`).join("");
   const feed=$("feed");
   if(LOADING&&!EVENTS.length){feed.innerHTML=`<div class="empty"><div class="spin"></div>Je cherche ce qui va te plaire…</div>`;$("fy-more").hidden=true;return;}
   const q=feedItems(S.fyF||"all");
-  if(!q.length){feed.innerHTML=`<div class="empty"><h3>Pas encore assez d'infos sur toi</h3><p>Connecte ta musique ou like quelques événements dans Découverte : Pour toi s'affine à chaque ♥.</p><div class="row" style="justify-content:center"><button class="btn sm" data-go="discover">Aller dans Découverte</button><button class="btn ghost sm" data-go="settings">Connecter mes comptes</button></div></div>`;$("fy-more").hidden=true;return;}
+  if(!q.length){feed.innerHTML=`<div class="empty"><h3>Pas encore assez d'infos sur toi</h3><p>Touche « Pourquoi pas ! » sur quelques événements dans Découverte : Pour toi s'affine à chaque fois.</p><div class="row" style="justify-content:center"><button class="btn sm" data-go="discover">Aller dans Découverte</button><button class="btn ghost sm" data-go="settings">Connecter mes comptes</button></div></div>`;$("fy-more").hidden=true;return;}
   feed.innerHTML=q.slice(0,FY_N).map(fcardHTML).join("");
   $("fy-more").hidden=q.length<=FY_N;
   // ce qui est montré sans jamais être aimé descend doucement
@@ -2219,7 +2365,7 @@ function renderAgenda(){
     ${O.length?O.slice(0,8).map(o=>`<div class="al" data-info="${esc(o.e.id)}" role="button" tabindex="0"><div class="when">${o.at?`<b>${o.at.getDate()}</b>${MO[o.at.getMonth()]}`:"Bientôt"}</div>
       <div style="min-width:0"><div class="ti">${esc(o.e.t)}</div><div class="tx">${o.at?esc(o.what+" le "+WDL[o.at.getDay()].toLowerCase()+" à "+hm(o.at)):esc(o.what+(o.what==="Inscriptions"?" pas encore ouvertes":" pas encore ouverte")+" : FOMO te prévient")}</div></div>
       ${o.e.link&&o.at&&o.at-NOW<36e5?`<a class="btn sm hot" href="${esc(o.e.link)}" target="_blank" rel="noopener">Y aller</a>`:""}</div>`).join("")
-    :`<p class="small" style="margin:0 0 10px">Aucune ouverture à venir. Like un concert, un festival ou une course dont la billetterie n'est pas ouverte : l'alerte se règle toute seule.</p>`}</div>`;
+    :`<p class="small" style="margin:0 0 10px">Aucune ouverture à venir. Touche 📅 sur un concert, un festival ou une course dont la billetterie n'est pas ouverte : l'alerte se règle toute seule.</p>`}</div>`;
   const sw=$("sw-notif");if(sw)sw.onclick=async()=>{if(S.notif&&Notification.permission==="granted"){S.notif=false;save();renderAgenda();return;}
     let p=Notification.permission;if(p==="default")p=await Notification.requestPermission();S.notif=p==="granted";save();renderAgenda();scheduleNotifs();
     if(S.notif)notify("Notifications activées","Garde FOMO ouvert ou installé sur ton téléphone pour les recevoir.");};
@@ -2236,13 +2382,13 @@ function renderAgenda(){
   // jour choisi, ou les prochaines sorties
   let h="";
   if(AG_DAY){const d=new Date(AG_DAY),evs=byDay[AG_DAY]||[];
-    h=`<div class="dayhead">${capital(WDL[d.getDay()].toLowerCase())} ${d.getDate()} ${MOL[d.getMonth()]}</div>`+(evs.length?evs.map(e=>itemHTML(e,{when:true,pills:2})).join(""):`<p class="small">Rien ce jour-là.</p>`);
+    h=`<div class="dayhead">${capital(WDL[d.getDay()].toLowerCase())} ${d.getDate()} ${MOL[d.getMonth()]}</div>`+(evs.length?evs.map(e=>itemHTML(e,{when:true,pills:2,agenda:true})).join(""):`<p class="small">Rien ce jour-là.</p>`);
     const busy=S.cal?S.cal.busy.filter(b=>new Date(b.s).toDateString()===AG_DAY):[];
     if(busy.length)h+=`<p class="small">Dans ton Google Agenda : ${esc(busy.map(b=>hm(new Date(b.s))+" "+b.t).join(", "))}</p>`;}
   else{const nx=up.filter(e=>!e.approx).slice(0,12),ap=up.filter(e=>e.approx);
-    h=nx.length?`<div class="dayhead">Prochainement</div>`+nx.map(e=>itemHTML(e,{when:true,pills:2})).join(""):"";
-    if(ap.length)h+=`<div class="dayhead">Dates à confirmer</div>`+ap.map(e=>itemHTML(e,{when:true,pills:2})).join("");
-    if(!up.length)h=`<div class="empty"><h3>Ton agenda est vide</h3><p>Touche ♥ sur un événement : il arrive ici, avec ses alertes billetterie.</p><button class="btn sm" data-go="foryou">Voir Pour toi</button></div>`;}
+    h=nx.length?`<div class="dayhead">Prochainement</div>`+nx.map(e=>itemHTML(e,{when:true,pills:2,agenda:true})).join(""):"";
+    if(ap.length)h+=`<div class="dayhead">Dates à confirmer</div>`+ap.map(e=>itemHTML(e,{when:true,pills:2,agenda:true})).join("");
+    if(!up.length)h=`<div class="empty"><h3>Ton agenda est vide</h3><p>Touche 📅 sur un événement : il arrive ici, avec ses alertes billetterie.</p><button class="btn sm" data-go="foryou">Voir Pour toi</button></div>`;}
   $("ag-day").innerHTML=h;
 }
 $("ag-filter").addEventListener("click",ev=>{const b=ev.target.closest("[data-agf]");if(!b)return;S.agF=b.dataset.agf;save();renderAgenda();});
@@ -2442,47 +2588,72 @@ function mkFiltered(){
     .filter(m=>MKF.day==="all"||(MKF.day==="today"?mkOpenOn(m,today):MKF.day==="tomorrow"?mkOpenOn(m,(today+1)%7):MKF.day==="we"?mkOpenOn(m,5)||mkOpenOn(m,6):mkOpenOn(m,+MKF.day)))
     .sort((a,b)=>{const o={open:0,today:1,soon:2,unk:3};return o[a._s.k]-o[b._s.k]||(a._s.n||0)-(b._s.n||0)||a._k-b._k;});
 }
-/* --- petite carte interactive (tuiles OpenStreetMap / CARTO), sans bibliothèque externe --- */
+/* --- carte interactive (tuiles OpenStreetMap), sans bibliothèque externe ---
+   glisser avec élan, pincer pour zoomer (fluide), molette, double toucher, recentrer, épingles cliquables */
 function SlippyMap(el,onPin){
-  const T=256,st={z:14,lat:48.8566,lon:2.3522,w:0,h:0,pins:[],me:null,sel:null};
-  el.innerHTML=`<div class="tiles"></div><div class="pins"></div><div class="zoom"><button aria-label="Zoomer">+</button><button aria-label="Dézoomer">−</button></div><div class="attr">© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">contributeurs OpenStreetMap</a></div>`;
+  const T=256,st={z:13,lat:48.8566,lon:2.3522,w:0,h:0,me:null,sel:null};
+  el.innerHTML=`<div class="tiles"></div><div class="pins"></div>
+    <div class="zoom"><button data-z="1" aria-label="Zoomer">+</button><button data-z="-1" aria-label="Dézoomer">−</button><button data-z="me" aria-label="Recentrer sur moi">◎</button></div>
+    <div class="attr">© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">contributeurs OpenStreetMap</a></div>`;
   const tl=el.querySelector(".tiles"),pl=el.querySelector(".pins");
-  const px=(lat,lon,z)=>{const n=T*2**z,s=Math.sin(lat*Math.PI/180);return{x:(lon+180)/360*n,y:(.5-Math.log((1+s)/(1-s))/(4*Math.PI))*n};};
-  const ll=(x,y,z)=>{const n=T*2**z,lon=x/n*360-180,k=Math.PI-2*Math.PI*y/n;return{lat:180/Math.PI*Math.atan(.5*(Math.exp(k)-Math.exp(-k))),lon};};
-  const tiles=new Map();
+  const W=z=>T*2**z;
+  const px=(lat,lon,z)=>{const n=W(z),s=Math.sin(Math.max(-85,Math.min(85,lat))*Math.PI/180);return{x:(lon+180)/360*n,y:(.5-Math.log((1+s)/(1-s))/(4*Math.PI))*n};};
+  const ll=(x,y,z)=>{const n=W(z),lon=x/n*360-180,k=Math.PI-2*Math.PI*y/n;return{lat:180/Math.PI*Math.atan(.5*(Math.exp(k)-Math.exp(-k))),lon};};
+  const tiles=new Map();let pinEls=new Map(),meEl=null,raf=0;
+  function frame(){if(raf)return;raf=requestAnimationFrame(()=>{raf=0;draw();});}
   function draw(){
-    st.w=el.clientWidth;st.h=el.clientHeight;const c=px(st.lat,st.lon,st.z),x0=c.x-st.w/2,y0=c.y-st.h/2,n=2**st.z,want=new Set();
-    for(let tx=Math.floor(x0/T);tx<=Math.floor((x0+st.w)/T);tx++)for(let ty=Math.floor(y0/T);ty<=Math.floor((y0+st.h)/T);ty++){
-      if(ty<0||ty>=n)continue;const wx=((tx%n)+n)%n,k=st.z+"/"+wx+"/"+ty;want.add(k+"@"+tx);
-      let im=tiles.get(k+"@"+tx);if(!im){im=new Image();im.alt="";
-        // fond OpenStreetMap (sans clé) ; si une tuile ne répond pas, on essaie le serveur d'OpenStreetMap France
+    st.w=el.clientWidth;st.h=el.clientHeight;
+    const zi=Math.max(3,Math.min(19,Math.round(st.z))),sc=2**(st.z-zi),TS=T*sc;   // tuiles du niveau entier le plus proche, agrandies ou réduites
+    const c=px(st.lat,st.lon,zi),x0=c.x*sc-st.w/2,y0=c.y*sc-st.h/2,n=2**zi,want=new Set();
+    for(let tx=Math.floor(x0/TS);tx<=Math.floor((x0+st.w)/TS);tx++)for(let ty=Math.floor(y0/TS);ty<=Math.floor((y0+st.h)/TS);ty++){
+      if(ty<0||ty>=n)continue;const wx=((tx%n)+n)%n,k=zi+"/"+wx+"/"+ty,key=k+"@"+tx;want.add(key);
+      let im=tiles.get(key);
+      if(!im){im=new Image();im.alt="";im.decoding="async";
         im.onerror=()=>{if(!im.dataset.fb){im.dataset.fb=1;im.src=`https://${"abc"[(wx+ty)%3]}.tile.openstreetmap.fr/osmfr/${k}.png`;}else im.style.visibility="hidden";};
-        im.src=`https://tile.openstreetmap.org/${k}.png`;tiles.set(k+"@"+tx,im);tl.appendChild(im);}
-      im.style.left=(tx*T-x0)+"px";im.style.top=(ty*T-y0)+"px";}
+        im.src=`https://tile.openstreetmap.org/${k}.png`;tiles.set(key,im);tl.appendChild(im);}
+      im.style.transform=`translate(${tx*TS-x0}px,${ty*TS-y0}px) scale(${sc})`;}
     tiles.forEach((im,k)=>{if(!want.has(k)){im.remove();tiles.delete(k);}});
-    pl.innerHTML=st.pins.map(p=>{const q=px(p.lat,p.lon,st.z);return`<button class="pin ${p.cls}${st.sel===p.id?" sel":""}" data-pin="${esc(p.id)}" style="left:${q.x-x0}px;top:${q.y-y0}px" aria-label="${esc(p.label)}"><i></i></button>`;}).join("")
-      +(st.me?(()=>{const q=px(st.me.lat,st.me.lon,st.z);return`<span class="me" style="left:${q.x-x0}px;top:${q.y-y0}px"></span>`;})():"")
-      +(st.sel&&st.pop?(()=>{const p=st.pins.find(x=>x.id===st.sel);if(!p)return"";const q=px(p.lat,p.lon,st.z);return`<div class="pop" style="left:${q.x-x0}px;top:${q.y-y0}px">${st.pop}</div>`;})():"");
+    const P=(lat,lon)=>{const q=px(lat,lon,st.z),cc=px(st.lat,st.lon,st.z);return{x:q.x-cc.x+st.w/2,y:q.y-cc.y+st.h/2};};
+    pinEls.forEach((b,id)=>{const q=P(b._lat,b._lon);b.style.transform=`translate(${q.x}px,${q.y}px)`;b.classList.toggle("sel",st.sel===id);b.hidden=q.x<-30||q.y<-30||q.x>st.w+30||q.y>st.h+40;});
+    if(meEl){if(st.me){const q=P(st.me.lat,st.me.lon);meEl.style.transform=`translate(${q.x}px,${q.y}px)`;meEl.hidden=false;}else meEl.hidden=true;}
   }
-  // déplacer, zoomer (molette, boutons, double toucher, pincer)
-  const pts=new Map();let last=null,pinch=null,moved=0;
-  el.addEventListener("pointerdown",ev=>{if(ev.target.closest(".zoom,.pop a"))return;el.setPointerCapture(ev.pointerId);pts.set(ev.pointerId,{x:ev.clientX,y:ev.clientY});moved=0;
-    if(pts.size===2){const [a,b]=[...pts.values()];pinch={d:Math.hypot(a.x-b.x,a.y-b.y)};}else last={x:ev.clientX,y:ev.clientY};});
-  el.addEventListener("pointermove",ev=>{if(!pts.has(ev.pointerId))return;pts.set(ev.pointerId,{x:ev.clientX,y:ev.clientY});
-    if(pts.size===2&&pinch){const [a,b]=[...pts.values()],d=Math.hypot(a.x-b.x,a.y-b.y);if(d/pinch.d>1.5){zoom(1);pinch.d=d;}else if(d/pinch.d<.66){zoom(-1);pinch.d=d;}return;}
-    if(!last)return;const dx=ev.clientX-last.x,dy=ev.clientY-last.y;moved+=Math.abs(dx)+Math.abs(dy);last={x:ev.clientX,y:ev.clientY};
-    const c=px(st.lat,st.lon,st.z),p=ll(c.x-dx,c.y-dy,st.z);st.lat=p.lat;st.lon=p.lon;draw();});
-  const up=ev=>{const wasTap=moved<6&&pts.size===1;pts.delete(ev.pointerId);if(pts.size<2)pinch=null;if(!pts.size)last=null;
-    if(wasTap){const b=document.elementsFromPoint(ev.clientX,ev.clientY).find(x=>x.dataset&&x.dataset.pin);if(b)onPin(b.dataset.pin);else if(!ev.target.closest(".pop")){st.sel=null;draw();}}};
+  // positions à l'écran <-> coordonnées
+  const at=(cx,cy)=>{const c=px(st.lat,st.lon,st.z);return ll(c.x+cx-st.w/2,c.y+cy-st.h/2,st.z);};
+  function zoomAt(nz,cx,cy){nz=Math.max(4,Math.min(19,nz));const before=at(cx,cy);st.z=nz;const p=px(before.lat,before.lon,st.z),c=px(st.lat,st.lon,st.z);
+    const nc=ll(p.x-(cx-st.w/2),p.y-(cy-st.h/2),st.z);st.lat=nc.lat;st.lon=nc.lon;frame();}
+  function animZoom(to,cx,cy){const from=st.z,t0=performance.now();const step=t=>{const k=Math.min(1,(t-t0)/220),e=1-(1-k)**3;zoomAt(from+(to-from)*e,cx,cy);if(k<1)requestAnimationFrame(step);};requestAnimationFrame(step);}
+  function panTo(lat,lon,z){const a={lat:st.lat,lon:st.lon,z:st.z},t0=performance.now(),b={lat,lon,z:z==null?st.z:z};
+    const step=t=>{const k=Math.min(1,(t-t0)/350),e=1-(1-k)**3;st.lat=a.lat+(b.lat-a.lat)*e;st.lon=a.lon+(b.lon-a.lon)*e;st.z=a.z+(b.z-a.z)*e;draw();if(k<1)requestAnimationFrame(step);};requestAnimationFrame(step);}
+  // gestes
+  const pts=new Map();let drag=null,pinch=null,vel={x:0,y:0},lastT=0,moved=0,inertia=0,lastTap=0;
+  const rel=ev=>{const r=el.getBoundingClientRect();return{x:ev.clientX-r.left,y:ev.clientY-r.top};};
+  el.addEventListener("pointerdown",ev=>{if(ev.target.closest(".zoom,.attr,.mkcard"))return;cancelAnimationFrame(inertia);el.setPointerCapture(ev.pointerId);pts.set(ev.pointerId,rel(ev));moved=0;
+    if(pts.size===2){const [a,b]=[...pts.values()];pinch={d:Math.hypot(a.x-b.x,a.y-b.y),z:st.z};drag=null;}
+    else{drag=rel(ev);lastT=performance.now();vel={x:0,y:0};}el.classList.add("grab");});
+  el.addEventListener("pointermove",ev=>{if(!pts.has(ev.pointerId))return;const p=rel(ev);pts.set(ev.pointerId,p);
+    if(pts.size===2&&pinch){const [a,b]=[...pts.values()],d=Math.hypot(a.x-b.x,a.y-b.y);moved+=10;zoomAt(pinch.z+Math.log2(d/pinch.d),(a.x+b.x)/2,(a.y+b.y)/2);return;}
+    if(!drag)return;const dx=p.x-drag.x,dy=p.y-drag.y,t=performance.now(),dt=Math.max(1,t-lastT);moved+=Math.abs(dx)+Math.abs(dy);
+    vel={x:.8*dx/dt+.2*vel.x,y:.8*dy/dt+.2*vel.y};lastT=t;drag=p;const c=px(st.lat,st.lon,st.z),q=ll(c.x-dx,c.y-dy,st.z);st.lat=q.lat;st.lon=q.lon;frame();});
+  const up=ev=>{if(!pts.has(ev.pointerId))return;const p=rel(ev);const tap=moved<8&&pts.size===1;pts.delete(ev.pointerId);el.classList.remove("grab");
+    if(pts.size<2)pinch=null;if(pts.size===1){drag=[...pts.values()][0];return;}
+    if(tap){const now=performance.now(),b=document.elementsFromPoint(ev.clientX,ev.clientY).find(x=>x.dataset&&x.dataset.pin);
+      if(b){onPin(b.dataset.pin);}else if(now-lastTap<300){animZoom(Math.round(st.z)+1,p.x,p.y);}else onPin(null);lastTap=now;drag=null;return;}
+    // élan après un glissé
+    if(drag&&performance.now()-lastT<80&&Math.hypot(vel.x,vel.y)>.15){let vx=vel.x*16,vy=vel.y*16;const go=()=>{vx*=.92;vy*=.92;const c=px(st.lat,st.lon,st.z),q=ll(c.x-vx,c.y-vy,st.z);st.lat=q.lat;st.lon=q.lon;draw();if(Math.hypot(vx,vy)>.5)inertia=requestAnimationFrame(go);};inertia=requestAnimationFrame(go);}
+    drag=null;};
   el.addEventListener("pointerup",up);el.addEventListener("pointercancel",up);
-  el.addEventListener("wheel",ev=>{ev.preventDefault();zoom(ev.deltaY<0?1:-1);},{passive:false});
-  el.addEventListener("dblclick",()=>zoom(1));
-  const [bi,bo]=el.querySelectorAll(".zoom button");bi.onclick=()=>zoom(1);bo.onclick=()=>zoom(-1);
-  function zoom(d){st.z=Math.max(5,Math.min(18,st.z+d));draw();}
-  return{set(o){Object.assign(st,o);draw();},
+  el.addEventListener("wheel",ev=>{ev.preventDefault();const p=rel(ev);zoomAt(st.z-ev.deltaY*(ev.ctrlKey?.01:.003),p.x,p.y);},{passive:false});
+  el.querySelector(".zoom").addEventListener("click",ev=>{const b=ev.target.closest("[data-z]");if(!b)return;
+    if(b.dataset.z==="me"){if(st.me)panTo(st.me.lat,st.me.lon,Math.max(st.z,14));return;}animZoom(Math.round(st.z)+ +b.dataset.z,st.w/2,st.h/2);});
+  addEventListener("resize",frame);
+  return{
+    setPins(list){pl.innerHTML="";pinEls=new Map();list.forEach(p=>{const b=document.createElement("button");b.className="pin "+(p.cls||"");b.dataset.pin=p.id;b.setAttribute("aria-label",p.label);b.innerHTML="<i></i>";b._lat=p.lat;b._lon=p.lon;pl.appendChild(b);pinEls.set(p.id,b);});
+      meEl=document.createElement("span");meEl.className="me";pl.appendChild(meEl);frame();},
+    setMe(me){st.me=me;frame();},select(id){st.sel=id;frame();},
+    focus(lat,lon){panTo(lat,lon,Math.max(st.z,15));},
     fit(points,me){const all=points.concat(me?[me]:[]);if(!all.length)return;st.w=el.clientWidth||360;st.h=el.clientHeight||360;
-      let z=16;for(;z>5;z--){const ps=all.map(p=>px(p.lat,p.lon,z)),w=Math.max(...ps.map(p=>p.x))-Math.min(...ps.map(p=>p.x)),h=Math.max(...ps.map(p=>p.y))-Math.min(...ps.map(p=>p.y));if(w<st.w-60&&h<st.h-70)break;}
-      const ps=all.map(p=>px(p.lat,p.lon,z)),cx=(Math.max(...ps.map(p=>p.x))+Math.min(...ps.map(p=>p.x)))/2,cy=(Math.max(...ps.map(p=>p.y))+Math.min(...ps.map(p=>p.y)))/2,c=ll(cx,cy,z);
+      let z=16;for(;z>5;z-=.25){const ps=all.map(p=>px(p.lat,p.lon,z)),w=Math.max(...ps.map(p=>p.x))-Math.min(...ps.map(p=>p.x)),h=Math.max(...ps.map(p=>p.y))-Math.min(...ps.map(p=>p.y));if(w<st.w-70&&h<st.h-110)break;}
+      const ps=all.map(p=>px(p.lat,p.lon,z)),c=ll((Math.max(...ps.map(p=>p.x))+Math.min(...ps.map(p=>p.x)))/2,(Math.max(...ps.map(p=>p.y))+Math.min(...ps.map(p=>p.y)))/2+20,z);
       Object.assign(st,{z,lat:c.lat,lon:c.lon});draw();},
     redraw:draw,state:st};
 }
@@ -2494,16 +2665,23 @@ async function renderMarkets(skipLoad){
   $("mk-days").innerHTML=dayOpts.map(([k,n])=>`<button class="chip" data-mkd="${k}" aria-pressed="${MKF.day===k}">${n}</button>`).join("");
   $("mk-rad").innerHTML=[1,2,5,10,20].map(r=>`<button class="chip" data-mkr="${r}" aria-pressed="${MKF.r===r}">${r} km</button>`).join("");
   $("mk-locate").hidden=!!(S.home&&S.home.src==="gps");
-  if(!MKMAP)MKMAP=SlippyMap($("mk-map"),id=>{MKF.sel=MKF.sel===id?null:id;drawMk(false);const li=document.querySelector(`[data-mk="${CSS.escape(id)}"]`);if(li&&MKF.sel)li.scrollIntoView({block:"nearest",behavior:"smooth"});});
+  if(!MKMAP){MKMAP=SlippyMap($("mk-map"),id=>{MKF.sel=id&&MKF.sel!==id?id:null;drawMk(false);});
+    const card=document.createElement("div");card.className="mkcard";card.id="mk-card";card.hidden=true;$("mk-map").appendChild(card);
+    card.addEventListener("click",ev=>{if(ev.target.closest("[data-mkx]")){MKF.sel=null;drawMk(false);}});}
   if(!skipLoad){await loadMarkets();}
   drawMk(true);
 }
 function drawMk(fit){
   const L=mkFiltered(),note=$("mk-note"),me=locMk();
   note.hidden=!(MK.busy||MK.err||!L.length);note.textContent=MK.busy?"Je cherche les marchés autour de toi…":MK.err||(MK.items.length?"Aucun marché ce jour-là dans ce rayon : élargis le rayon ou change de jour.":"Aucun marché trouvé autour de toi.");
-  const sel=L.find(m=>m.id===MKF.sel);
-  MKMAP.set({pins:L.map(m=>({id:m.id,lat:m.lat,lon:m.lon,label:m.name,cls:m._s.k==="open"?"open":m._s.k==="today"?"soon":""})),me:S.home&&S.home.src==="gps"?me:{lat:me.lat,lon:me.lon},sel:MKF.sel,pop:sel?mkPop(sel):""});
+  if(fit||MK._pinsKey!==L.map(m=>m.id).join()){MKMAP.setPins(L.map(m=>({id:m.id,lat:m.lat,lon:m.lon,label:m.name,cls:m._s.k==="open"?"open":m._s.k==="today"?"soon":""})));MK._pinsKey=L.map(m=>m.id).join();}
+  MKMAP.setMe(me);MKMAP.select(MKF.sel);
   if(fit)MKMAP.fit(L.slice(0,25),me);
+  const sel=L.find(m=>m.id===MKF.sel),card=$("mk-card");
+  card.hidden=!sel;if(sel)card.innerHTML=`<button class="x" data-mkx aria-label="Fermer">✕</button><b>${esc(sel.name)}</b>
+    <div class="st ${sel._s.k==="open"?"open":sel._s.k==="today"?"soon":""}">${esc(sel._s.t)}</div>
+    <div class="small">${esc([sel.street,sel.city].filter(Boolean).join(", "))}${sel.street||sel.city?" · ":""}${sel._k<1?Math.round(sel._k*1000)+" m":String(Math.round(sel._k*10)/10).replace(".",",")+" km"}</div>
+    ${mkDaysHTML(sel)}<div class="row" style="margin-top:8px"><a class="btn sm" href="${mkGo(sel)}" target="_blank" rel="noopener">Itinéraire</a></div>`;
   $("mk-list").innerHTML=L.slice(0,80).map(m=>`<div class="item mk-item" data-mk="${esc(m.id)}" role="button" tabindex="0" style="grid-template-columns:1fr auto${MKF.sel===m.id?";border-color:var(--v-marche)":""}">
     <div style="min-width:0"><div class="ti">${esc(m.name)}</div><div class="st ${m._s.k==="open"?"open":m._s.k==="today"?"soon":""}">${esc(m._s.t)}</div>
       <div class="pl">${esc([m.street,m.city].filter(Boolean).join(", "))}${m.street||m.city?" · ":""}${m._k<1?Math.round(m._k*1000)+" m":String(Math.round(m._k*10)/10).replace(".",",")+" km"}</div>${mkDaysHTML(m)}</div>
@@ -2512,7 +2690,7 @@ function drawMk(fit){
 $("mk-days").addEventListener("click",ev=>{const b=ev.target.closest("[data-mkd]");if(!b)return;MKF.day=MKF.day===b.dataset.mkd&&b.dataset.mkd!=="all"?"all":b.dataset.mkd;MKF.sel=null;renderMarkets(true);});
 $("mk-rad").addEventListener("click",async ev=>{const b=ev.target.closest("[data-mkr]");if(!b)return;MKF.r=+b.dataset.mkr;MKF.sel=null;if(MKF.r>5)await loadMarkets();renderMarkets(true);});
 $("mk-list").addEventListener("click",ev=>{if(ev.target.closest("a"))return;const it=ev.target.closest("[data-mk]");if(!it)return;MKF.sel=it.dataset.mk;const m=MK.items.find(x=>x.id===MKF.sel);
-  if(m){MKMAP.state.lat=m.lat;MKMAP.state.lon=m.lon;MKMAP.state.z=Math.max(MKMAP.state.z,15);}drawMk(false);$("mk-map").scrollIntoView({block:"nearest",behavior:"smooth"});});
+  if(m)MKMAP.focus(m.lat,m.lon);drawMk(false);$("mk-map").scrollIntoView({block:"nearest",behavior:"smooth"});});
 $("mk-locate").onclick=async()=>{try{await locate();MK.key="";await renderMarkets();}catch(e){notify("Position",e.message);}};
 
 /* ================= profil et connexions ================= */
@@ -2576,7 +2754,9 @@ function connSummary(k){
 }
 function userSettingsHTML(){
   const loc=CONNS.find(c=>c.k==="loc"),st=STATUS.loc||{};
-  return`<div class="set-card"><h3>Ta ville</h3><div class="ds">${S.home?esc(connSummary("loc")):"Choisis ta ville ou active ta position."}</div>
+  const on=k=>!S.verts||!S.verts.length||S.verts.includes(k);
+  return`<div class="set-card"><h3>Tes univers</h3><div class="ds">Ceux qui apparaissent dans Pour toi et Découverte.</div><div class="opts">${OB_ORDER.map(k=>`<button class="chip" data-sv="${k}" aria-pressed="${on(k)}">${esc(VERTS[k].n)}</button>`).join("")}</div></div>
+    <div class="set-card"><h3>Ta ville</h3><div class="ds">${S.home?esc(connSummary("loc")):"Choisis ta ville ou active ta position."}</div>
       ${loc.top()}<div class="row"><button class="btn sm" data-conn="loc"${st.busy?" disabled":""}>${st.busy?"Localisation…":"Utiliser ma position précise"}</button></div>
       ${st.msg?`<div class="${st.err?"er":"res"}">${esc(st.msg)}</div>`:""}</div>
     <div class="set-card"><h3>Ta musique</h3>${artistPickerHTML("set-pa")}
@@ -2608,6 +2788,7 @@ document.addEventListener("click",async ev=>{
   if(t.dataset&&t.dataset.copy){const el=$(t.dataset.copy);try{await navigator.clipboard.writeText(el.textContent);t.textContent="Copié";}catch(e){const r=document.createRange();r.selectNodeContents(el);const s=getSelection();s.removeAllRanges();s.addRange(r);t.textContent="Sélectionné";}setTimeout(()=>t.textContent="Copier",1600);return;}
   if(t.id==="b-city"){const p=cityPos($("f-city").value);if(!p){STATUS.loc={err:true,msg:"Ville inconnue : choisis-la dans la liste (France)."};renderConns();return;}
     S.home={lat:p.lat,lon:p.lon,city:p.city,src:"manual",at:Date.now()};STATUS.loc={};save();renderConns();loadEvents();ghSyncConfig().catch(()=>{});return;}
+  if(t.dataset&&t.dataset.sv){const k=t.dataset.sv;let v=S.verts&&S.verts.length?S.verts.slice():OB_ORDER.slice();v=v.includes(k)?v.filter(x=>x!==k):v.concat([k]);if(!v.length)return;S.verts=v;PROF_V++;save();renderConns();return;}
   if(t.dataset&&t.dataset.radius){S.radius=+t.dataset.radius;save();PROF_V++;renderConns();loadEvents();return;}
   const d=t.closest&&t.closest("[data-disc]");
   if(d){const k=d.dataset.disc;delete S.conn[k];
@@ -2684,7 +2865,7 @@ window.__fomo={get S(){return S},set S(v){S=v},get CFG(){return CFG},get EVENTS(
         const m=await (k==="spotify"?finishSP:k==="soundcloud"?finishSC:finishStrava)(qs.get("code"),st);STATUS[k]={msg:""};back=m;notify("Connecté",m);}
       catch(e){STATUS[k]={err:true,msg:e.message};back=e.message;}}
   }
-  show("discover");
+  show(S.onboarded?"foryou":"discover");
   if(S.stravaK){startStravaWatch();checkStrava();}
   if(!S.onboarded){OB_FB=back?esc(back):"";runOnboarding(S.obStep||0);}
   else if(back)show("settings");
