@@ -338,6 +338,31 @@ details.more summary{cursor:pointer;font-weight:650;font-size:14.5px}
 .iacts button.cal[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--paper)}
 .cal-btn{border:1px solid var(--line);background:var(--card);border-radius:999px;width:44px;height:44px;font-size:19px;cursor:pointer;flex:none}
 .cal-btn[aria-pressed="true"]{background:var(--ink);border-color:var(--ink)}
+/* lieu : recherche de ville + rayon */
+.psearch{position:relative;margin:10px 0 4px}
+.psearch .txt{width:100%}
+.psugg{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:30;background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:0 10px 30px rgba(20,20,50,.16);overflow:hidden;max-height:300px;overflow-y:auto}
+.ps-i{display:flex;justify-content:space-between;gap:10px;align-items:baseline;width:100%;text-align:left;border:0;background:transparent;padding:12px 14px;font-size:15px;color:var(--ink);cursor:pointer;border-bottom:1px solid var(--line)}
+.ps-i:last-child{border-bottom:0}.ps-i:hover,.ps-i:focus{background:var(--sunk)}
+.ps-i span{color:var(--ink3);font-size:13px;white-space:nowrap}
+.ps-none{padding:12px 14px;color:var(--ink3);font-size:14px}
+.rad{margin:12px 0 4px}
+.rad-h{display:flex;justify-content:space-between;align-items:baseline;font-size:14px;color:var(--ink2)}
+.rad-h b{color:var(--ink);font-size:16px}
+.rad-s{display:flex;justify-content:space-between;font-size:12px;color:var(--ink3)}
+.range{-webkit-appearance:none;appearance:none;width:100%;height:32px;background:transparent;margin:4px 0;touch-action:pan-y}
+.range::-webkit-slider-runnable-track{height:6px;border-radius:6px;background:var(--line)}
+.range::-moz-range-track{height:6px;border-radius:6px;background:var(--line)}
+.range::-webkit-slider-thumb{-webkit-appearance:none;width:28px;height:28px;border-radius:50%;background:var(--ink);margin-top:-11px;border:3px solid var(--card);box-shadow:0 1px 4px rgba(0,0,0,.25)}
+.range::-moz-range-thumb{width:24px;height:24px;border-radius:50%;background:var(--ink);border:3px solid var(--card)}
+.lnk{border:0;background:none;padding:0;color:var(--ink);text-decoration:underline;font:inherit;cursor:pointer}
+.mkwhere{width:100%}
+/* ta musique par lien */
+.mlinks{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.mlink{display:inline-flex;gap:8px;align-items:center;background:var(--ok-soft);color:var(--ok);border-radius:999px;padding:6px 12px;font-size:13.5px;font-weight:600}
+.mlink .lnk{color:var(--ink2);font-weight:500;font-size:13px}
+.fb.er{color:var(--hot)}
+.fy-when{margin:12px 0 10px}
 </style>
 </head>
 <body>
@@ -386,6 +411,7 @@ details.more summary{cursor:pointer;font-weight:650;font-size:14.5px}
   <!-- POUR TOI -->
   <section class="view" id="v-foryou" hidden>
     <div><h1 class="h-page" id="fy-title">Pour toi</h1><p class="sub" id="fy-sub">Classé par correspondance avec tes goûts. Chaque ♥ affine la suite.</p></div>
+    <div class="seg fy-when" id="fy-when" role="tablist"><button role="tab" data-fyw="now">En ce moment</button><button role="tab" data-fyw="later">Prochainement</button></div>
     <div class="chips" id="fy-filter"></div>
     <div class="feed" id="feed"></div>
     <button class="btn ghost sm more" id="fy-more" hidden>Voir plus</button>
@@ -682,6 +708,25 @@ function locate(){
       {enableHighAccuracy:false,timeout:12000,maximumAge:30*60*1000});
   });
 }
+// villes et villages trouvés par la recherche (toutes les communes de France) : retenus pour la suite
+for(const k in (S.geoX||{})){GEO[k]=S.geoX[k];GEO_N[norm(k)]=k;}
+function learnPlace(p){if(!p||p.lat==null||!p.name)return;S.geoX=S.geoX||{};const k=Object.keys(S.geoX);if(k.length>200)delete S.geoX[k[0]];
+  if(!GEO_N[norm(p.name)]){S.geoX[p.name]=[+p.lat,+p.lon];GEO[p.name]=[+p.lat,+p.lon];GEO_N[norm(p.name)]=p.name;}}
+const GEO_API="https://geo.api.gouv.fr/communes";
+async function searchPlaces(q){
+  const n=norm(q).trim();if(n.length<2)return[];
+  const mk=k=>({name:k,lat:GEO[k][0],lon:GEO[k][1],sub:WORLD[k]?(COUNTRY[WORLD[k][0]]||WORLD[k][0]):"",country:countryOfCity(k)});
+  const loc=Object.keys(GEO).filter(k=>norm(k).startsWith(n)).slice(0,5).map(mk),loc2=Object.keys(GEO).filter(k=>!norm(k).startsWith(n)&&norm(k).includes(" "+n)).slice(0,2).map(mk);
+  let api=[];
+  try{const ac=new AbortController(),t=setTimeout(()=>ac.abort(),4000);
+    const r=await fetch(GEO_API+"?nom="+encodeURIComponent(q.trim())+"&fields=nom,centre,population,codeDepartement&boost=population&limit=8",{signal:ac.signal});clearTimeout(t);
+    if(r.ok)api=(await r.json()).filter(c=>c.centre&&c.centre.coordinates).map(c=>({name:c.nom,lat:c.centre.coordinates[1],lon:c.centre.coordinates[0],
+      sub:(c.codeDepartement?c.codeDepartement+" · ":"")+(c.population?fmtN(c.population)+" hab.":""),country:"FR"}));}catch(e){}
+  const seen=new Set(),out=[];
+  loc.concat(api,loc2).forEach(p=>{const k=norm(p.name)+"|"+Math.round(p.lat*10);if(seen.has(k))return;seen.add(k);out.push(p);});
+  // les communes homonymes : la plus peuplée d'abord (l'API trie déjà), puis le reste
+  return out.slice(0,8);
+}
 function cityIn(text){const t=norm(text);for(const c of CITIES){const k=norm(c);if(!kwTest(t,k))continue;
   const street=new RegExp("(rue|avenue|av\\.?|boulevard|bd|place|quai|gare|passage|porte|square|allee|cours|impasse|villa|cite|hotel)\\s+(de\\s+|d'|du\\s+|des\\s+)?"+k.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"));
   if(street.test(t)&&!kwTest(t.replace(new RegExp(street.source,"g")," "),k))continue;return c;}return null;}
@@ -961,6 +1006,30 @@ async function ghSyncConfig(force){
   S.ghSynced=key;save();return want;
 }
 
+/* ================= Shotgun (soirées) : lu par le serveur FOMO, mis en cache ================= */
+const SG_FN="/.netlify/functions/shotgun";
+let SG={},SG_TRY={};try{SG=JSON.parse(localStorage.getItem("fomo2-sg")||"{}")||{};}catch(e){SG={};}
+function sgCities(){return[...new Set([homeCity(),S.nightCity&&S.nightCity.city].filter(Boolean))];}
+function sgEvents(){
+  const out=[],hc=homeCity();
+  sgCities().forEach(c=>{const f=SG[c];if(!f)return;(f.events||[]).forEach(x=>{const e=collNorm(x,{city:c});if(!e)return;
+    if(c!==hc){if(e.cat!=="soiree"&&e.cat!=="festival")return;e.picked=1;}out.push(e);});});
+  return out;
+}
+async function loadShotgun(){
+  if(isFile)return sgEvents();
+  let again=false;
+  await Promise.all(sgCities().map(async c=>{try{const r=await fetch(SG_FN+"?city="+encodeURIComponent(c));if(!r.ok)return;const j=await r.json();
+    if(j.events&&(j.events.length||!SG[c]))SG[c]={at:Date.now(),events:j.events,err:j.err||null,listed:j.listed};
+    STATUS.sg={msg:(j.events||[]).length+" soirées Shotgun à "+c+(j.err?" · "+j.err:"")};
+    if(j.pending>0&&(SG_TRY[c]||0)<5){SG_TRY[c]=(SG_TRY[c]||0)+1;again=true;}}catch(e){}}));
+  for(const c in SG)if(Date.now()-SG[c].at>5*864e5)delete SG[c];
+  try{localStorage.setItem("fomo2-sg",JSON.stringify(SG));}catch(e){}
+  // le serveur lit les fiches par paquets : on repasse tant qu'il en reste
+  if(again)setTimeout(refreshShotgun,15000);
+  return sgEvents();
+}
+async function refreshShotgun(){const L=await loadShotgun();if(!EVENTS.length)return;EVENTS=keepRules(dedupe(EVENTS.filter(e=>e.src!=="sg").concat(L)));PROF_V++;renderAll(true);}
 /* ================= chargement et actualisation automatique ================= */
 async function loadEvents(quiet){
   if(!quiet){LOADING=true;LOAD_ERR="";renderAll();}
@@ -976,11 +1045,12 @@ async function loadEvents(quiet){
     ["Ticketmaster festivals",loadTMMonths("countryCode=FR&classificationName=music&keyword=festival",12,1).then(L=>L.filter(e=>e.cat==="concert"||e.cat==="festival").map(e=>{if(e.cat!=="festival"){e.cat="festival";finalize(e);}return e;}))],
     ["Ticketmaster sport",loadTMMonths("countryCode=FR&classificationName=sports",12,1)],
     ["Ticketmaster spectacles",loadTMMonths(near+"&classificationName=arts%20%26%20theatre",6,1)],
+    ["Shotgun",loadShotgun()],
     ["Collecteur",loadCollector().then(()=>[]).catch(e=>{STATUS.gh={err:true,msg:e.message};return[];})]
   ];
   // affichage rapide avec le collecteur et Paris, puis complété quand Ticketmaster a fini (12 mois découpés par mois)
   if(!quiet&&!EVENTS.length)Promise.allSettled([jobs[0][1],jobs[jobs.length-1][1]]).then(rs=>{if(!LOADING)return;const part=[];rs.forEach(r=>{if(r.status==="fulfilled")part.push(...r.value);});
-    const evs=keepRules(dedupe(part.concat(collectorEvents(),TRACKED,annEvents())));
+    const evs=keepRules(dedupe(part.concat(collectorEvents(),sgEvents(),TRACKED,annEvents())));
     if(evs.length){EVENTS=evs;LOADING=false;PROF_V++;$("src-txt").textContent="Chargement des 12 prochains mois…";renderAll(true);}});
   const res=await Promise.allSettled(jobs.map(j=>j[1]));
   const errs=[];let list=[];
@@ -1012,7 +1082,7 @@ async function trackArtists(){
   if(out.length){EVENTS=keepRules(dedupe(EVENTS.concat(out)));PROF_V++;renderAll(true);}
 }
 // règles de sources par univers (choix produit) et zone géographique
-const ONLY={soiree:["ra","dice"],festival:["ra","dice","tm","fnac","veille"]};
+const ONLY={soiree:["ra","dice","sg"],festival:["ra","dice","sg","tm","fnac","veille"]};
 function keepRules(L){
   return L.filter(e=>{
     if(ONLY[e.cat]&&!ONLY[e.cat].includes(e.src))return false;
@@ -1189,8 +1259,10 @@ async function refreshRelated(max){
 let FEED_T0=Date.now();
 const FREQW={4:4,3:3,2:2,1:1};
 const vertOn=k=>!S.verts||!S.verts.length||S.verts.includes(k);
-function feedItems(cat){
-  const cand=EVENTS.filter(e=>!(VERTS[e.cat]||{}).noDeck&&vertOn(e.cat)&&!S.disliked[e.id]&&(!cat||cat==="all"||e.cat===cat)&&!e.noDate&&(e.approx||D(e.d)>NOW)
+// « En ce moment » : ce qui a lieu dans les 7 prochains jours (ou est déjà en cours) ; « Prochainement » : la suite
+function whenOf(e){if(e.approx)return"later";const st=D(e.d),en=D(e.until||e.end||e.d);return(st-NOW<=7*864e5||(st<=NOW&&en>NOW))?"now":"later";}
+function feedItems(cat,when){
+  const cand=EVENTS.filter(e=>!(VERTS[e.cat]||{}).noDeck&&vertOn(e.cat)&&!S.disliked[e.id]&&(!cat||cat==="all"||e.cat===cat)&&!e.noDate&&(e.approx||D(e.d)>NOW)&&(!when||whenOf(e)===when)
     &&!(S.interest&&S.interest[e.id]&&!S.interest[e.id].auto&&S.interest[e.id].likedAt<FEED_T0)&&!(S.liked[e.id]&&S.liked[e.id].likedAt<FEED_T0)).map(e=>{const x=Object.assign({e},score(e));const im=(S.impr||{})[e.id]||0;if(im>3&&!(S.interest||{})[e.id])x.s-=Math.min(2,(im-3)*.25);return x;});
   const match=cand.filter(x=>x.ok&&x.pct>=45).sort((a,b)=>b.s-a.s);
   // dosage par univers selon la fréquence donnée au calibrage (plusieurs fois par semaine = 4 parts, une fois par an = 1 part)
@@ -1385,8 +1457,8 @@ const VCONF={
   sport:{segs:[["soon","⏳ À venir"],["now","🎟️ Billetterie ouverte"]],filters:["loc","date","sport"],radius:120},
   competition:{segs:[["soon","⏳ À venir"],["now","📝 Inscriptions ouvertes"]],filters:["loc","date","disc","dist","dplus"],radius:100},
   theatre:{segs:[["soon","⏳ À venir"],["now","🎟️ Billetterie ouverte"]],filters:["loc","date","tgenre","fav"],radius:30},
-  expo:{segs:null,filters:["loc","radius","last","date","etype","free"],radius:30,near:true},
-  local:{segs:null,filters:["loc","radius","date","ltype","free"],radius:25,near:true}
+  expo:{segs:null,filters:["loc","last","date","etype","free"],radius:30,near:true},
+  local:{segs:null,filters:["loc","date","ltype","free"],radius:25,near:true}
 };
 const SEG_HELP={concert:{soon:"Annoncés, billetterie pas encore ouverte. Avec 📅, FOMO te prévient à l'ouverture.",last:"Grandes salles et stades (Accor Arena, La Défense Arena, Stade de France, Zénith…) dont la billetterie est ouverte : les places partent vite."},
   sport:{soon:"Les grandes affiches dont la billetterie n'est pas encore ouverte. Avec 📅, FOMO te prévient à l'ouverture."},
@@ -1437,8 +1509,16 @@ function segOf(e){
   return null;
 }
 /* --- lieu : « autour de moi » ou une ville du menu --- */
-function locCenter(){const f=VF();if(CUR==="soiree"&&S.nightCity){const p=cityPos(S.nightCity.city);if(p)return p;}
-  if(f.loc&&cityPos(f.loc))return cityPos(f.loc);return homePos();}
+function locCenter(){const p=placeOf(VF());return p||homePos();}
+// lieu choisi pour cet univers : une ville cherchée, la ville des soirées, ou (ancien réglage) une grande ville
+const LOC_CODES=c=>["fr","eu","intl"].includes(c)||/^[A-Z]{2}$/.test(c||"");
+function placeOf(f){
+  if(f.place&&f.place.lat!=null)return f.place;
+  if(CUR==="soiree"&&S.nightCity){const p=S.nightCity.lat!=null?S.nightCity:cityPos(S.nightCity.city);if(p)return{name:S.nightCity.city,lat:p.lat,lon:p.lon};}
+  if(f.loc&&!LOC_CODES(f.loc)){const p=cityPos(f.loc);if(p)return{name:p.city,lat:p.lat,lon:p.lon};}
+  return null;}
+// rayon : choisi au curseur, sinon celui de l'univers (0 = sans limite)
+function curRad(conf,f){if(f.rad!=null)return f.rad;if(conf.near)return f.r||2;if(CUR==="festival")return placeOf(f)?80:0;return conf.radius;}
 function summer(){const y=NOW.getMonth()>8?NOW.getFullYear()+1:NOW.getFullYear();return[new Date(y,4,1),new Date(y,8,30,23,59)];}
 const ymd=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
 function dateRange(f){
@@ -1511,19 +1591,19 @@ function vItems(cat,seg){
   L=L.filter(e=>inDate(e,f));
   const near=conf.near;
   L.forEach(e=>{const p=near?precisePos(e):eventPos(e);e._k=p?km(c0,p):null;});
-  const loc=f.loc||"";
+  const loc=LOC_CODES(f.loc)?f.loc:"",R=curRad(conf,f),pl=placeOf(f);
   if(cat==="festival"){
     if(loc==="fr")L=L.filter(e=>e.country==="FR");else if(/^[A-Z]{2}$/.test(loc))L=L.filter(e=>e.country===loc);
-    else if(loc&&loc!=="eu")L=L.filter(e=>e._k!=null&&e._k<=80);}
+    else if(loc!=="eu"&&R)L=L.filter(e=>e._k!=null&&e._k<=R);}
   else if(cat==="sport"){
     if(loc==="intl")L=L.filter(e=>e.country!=="FR");else if(loc==="fr")L=L.filter(e=>e.country==="FR");
-    else L=L.filter(e=>isBigSport(e)&&!loc||(e._k!=null&&e._k<=conf.radius));}
-  else if(cat==="soiree"){L=L.filter(e=>e._k!=null?e._k<=conf.radius:(S.nightCity?norm(e.city)===norm(S.nightCity.city):norm(e.city)===norm(homeCity())));}
-  else if(near){const r=f.r||1;L=L.filter(e=>e._k!=null&&e._k<=r+.05);}
-  else if(conf.radius)L=L.filter(e=>e._k==null||e._k<=conf.radius);
+    else L=L.filter(e=>isBigSport(e)&&!pl&&f.rad==null||(e._k!=null&&(!R||e._k<=R)));}
+  else if(cat==="soiree"){const cn=norm(pl?pl.name:homeCity());L=L.filter(e=>e._k!=null?(!R||e._k<=R):norm(e.city)===cn);}
+  else if(near){L=L.filter(e=>e._k!=null&&(!R||e._k<=R+.05));}
+  else if(R)L=L.filter(e=>e._k==null||e._k<=R);
   if(q)L=L.filter(e=>norm([e.t,e.w,e.venue,e.city,(e.lineup||[]).join(" "),e.home,e.away,e.comp].join(" ")).includes(q));
   if((f.g||[]).length)L=L.filter(e=>(e.genres||[]).some(g=>f.g.includes(g)));
-  if(cat==="concert"&&f.hype&&seg==="soon")L=EVENTS.filter(e=>e.cat==="concert"&&isBigVenue(e)&&D(e.d)-NOW>90*864e5&&inDate(e,f)).map(e=>{const p=eventPos(e);e._k=p?km(c0,p):null;return e;}).filter(e=>loc||e._k==null||e._k<=conf.radius)
+  if(cat==="concert"&&f.hype&&seg==="soon")L=EVENTS.filter(e=>e.cat==="concert"&&isBigVenue(e)&&D(e.d)-NOW>90*864e5&&inDate(e,f)).map(e=>{const p=eventPos(e);e._k=p?km(c0,p):null;return e;}).filter(e=>!R||e._k==null||e._k<=R)
     .filter(e=>!q||norm([e.t,e.w,e.venue,e.city,(e.lineup||[]).join(" ")].join(" ")).includes(q)).filter(e=>!(f.g||[]).length||(e.genres||[]).some(g=>f.g.includes(g)));
   if(cat==="soiree"){if(f.vt==="open")L=L.filter(isOpenAir);else if(f.vt==="club")L=L.filter(e=>!isOpenAir(e));}
   if(cat==="festival"&&(f.size||[]).length)L=L.filter(e=>f.size.includes(e.size));
@@ -1597,16 +1677,27 @@ function openVert(cat){CUR=cat;VPAGE=40;VPANEL=null;S.dv=cat;save();$("vt-q").va
 function curSeg(){const conf=VCONF[CUR];if(!conf.segs)return null;S.vtab=S.vtab||{};const s=S.vtab[CUR];if(conf.segs.some(x=>x[0]===s))return s;
   // pas encore choisi : la première partie qui a des événements
   const c=CUR;const hit=conf.segs.find(([k])=>vItems(c,k).length);CUR=c;return(hit||conf.segs[0])[0];}
-function locOptions(){
-  const home=S.home&&S.home.src==="gps"?"Autour de moi":"Autour de moi ("+homeCity()+")";
-  const o=[["",home]];
-  if(CUR==="festival"){o.push(["fr","Toute la France"],["eu","Toute l'Europe"]);const cc=[...new Set(FKB().map(f=>f.country).concat(EVENTS.filter(e=>e.cat==="festival").map(e=>e.country)))].filter(c=>c&&c!=="FR"&&COUNTRY[c]).sort((a,b)=>COUNTRY[a].localeCompare(COUNTRY[b]));
-    cc.forEach(c=>o.push([c,COUNTRY[c]]));}
-  if(CUR==="sport")o.push(["fr","Toute la France"],["intl","À l'étranger"]);
-  BIG_CITIES.forEach(c=>o.push([c,c]));
-  if(CUR==="soiree")Object.keys(WORLD).forEach(c=>o.push([c,c+", "+(COUNTRY[WORLD[c][0]]||WORLD[c][0])]));
-  return o;
-}
+/* ================= lieu : recherche de ville + rayon au curseur ================= */
+const RSTEPS=[1,2,3,5,7,10,15,20,25,30,40,50,60,80,100,150,200,300];
+function radIdx(r){if(!r)return RSTEPS.length;const i=RSTEPS.findIndex(x=>x>=r);return i<0?RSTEPS.length-1:i;}
+const radLab=r=>r?r+" km":"Sans limite";
+function sliderHTML(id,r,unlimited,maxKm){const top=maxKm?RSTEPS.indexOf(maxKm):RSTEPS.length-1,max=unlimited?RSTEPS.length:top;
+  return`<div class="rad"><div class="rad-h"><span>Rayon</span><b id="${id}-v">${radLab(r)}</b></div><input type="range" class="range" id="${id}" min="0" max="${max}" step="1" value="${Math.min(radIdx(r),max)}" aria-label="Rayon en kilomètres"><div class="rad-s"><span>1 km</span><span>${unlimited?"Sans limite":RSTEPS[top]+" km"}</span></div></div>`;}
+function bindSlider(id,onInput,onChange){const el=$(id);if(!el)return;const val=()=>+el.value>=RSTEPS.length?0:RSTEPS[+el.value];
+  el.oninput=()=>{$(id+"-v").textContent=radLab(val());if(onInput)onInput(val());};el.onchange=()=>onChange(val());}
+function placeSearchHTML(id,ph){return`<div class="psearch"><input class="txt" id="${id}" type="search" autocomplete="off" enterkeyhint="search" placeholder="${esc(ph||"Chercher une ville ou un village…")}"><div class="psugg" id="${id}-s" role="listbox" hidden></div></div>`;}
+function bindPlaceSearch(id,onPick){const inp=$(id),box=$(id+"-s");if(!inp)return;let t=null,last=[],seq=0;
+  const show=L=>{last=L;box.innerHTML=L.length?L.map((p,i)=>`<button type="button" class="ps-i" data-pi="${i}" role="option"><b>${esc(p.name)}</b>${p.sub?`<span>${esc(p.sub)}</span>`:""}</button>`).join(""):"";box.hidden=!L.length;};
+  const pick=p=>{learnPlace(p);save();box.hidden=true;inp.value=p.name;onPick(p);};
+  inp.oninput=()=>{clearTimeout(t);const q=inp.value;if(norm(q).trim().length<2){show([]);return;}const my=++seq;
+    t=setTimeout(async()=>{const L=await searchPlaces(q);if(my===seq)show(L);if(!L.length&&my===seq){box.innerHTML=`<div class="ps-none">Aucune ville trouvée</div>`;box.hidden=false;}},220);};
+  inp.onkeydown=ev=>{if(ev.key==="Enter"){ev.preventDefault();if(last[0])pick(last[0]);}};
+  box.onclick=ev=>{const b=ev.target.closest("[data-pi]");if(b)pick(last[+b.dataset.pi]);};}
+function setVPlace(p){const f=VF();
+  if(p){f.place={name:p.name,lat:+p.lat,lon:+p.lon,country:p.country||"FR"};delete f.loc;}else{delete f.place;delete f.loc;}
+  if(CUR==="soiree"){const c=p&&norm(p.name)!==norm(homeCity())?p:null;S.nightCity=c?{city:c.name,country:c.country||countryOfCity(c.name),lat:+c.lat,lon:+c.lon}:null;
+    if(c){refreshShotgun();if(ADMIN()&&!EVENTS.some(e=>e.cat==="soiree"&&norm(e.city)===norm(c.name))){ghSyncConfig(true).catch(()=>{});loadCollector().then(()=>loadEvents(true)).catch(()=>{});}}}
+  VPAGE=40;save();renderVert();}
 function chipLabel(k){
   const f=VF();
   if(k==="date"){const dk=(f.date&&f.date.k)||"all";if(dk==="summer")return["Cet été",1];if(dk==="7d")return["7 prochains jours",1];
@@ -1621,7 +1712,9 @@ function chipLabel(k){
   if(k==="fav")return["Coups de cœur",!!f.fav];
   if(k==="hype")return["⭐ Les plus attendus",!!f.hype];
   if(k==="last")return["⌛ Derniers jours",!!f.last];
-  if(k==="radius"){const r=f.r||1;return["Rayon "+r+" km",1];}
+  if(k==="loc"){const code=LOC_CODES(f.loc)?f.loc:"",pl=placeOf(f),R=curRad(VCONF[CUR],f);
+    const nm=code==="fr"?"Toute la France":code==="eu"?"Toute l'Europe":code==="intl"?"À l'étranger":code?COUNTRY[code]||code:pl?pl.name:"Autour de moi";
+    return["📍 "+nm+(!code&&R?" · "+R+" km":""),!!(code||pl||f.rad!=null)];}
   if(k==="free")return["Gratuit",!!f.free];
   return[k,0];
 }
@@ -1630,9 +1723,7 @@ function renderVert(){
   $("vt-title").textContent=VERTS[CUR].n;$("vt-bar").className="vbar v-"+CUR;$("vt-bar").style.background="var(--vc)";
   $("vt-seg").hidden=!conf.segs;
   if(conf.segs){$("vt-seg").innerHTML=conf.segs.map(([k,n])=>`<button role="tab" data-seg="${k}" aria-selected="${seg===k}">${esc(n)}<span class="n num">${vItems(CUR,k).length}</span></button>`).join("");}
-  const f=VF(),cur=CUR==="soiree"&&S.nightCity?S.nightCity.city:(f.loc||"");
   $("vt-filters").innerHTML=conf.filters.filter(k=>k!=="hype"||seg==="soon").map(k=>{
-    if(k==="loc")return`<label class="chip sel${cur?" has":""}"><span class="sr">Lieu</span><select id="vt-loc" aria-label="Lieu">${locOptions().map(([v,n])=>`<option value="${esc(v)}"${v===cur?" selected":""}>${esc(n)}</option>`).join("")}</select></label>`;
     const [l,on]=chipLabel(k);const toggle=["fav","free","hype","last"].includes(k);
     return`<button class="chip${on?" has":""}${VPANEL===k?" open":""}" data-filt="${k}" aria-pressed="${toggle?!!on:VPANEL===k}">${esc(l)}${toggle?"":`<span class="caret">▾</span>`}</button>`;}).join("");
   renderPanel();renderVList();
@@ -1663,8 +1754,15 @@ function renderPanel(){
   const p=$("vt-panel"),f=VF(),k=VPANEL;if(!k){p.hidden=true;p.innerHTML="";return;}
   let h="";
   if(k==="date")h=calHTML(f);
-  if(k==="radius")h=`<div class="opts">${RADII.map(r=>`<button class="chip" data-rad="${r}" aria-pressed="${(f.r||1)===r}">${r} km</button>`).join("")}</div>
-    <p class="small">${S.home&&S.home.src==="gps"?"Autour de ta position.":"Autour du centre de "+esc(f.loc||homeCity())+". Active ta position précise pour un rayon exact."}</p>`;
+  if(k==="loc"){const code=LOC_CODES(f.loc)?f.loc:"",pl=placeOf(f),unl=CUR==="festival"||CUR==="sport",gps=S.home&&S.home.src==="gps";
+    const spec=CUR==="festival"?[["fr","Toute la France"],["eu","Toute l'Europe"]]:CUR==="sport"?[["fr","Toute la France"],["intl","À l'étranger"]]:[];
+    const cc=CUR==="festival"?[...new Set(FKB().map(x=>x.country).concat(EVENTS.filter(e=>e.cat==="festival").map(e=>e.country)))].filter(c=>c&&c!=="FR"&&COUNTRY[c]).sort((a,b)=>COUNTRY[a].localeCompare(COUNTRY[b])):[];
+    h=`<div class="opts"><button class="chip" data-wh="me" aria-pressed="${!code&&!pl}">📍 ${gps?"Autour de moi":"Autour de "+esc(homeCity())}</button>${spec.map(([v,n])=>`<button class="chip" data-wh="${v}" aria-pressed="${code===v}">${n}</button>`).join("")}
+      ${cc.length?`<label class="chip sel${/^[A-Z]{2}$/.test(code)?" has":""}"><select id="vp-country" aria-label="Pays"><option value="">Un pays…</option>${cc.map(c=>`<option value="${c}"${c===code?" selected":""}>${esc(COUNTRY[c])}</option>`).join("")}</select></label>`:""}</div>
+      ${placeSearchHTML("vp-q",CUR==="soiree"?"Une autre ville : Lyon, Lille, Berlin…":"Chercher une ville ou un village…")}
+      ${pl?`<p class="small">Autour de <b>${esc(pl.name)}</b>${CUR==="soiree"&&S.nightCity?" · je cherche ses soirées":""}</p>`:""}
+      ${code?"":sliderHTML("vp-r",curRad(VCONF[CUR],f),unl)}
+      ${!gps&&!pl&&!code?`<p class="small">Autour du centre de ${esc(homeCity())}. <button class="lnk" data-wh="gps">Utiliser ma position précise</button></p>`:""}`;}
   if(k==="genre")h=optRow("g",GEN_FILTER.map(g=>[g,GENRES[g].n]),true);
   if(k==="vtype")h=optRow("vt",[["club","Club"],["open","Open air"]],false)+`<p class="small">Open air repéré d'après le nom de l'événement et du lieu (rooftop, péniche, parc, plage…).</p>`;
   if(k==="size")h=optRow("size",[["small","Taille humaine, moins de 1 000"],["medium","Moyen, 1 000 à 5 000"],["big","Gros, plus de 5 000"]],true);
@@ -1678,20 +1776,24 @@ function renderPanel(){
   if(k==="etype")h=optRow("et",Object.keys(EXPO_TYPES).map(g=>[g,EXPO_TYPES[g].n]),true);
   if(k==="ltype")h=optRow("lt",[...Object.keys(LOCAL_T).map(g=>[g,LOCAL_T[g].n]),["exp","Expériences et autres"]],true);
   p.innerHTML=h;p.hidden=false;
+  if(k==="loc"){bindPlaceSearch("vp-q",setVPlace);let rt=null;
+    bindSlider("vp-r",r=>{clearTimeout(rt);rt=setTimeout(()=>{VF().rad=r;VPAGE=40;renderVList();const c=document.querySelector('[data-filt="loc"]');if(c)c.firstChild.textContent=chipLabel("loc")[0];},120);},
+      r=>{clearTimeout(rt);VF().rad=r;VPAGE=40;save();renderVert();});
+    const sel=$("vp-country");if(sel)sel.onchange=()=>{const f=VF();if(sel.value){f.loc=sel.value;delete f.place;}else delete f.loc;VPAGE=40;save();renderVert();};}
 }
 function renderVList(){
   const seg=curSeg(),L=vItems(CUR,seg),note=$("vt-note"),f=VF();
   let msg=SEG_HELP[CUR]&&seg?SEG_HELP[CUR][seg]||"":"";
-  if(CUR==="soiree"&&S.nightCity&&S.nightCity.city!==homeCity()&&!EVENTS.some(e=>e.picked))msg="Les soirées de "+S.nightCity.city+" arrivent à la prochaine collecte (environ 30 minutes).";
+  if(CUR==="soiree"&&S.nightCity&&S.nightCity.city!==homeCity()&&!L.length)msg="Je cherche les soirées de "+S.nightCity.city+" : elles arrivent dans une minute.";
   const precise=S.home&&S.home.src==="gps";
   $("vt-locate").hidden=!(VCONF[CUR].near&&!precise);
   note.hidden=!msg;note.textContent=msg;
   if(LOADING&&!L.length){$("vt-list").innerHTML=`<div class="empty"><div class="spin"></div>Chargement…</div>`;$("vt-more").hidden=true;return;}
   if(!L.length){const f=VF(),act=Object.keys(f).some(k=>{const v=f[k];return Array.isArray(v)?v.length:!!v;}),noColl=!CFG.ghRepo||!Object.keys(COLL.files||{}).length;
     $("vt-list").innerHTML=`<div class="empty">${noColl?`<h3>Les événements arrivent</h3><p>Vérifie ta connexion internet, puis réessaie.</p><button class="btn sm" id="vt-retry">Réessayer</button>`
-      :VCONF[CUR].near&&(f.r||1)<10?`<h3>Rien à moins de ${f.r||1} km</h3><p>Élargis le rayon pour voir plus loin.</p><button class="btn sm" data-rad="${RADII[RADII.indexOf(f.r||1)+1]}" id="vt-wider">Passer à ${RADII[RADII.indexOf(f.r||1)+1]} km</button>`
-      :`<h3>Rien pour ces filtres</h3><p>Change de lieu ou de dates.</p>${act?`<button class="btn sm" id="vt-reset">Retirer tous les filtres</button>`:""}`}</div>`;
-    const w=$("vt-wider");if(w)w.onclick=()=>{VF().r=+w.dataset.rad;VPAGE=40;save();renderVert();};
+      :(()=>{const R=curRad(VCONF[CUR],f),nx=RSTEPS.find(x=>x>=(R||0)*2);return R&&nx&&!LOC_CODES(f.loc)?`<h3>Rien à moins de ${R} km</h3><p>Élargis le rayon pour voir plus loin.</p><button class="btn sm" data-rad="${nx}" id="vt-wider">Passer à ${nx} km</button>`:"";})()||`<h3>Rien pour ces filtres</h3><p>Change de lieu ou de dates.</p>${act?`<button class="btn sm" id="vt-reset">Retirer tous les filtres</button>`:""}`
+}</div>`;
+    const w=$("vt-wider");if(w)w.onclick=()=>{VF().rad=+w.dataset.rad;VPAGE=40;save();renderVert();};
     const r=$("vt-reset");if(r)r.onclick=()=>{S.vf[CUR]={};save();renderVert(CUR);};
     const rt=$("vt-retry");if(rt)rt.onclick=()=>loadEvents();
     $("vt-more").hidden=true;return;}
@@ -1711,11 +1813,6 @@ $("vt-more").onclick=()=>{VPAGE+=40;renderVList();};
 $("vt-seg").addEventListener("click",ev=>{const b=ev.target.closest("[data-seg]");if(!b)return;S.vtab=S.vtab||{};S.vtab[CUR]=b.dataset.seg;VPAGE=40;save();renderVert();});
 let QT=null;$("vt-q").addEventListener("input",ev=>{clearTimeout(QT);QT=setTimeout(()=>{VF().q=ev.target.value.trim();VPAGE=40;save();renderVert();},180);});
 $("vt-locate").onclick=async()=>{try{await locate();notify("Position précise activée","Les événements de ton quartier passent en premier.");afterCity();}catch(e){notify("Position",e.message);}};
-$("vt-filters").addEventListener("change",ev=>{if(ev.target.id!=="vt-loc")return;const v=ev.target.value,f=VF();
-  if(CUR==="soiree"){const c=v&&v!==homeCity()?v:null;S.nightCity=c?{city:c,country:countryOfCity(c)}:null;delete f.loc;
-    if(c&&!EVENTS.some(e=>e.cat==="soiree"&&norm(e.city)===norm(c))){ghSyncConfig(true).then(()=>notify("Collecte lancée","Les soirées de "+c+" arrivent dans environ 30 minutes.")).catch(e=>notify("Collecte",e.message));loadCollector().then(()=>loadEvents(true)).catch(()=>{});}}
-  else{if(v)f.loc=v;else delete f.loc;}
-  VPAGE=40;save();renderVert();});
 $("vt-filters").addEventListener("click",ev=>{const b=ev.target.closest("[data-filt]");if(!b)return;const k=b.dataset.filt,f=VF();
   if(k==="fav"){f.fav=!f.fav;save();renderVert();return;}
   if(k==="last"){f.last=!f.last;if(!f.last)delete f.last;VPAGE=40;save();renderVert();return;}
@@ -1732,7 +1829,11 @@ $("vt-panel").addEventListener("click",ev=>{const f=VF();
     if(cur&&cur.from===(cur.to||cur.from)){if(k===cur.from)delete f.date;else f.date={k:"custom",from:k<cur.from?k:cur.from,to:k<cur.from?cur.from:k};}
     else f.date={k:"custom",from:k,to:k};
     VPAGE=40;save();renderVert();return;}
-  const rd=ev.target.closest("[data-rad]");if(rd){f.r=+rd.dataset.rad;VPAGE=40;save();renderVert();return;}
+  const rd=ev.target.closest("[data-rad]");if(rd){f.rad=+rd.dataset.rad;VPAGE=40;save();renderVert();return;}
+  const wh=ev.target.closest("[data-wh]");if(wh){const v=wh.dataset.wh;
+    if(v==="gps"){locate().then(()=>{notify("Position précise activée","Les événements les plus proches passent en premier.");afterCity();}).catch(e=>notify("Position",e.message));return;}
+    if(v==="me"){setVPlace(null);return;}
+    if(f.loc===v)delete f.loc;else{f.loc=v;delete f.place;}VPAGE=40;save();renderVert();return;}
   const b=ev.target.closest("[data-fk]");if(!b)return;const k=b.dataset.fk,v=b.dataset.fv;
   if(b.dataset.multi==="1"){const a=new Set(f[k]||[]);a.has(v)?a.delete(v):a.add(v);f[k]=[...a];if(!f[k].length)delete f[k];}
   else{if(f[k]===v)delete f[k];else f[k]=v;if(k==="sp")delete f.comp;}
@@ -1820,6 +1921,47 @@ function recogRace(a){
   let k=e&&(e.kms||[])[0];if(!k){const m=t.match(/(\d+(?:[.,]\d+)?) ?km/);k=m?parseFloat(m[1].replace(",",".")):/semi/.test(t)?21.1:/marathon/.test(t)?42.2:/utmb/.test(t)?170:/saintelyon/.test(t)?78:null;}
   if(k){if(d==="trail")R.trailKm=[Math.max(5,Math.round(k*.6)),Math.round(k*1.6)];if(d==="route")R.roadKm=[Math.max(5,Math.round(k*.5)),Math.round(k*1.5)];}
   PROF_V++;return`${DISC[d].n}${k?", environ "+String(k).replace(".",",")+" km":""} : je te proposerai des courses de ce type${k?" et de cette distance":""}.`;
+}
+/* --- ta musique par un simple lien : Deezer, Spotify ou SoundCloud (profil public, sans compte développeur) --- */
+const MUSIC_FN="/.netlify/functions/music-profile";
+const MUSIC_SRC=[["dz","Deezer","deezer"],["sp","Spotify","spotify"],["sc","SoundCloud","soundcloud"]];
+function musicKind(l){return /deezer\.com|deezer\.page\.link|link\.deezer/i.test(l)?"dz":/spotify\.(com|link)/i.test(l)?"sp":/soundcloud\.com/i.test(l)?"sc":null;}
+async function connectMusicLink(link){
+  link=String(link||"").trim();const m=link.match(/https?:\/\/\S+/);if(m)link=m[0];
+  const k=musicKind(link);
+  if(!k)throw new Error("Colle le lien de ton profil Deezer, Spotify ou SoundCloud (dans l'appli : ton profil → Partager → Copier le lien).");
+  if(k==="dz"){
+    if(!/\/(profile|user)\/\d{3,}/.test(link)&&!/^\d+$/.test(link)){ // lien court de partage : on demande où il mène
+      try{const j=await getJSON(MUSIC_FN+"?resolve=1&url="+encodeURIComponent(link));if(j.resolved)link=j.resolved;}catch(e){}}
+    return connectDeezer(link);}
+  let j;try{j=await getJSON(MUSIC_FN+"?url="+encodeURIComponent(link));}catch(e){throw new Error(isFile?"L'import Spotify et SoundCloud marche depuis l'app en ligne, pas depuis un fichier.":"Je n'arrive pas à lire ce lien pour l'instant, réessaie dans un moment.");}
+  if(j.error)throw new Error(j.error);
+  const prev=S.prof[k]||{},art=Object.assign({},prev.link?prev.art:{}),gen=Object.assign({},prev.link?prev.gen:{});
+  (j.artists||[]).forEach(a=>{art[a.n]=(art[a.n]||0)+a.w;});
+  const n=Object.keys(art).length;if(!n)throw new Error("Aucun artiste lisible sur ce lien.");
+  const top=(j.artists||[]).slice(0,8);
+  for(const a of top){try{const f=(await deezerArtist(a.n))[0];if(f&&norm(f.name)===norm(a.n))(await deezerGenres(f.id)).forEach(g=>gen[g]=(gen[g]||0)+1);}catch(e){}}
+  const links=[...new Set((prev.links||[]).concat([link]))].slice(-8);
+  S.prof[k]={art,gen,n,name:j.name||prev.name||"",link:true,links,at:Date.now()};S.conn[k==="sp"?"spotify":"soundcloud"]=1;save();PROF_V++;refreshRelated(10);
+  const lab=k==="sp"?"Spotify":"SoundCloud";
+  const na=(j.artists||[]).length;return na+(na>1?" artistes repérés":" artiste repéré")+" sur "+lab+(j.name?" ("+j.name+")":"")+(k==="sp"&&links.length>1?" · "+links.length+" liens importés":"");
+}
+function musicLinksHTML(id){
+  const done=MUSIC_SRC.filter(([k])=>S.prof[k]);
+  return`<div class="fld"><label for="${id}-in">Colle le lien de ton profil <b>Deezer</b>, <b>Spotify</b> ou <b>SoundCloud</b></label>
+    <div class="row" style="flex-wrap:nowrap"><input class="txt" id="${id}-in" inputmode="url" autocomplete="off" placeholder="https://…"><button class="btn sm" id="${id}-go">Importer</button></div>
+    <p class="small">Dans l'appli : ton profil → Partager → Copier le lien. Ton profil doit être public. Sur Spotify, le lien d'une de tes playlists marche aussi (tu peux en ajouter plusieurs).</p>
+    <div id="${id}-fb"></div>
+    ${done.length?`<div class="mlinks">${done.map(([k,n])=>`<span class="mlink">✓ ${n} · ${S.prof[k].n} artiste${S.prof[k].n>1?"s":""} <button class="lnk" data-mrm="${k}" aria-label="Retirer ${n}">Retirer</button></span>`).join("")}</div>`:""}</div>`;
+}
+function bindMusicLinks(id,redraw){
+  const go=$(id+"-go"),inp=$(id+"-in");if(!go)return;
+  const run=async()=>{const v=inp.value;if(!v.trim())return;go.disabled=true;$(id+"-fb").innerHTML=`<div class="fb">Je lis ton profil…</div>`;
+    try{const msg=await connectMusicLink(v);STATUS.music={msg};redraw();const fb=$(id+"-fb");if(fb)fb.innerHTML=`<div class="fb">✓ ${esc(msg)}</div>`;}
+    catch(e){go.disabled=false;$(id+"-fb").innerHTML=`<div class="fb er">${esc(e.message)}</div>`;}};
+  go.onclick=run;inp.onkeydown=ev=>{if(ev.key==="Enter"){ev.preventDefault();run();}};
+  inp.onpaste=()=>setTimeout(()=>{if(musicKind(inp.value))run();},50);
+  const box=inp.closest(".fld");box.querySelectorAll("[data-mrm]").forEach(b=>b.onclick=()=>{const k=b.dataset.mrm;S.prof[k]=null;delete S.conn[k==="dz"?"deezer":k==="sp"?"spotify":"soundcloud"];save();PROF_V++;redraw();});
 }
 /* --- connexion Deezer : profil public, sans clé --- */
 async function connectDeezer(link){
@@ -1944,10 +2086,10 @@ function bindField(id,suggest,recog){
 }
 function musicHTML(){
   return`<div class="why-box"><b>Connecte ta musique</b><p>Je repère les soirées et les concerts de tes artistes, et de ceux qui leur ressemblent. C'est ce qui rend tes propositions vraiment personnelles.</p></div>
-    <details class="more" ${S.prof.dz?"":"open"}><summary>${S.prof.dz?"✓ Deezer importé : "+esc(S.prof.dz.n+" artistes"):"Importer depuis Deezer (un lien suffit)"}</summary>${S.prof.dz?"":`<div class="fld"><div class="row" style="flex-wrap:nowrap"><input class="txt" id="ob-dz" placeholder="https://www.deezer.com/fr/profile/…"><button class="btn sm" id="ob-dz-go">Importer</button></div><p class="small">Dans Deezer : ton profil → Partager → Copier le lien.</p><div id="ob-dz-fb"></div></div>`}</details>
+    ${musicLinksHTML("ob-ml")}
     <div class="lab">Ou ajoute tes artistes</div>${artistPickerHTML("ob-pa")}`;
 }
-function bindMusic(redraw){bindArtistPicker("ob-pa",redraw);const go=$("ob-dz-go");if(go)go.onclick=async()=>{$("ob-dz-fb").innerHTML=`<div class="fb">Import depuis Deezer…</div>`;try{await connectDeezer($("ob-dz").value);redraw();}catch(e){$("ob-dz-fb").innerHTML=`<div class="fb">${esc(e.message)}</div>`;}};}
+function bindMusic(redraw){bindArtistPicker("ob-pa",redraw);bindMusicLinks("ob-ml",redraw);}
 // l'artiste que tu rêves de voir : on cherche tout de suite ses prochaines dates
 const TM_FN="/.netlify/functions/tm-artist";
 async function dreamArtist(a){
@@ -2005,12 +2147,18 @@ function renderOb(){
     obShell(i,"Salut, moi c'est FOMO.","Je repère pour toi les sorties qui te ressemblent, et je te préviens quand la billetterie ouvre.",
       `<div class="fld"><label for="ob-name">Ton prénom</label><input class="txt" id="ob-name" value="${esc(S.name||"")}" autocomplete="given-name" placeholder="Léa"></div>
        <div class="fld"><label for="ob-age">Ton âge</label><input class="txt" id="ob-age" type="number" inputmode="numeric" min="12" max="99" value="${esc(S.age||"")}" placeholder="27"></div>
-       <div class="fld"><label for="ob-city">Ta ville</label><div class="row" style="flex-wrap:nowrap"><input class="txt" id="ob-city" list="ob-cities" placeholder="Paris, Lyon…" value="${esc(S.home?homeCity():"")}"><button class="btn sm ghost" id="ob-loc">📍 Me localiser</button></div>
-       <datalist id="ob-cities">${CITIES.map(c=>`<option value="${esc(c)}">`).join("")}</datalist></div><div id="ob-fb"></div>`,
+       <div class="fld"><label for="ob-city">Ta ville</label><button class="btn sm ghost wide" id="ob-loc" style="margin-bottom:8px">📍 Me localiser</button>${placeSearchHTML("ob-city","Ou cherche ta ville, ton village…")}</div><div id="ob-fb"></div>`,
       `<button class="btn wide" id="ob-next">Continuer</button>`);
+    let picked=null;const ci=$("ob-city");if(S.home&&S.home.src!=="default")ci.value=homeCity();
+    bindPlaceSearch("ob-city",p=>{picked=p;$("ob-fb").innerHTML=`<div class="fb">📍 ${esc(p.name)}</div>`;});
     $("ob-loc").onclick=async()=>{$("ob-fb").innerHTML=`<div class="fb">Localisation…</div>`;try{const h=await locate();$("ob-city").value=h.city==="Autour de moi"?h.near:h.city;$("ob-fb").innerHTML=`<div class="fb">📍 Position trouvée : ${esc(h.city==="Autour de moi"?"près de "+h.near:h.city)}</div>`;}catch(e){$("ob-fb").innerHTML=`<div class="fb">${esc(e.message)}</div>`;}};
-    $("ob-next").onclick=()=>{S.name=$("ob-name").value.trim().split(/\s+/)[0]||"";const ag=parseInt($("ob-age").value,10);S.age=ag>=12&&ag<100?ag:null;const c=$("ob-city").value.trim();
-      if(c&&!(S.home&&S.home.src==="gps"&&(S.home.city===c||S.home.near===c))){const p=cityPos(c);if(!p){$("ob-fb").innerHTML=`<div class="fb">Je ne connais pas cette ville : choisis-la dans la liste.</div>`;return;}S.home={lat:p.lat,lon:p.lon,city:p.city,src:"manual",at:Date.now()};}
+    $("ob-next").onclick=async()=>{S.name=$("ob-name").value.trim().split(/\s+/)[0]||"";const ag=parseInt($("ob-age").value,10);S.age=ag>=12&&ag<100?ag:null;const c=$("ob-city").value.trim();
+      if(c&&!(S.home&&S.home.src==="gps"&&(S.home.city===c||S.home.near===c))){
+        let p=picked&&norm(picked.name)===norm(c)?picked:null;
+        if(!p){const k=cityPos(c);if(k)p={name:k.city,lat:k.lat,lon:k.lon};}
+        if(!p){const L=await searchPlaces(c).catch(()=>[]);p=L.find(x=>norm(x.name)===norm(c))||null;if(p)learnPlace(p);}
+        if(!p){$("ob-fb").innerHTML=`<div class="fb">Je ne trouve pas cette ville : tape les premières lettres et choisis-la dans la liste.</div>`;return;}
+        S.home={lat:p.lat,lon:p.lon,city:p.name,src:"manual",at:Date.now()};}
       if(!S.home){const p=cityPos("Paris");S.home={lat:p.lat,lon:p.lon,city:"Paris",src:"default",at:Date.now()};}
       save();loadEvents(true);obGo(i+1);};
     return;}
@@ -2328,7 +2476,11 @@ function renderForYou(){
   $("fy-filter").innerHTML=cats.map(k=>`<button class="chip" data-fy="${k}" aria-pressed="${S.fyF===k}">${esc(VERTS[k].n)}</button>`).join("");
   const feed=$("feed");
   if(LOADING&&!EVENTS.length){feed.innerHTML=`<div class="empty"><div class="spin"></div>Je cherche ce qui va te plaire…</div>`;$("fy-more").hidden=true;return;}
-  const q=feedItems(S.fyF||"all");
+  const W=S.fyW==="later"?"later":"now";
+  document.querySelectorAll("#fy-when [data-fyw]").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.fyw===W)));
+  $("fy-sub").textContent=W==="now"?"Ce qui se passe cette semaine, classé selon tes goûts.":"Les semaines et mois à venir : repère-les avant tout le monde.";
+  const q=feedItems(S.fyF||"all",W);
+  if(!q.length&&EVENTS.length){feed.innerHTML=`<div class="empty"><h3>${W==="now"?"Rien pour toi cette semaine":"Rien de prévu plus loin pour l'instant"}</h3><p>${W==="now"?"Regarde ce qui arrive ensuite.":"Regarde ce qui se passe en ce moment."}</p><button class="btn sm" data-fyw="${W==="now"?"later":"now"}">${W==="now"?"Voir Prochainement":"Voir En ce moment"}</button></div>`;$("fy-more").hidden=true;return;}
   if(!q.length){feed.innerHTML=`<div class="empty"><h3>Pas encore assez d'infos sur toi</h3><p>Touche « Pourquoi pas ! » sur quelques événements dans Découverte : Pour toi s'affine à chaque fois.</p><div class="row" style="justify-content:center"><button class="btn sm" data-go="discover">Aller dans Découverte</button><button class="btn ghost sm" data-go="settings">Connecter mes comptes</button></div></div>`;$("fy-more").hidden=true;return;}
   feed.innerHTML=q.slice(0,FY_N).map(fcardHTML).join("");
   $("fy-more").hidden=q.length<=FY_N;
@@ -2339,6 +2491,7 @@ function renderForYou(){
 }
 $("fy-filter").addEventListener("click",ev=>{const b=ev.target.closest("[data-fy]");if(!b)return;S.fyF=S.fyF===b.dataset.fy?"all":b.dataset.fy;FY_N=12;save();renderForYou();});
 $("fy-more").onclick=()=>{FY_N+=12;renderForYou();};
+document.addEventListener("click",ev=>{const b=ev.target.closest("[data-fyw]");if(!b||!b.closest("#v-foryou"))return;S.fyW=b.dataset.fyw;FY_N=12;save();renderForYou();window.scrollTo(0,0);});
 
 /* ================= Agenda ================= */
 let AG_M=null,AG_DAY=null;
@@ -2563,8 +2716,9 @@ function mkState(m,at){
 }
 const mkOpenOn=(m,day)=>!!(m.rules&&m.rules.days[day].length);
 async function loadMarkets(force){
-  const c=locMk(),rad=Math.max(MKF.r,5)*1000+500,key=c.lat.toFixed(2)+","+c.lon.toFixed(2)+","+rad;
-  if(!force&&MK.key===key&&MK.items.length)return MK.items;
+  const c=locMk(),rad=Math.max(MKF.r,5)*1000+500,key=c.lat.toFixed(2)+","+c.lon.toFixed(2)+","+rad,ck=c.lat.toFixed(2)+","+c.lon.toFixed(2)+",";
+  // un rayon plus petit autour du même endroit : on a déjà tout
+  if(!force&&MK.items.length&&MK.key.startsWith(ck)&&+MK.key.slice(ck.length)>=rad)return MK.items;
   try{const c0=JSON.parse(localStorage.getItem("fomo2-mk")||"null");if(!force&&c0&&c0.key===key&&Date.now()-c0.at<7*864e5){MK={key,items:c0.items,busy:false,err:""};return MK.items;}}catch(e){}
   MK.busy=true;MK.err="";renderMarkets(true);
   const q=`[out:json][timeout:25];(node["amenity"="marketplace"](around:${rad},${c.lat},${c.lon});way["amenity"="marketplace"](around:${rad},${c.lat},${c.lon});relation["amenity"="marketplace"](around:${rad},${c.lat},${c.lon}););out center tags;`;
@@ -2581,7 +2735,7 @@ async function loadMarkets(force){
   try{localStorage.setItem("fomo2-mk",JSON.stringify({key,at:Date.now(),items}));}catch(e){}
   return items;
 }
-function locMk(){const h=homePos();return{lat:h.lat,lon:h.lon};}
+function locMk(){const h=MKF.place||homePos();return{lat:h.lat,lon:h.lon};}
 function mkFiltered(){
   const c=locMk(),today=wd(NOW);
   return MK.items.map(m=>Object.assign(m,{_k:km(c,m),_s:mkState(m)})).filter(m=>m._k<=MKF.r+.05)
@@ -2663,7 +2817,10 @@ function mkPop(m){return`<b>${esc(m.name)}</b><small>${esc(m._s.t)}</small>${m.s
 async function renderMarkets(skipLoad){
   const t=wd(NOW),dayOpts=[["all","Tous"],["today","Aujourd'hui"],["tomorrow","Demain"],["we","Ce week-end"]].concat(DAYS_FR.map((d,i)=>[String(i),d]).filter(x=>+x[0]!==t&&+x[0]!==(t+1)%7));
   $("mk-days").innerHTML=dayOpts.map(([k,n])=>`<button class="chip" data-mkd="${k}" aria-pressed="${MKF.day===k}">${n}</button>`).join("");
-  $("mk-rad").innerHTML=[1,2,5,10,20].map(r=>`<button class="chip" data-mkr="${r}" aria-pressed="${MKF.r===r}">${r} km</button>`).join("");
+  if(!$("mk-q")){$("mk-rad").innerHTML=`<div class="mkwhere">${placeSearchHTML("mk-q",MKF.place?"Autour de "+MKF.place.name:"Autour de "+homeCity()+" · chercher une autre ville…")}${MKF.place?`<button class="lnk" id="mk-home">Revenir autour de moi</button>`:""}${sliderHTML("mk-r",MKF.r,false,50)}</div>`;
+    bindPlaceSearch("mk-q",p=>{MKF.place={name:p.name,lat:+p.lat,lon:+p.lon};MKF.sel=null;$("mk-rad").innerHTML="";renderMarkets();});
+    const hb=$("mk-home");if(hb)hb.onclick=()=>{MKF.place=null;MKF.sel=null;$("mk-rad").innerHTML="";renderMarkets();};
+    let rt=null;bindSlider("mk-r",r=>{clearTimeout(rt);rt=setTimeout(()=>{MKF.r=r;MKF.sel=null;drawMk(true);},120);},async r=>{MKF.r=r;MKF.sel=null;if(r>5){await loadMarkets();}drawMk(true);});}
   $("mk-locate").hidden=!!(S.home&&S.home.src==="gps");
   if(!MKMAP){MKMAP=SlippyMap($("mk-map"),id=>{MKF.sel=id&&MKF.sel!==id?id:null;drawMk(false);});
     const card=document.createElement("div");card.className="mkcard";card.id="mk-card";card.hidden=true;$("mk-map").appendChild(card);
@@ -2688,10 +2845,9 @@ function drawMk(fit){
     <a class="go" href="${mkGo(m)}" target="_blank" rel="noopener">Itinéraire ›</a></div>`).join("");
 }
 $("mk-days").addEventListener("click",ev=>{const b=ev.target.closest("[data-mkd]");if(!b)return;MKF.day=MKF.day===b.dataset.mkd&&b.dataset.mkd!=="all"?"all":b.dataset.mkd;MKF.sel=null;renderMarkets(true);});
-$("mk-rad").addEventListener("click",async ev=>{const b=ev.target.closest("[data-mkr]");if(!b)return;MKF.r=+b.dataset.mkr;MKF.sel=null;if(MKF.r>5)await loadMarkets();renderMarkets(true);});
 $("mk-list").addEventListener("click",ev=>{if(ev.target.closest("a"))return;const it=ev.target.closest("[data-mk]");if(!it)return;MKF.sel=it.dataset.mk;const m=MK.items.find(x=>x.id===MKF.sel);
   if(m)MKMAP.focus(m.lat,m.lon);drawMk(false);$("mk-map").scrollIntoView({block:"nearest",behavior:"smooth"});});
-$("mk-locate").onclick=async()=>{try{await locate();MK.key="";await renderMarkets();}catch(e){notify("Position",e.message);}};
+$("mk-locate").onclick=async()=>{try{await locate();MK.key="";MKF.place=null;$("mk-rad").innerHTML="";await renderMarkets();}catch(e){notify("Position",e.message);}};
 
 /* ================= profil et connexions ================= */
 const GHELP=()=>`<ol><li>Avec un compte Gmail <b>personnel</b> (les comptes d'école ne peuvent pas créer de projet), va sur <a href="https://console.cloud.google.com/projectcreate" target="_blank" rel="noopener">console.cloud.google.com</a> et crée un projet « FOMO ».</li>
@@ -2703,8 +2859,8 @@ const uriBox=id=>isFile?"":`<div class="fld"><label>Adresse de retour à déclar
 const CONNS=[
  {grp:"Ta position"},
  {k:"loc",n:"Ma position",i:"GPS",ds:"FOMO te propose ce qui se passe autour de toi, et autour de tes destinations quand ton agenda montre un déplacement.",fields:[],btn:"Me localiser",
-  top:()=>`<div class="fld"><label for="f-city">Ou choisis ta ville</label><div class="row" style="flex-wrap:nowrap"><input class="txt" id="f-city" list="city-list" placeholder="Paris, Lyon…" value="${esc(S.home&&S.home.src==="manual"?S.home.city:"")}"><button class="btn ghost sm" id="b-city">Valider</button></div><datalist id="city-list">${CITIES.map(c=>`<option value="${esc(c)}">`).join("")}</datalist></div>
-   <div class="fld"><label>Rayon autour de toi</label><div class="row">${[5,15,40].map(r=>`<button class="chip sm" data-radius="${r}" aria-pressed="${(S.radius||15)===r}">${r} km</button>`).join("")}</div></div>`,
+  top:()=>`<div class="fld"><label for="f-city">Ou cherche ta ville</label>${placeSearchHTML("f-city","Ta ville, ton village…")}</div>
+   <div class="fld">${sliderHTML("f-rad",S.radius||15,false)}<p class="small">Pour toi te propose surtout ce qui se passe dans ce rayon.</p></div>`,
   run:async()=>{const h=await locate();loadEvents();ghSyncConfig().catch(()=>{});return "Position : "+h.city;}},
  {grp:"Tes goûts musicaux"},
  {k:"spotify",n:"Spotify",i:"Sp",ds:"Tes artistes les plus écoutés et ceux que tu suis, plus des artistes proches.",fields:[["spId","Client ID",""]],top:()=>uriBox("u-sp"),
@@ -2760,15 +2916,16 @@ function userSettingsHTML(){
       ${loc.top()}<div class="row"><button class="btn sm" data-conn="loc"${st.busy?" disabled":""}>${st.busy?"Localisation…":"Utiliser ma position précise"}</button></div>
       ${st.msg?`<div class="${st.err?"er":"res"}">${esc(st.msg)}</div>`:""}</div>
     <div class="set-card"><h3>Ta musique</h3>${artistPickerHTML("set-pa")}
-      <details class="more"><summary>${S.prof.dz?"✓ Deezer importé : "+esc(connSummary("deezer")):"Importer depuis Deezer (un lien suffit)"}</summary>
-        ${S.prof.dz?`<button class="btn ghost sm" data-disc="deezer">Retirer Deezer</button>`:`<div class="fld"><label for="f-dz">Lien de ton profil Deezer</label><div class="row" style="flex-wrap:nowrap"><input class="txt" id="f-dz" placeholder="https://www.deezer.com/fr/profile/…"><button class="btn sm" data-conn="deezer">Importer</button></div></div>`}
-        ${(STATUS.deezer||{}).msg?`<div class="${STATUS.deezer.err?"er":"res"}">${esc(STATUS.deezer.msg)}</div>`:""}</details></div>
+      ${musicLinksHTML("set-ml")}</div>
     <div class="set-card"><h3>Ton sport</h3>${sportPickerHTML("set-ps")}</div>`;
 }
+function bindHomePlace(){
+  bindPlaceSearch("f-city",p=>{S.home={lat:p.lat,lon:p.lon,city:p.name,src:"manual",at:Date.now()};STATUS.loc={};save();renderConns();afterCity();});
+  bindSlider("f-rad",null,r=>{S.radius=r;save();PROF_V++;renderConns();loadEvents(true);});}
 function renderConns(){
   $("file-warn").hidden=!(isFile&&ADMIN());
   const user=userSettingsHTML();
-  if(!ADMIN()){$("conns").innerHTML=user;bindArtistPicker("set-pa",renderConns);bindSportPicker("set-ps");return;}
+  if(!ADMIN()){$("conns").innerHTML=user;bindArtistPicker("set-pa",renderConns);bindMusicLinks("set-ml",renderConns);bindSportPicker("set-ps");bindHomePlace();return;}
   $("conns").innerHTML=user+`<div class="grp">Réglages FOMO (fondateur)</div>`+CONNS.filter(c=>!(c.k==="loc"||c.k==="deezer"||c.grp==="Ta position")).map(c=>{if(c.grp)return `<div class="grp">${c.grp}</div>`;const on=connDone(c.k),st=STATUS[c.k]||{};
     return `<div class="cn${on?" on":""}" id="cn-${c.k}"><div class="hd"><div class="lg" aria-hidden="true">${c.i}</div><div style="min-width:0"><b>${c.n}</b><div class="ds">${c.ds}</div></div>
       ${on&&c.k!=="loc"?`<button class="btn ghost sm" data-disc="${c.k}">Déconnecter</button>`:`<button class="btn sm" data-conn="${c.k}"${st.busy?" disabled":""}>${st.busy?"Connexion…":c.btn||"Connecter"}</button>`}</div>
@@ -2780,7 +2937,7 @@ function renderConns(){
       ${!on&&c.help?`<details><summary>Comment obtenir l'accès</summary>${c.help()}</details>`:""}
       ${on&&["gcal","gh","spotify","youtube","gmail"].includes(c.k)?`<div class="row"><button class="btn ghost sm" data-conn="${c.k}">${c.k==="gh"?"Relire et relancer une collecte":"Resynchroniser"}</button></div>`:""}
     </div>`;}).join("");
-  bindArtistPicker("set-pa",renderConns);bindSportPicker("set-ps");
+  bindArtistPicker("set-pa",renderConns);bindMusicLinks("set-ml",renderConns);bindSportPicker("set-ps");bindHomePlace();
 }
 document.addEventListener("input",ev=>{const f=ev.target.dataset&&ev.target.dataset.cfg;if(f){CFG[f]=ev.target.value;save();}});
 document.addEventListener("click",async ev=>{
@@ -2827,14 +2984,12 @@ document.querySelector("nav.tabs").addEventListener("click",ev=>{const b=ev.targ
 $("b-settings").onclick=()=>show("settings");
 $("where").onclick=()=>{
   openSheet(`<div class="in filt-sheet"><h3>Ta ville</h3><p class="small">FOMO te propose d'abord ce qui se passe autour de toi.</p>
-    <button class="btn wide" id="w-loc">Utiliser ma position</button>
-    <div class="row" style="flex-wrap:nowrap"><input class="txt" id="w-city" list="w-cities" placeholder="Choisir une ville" value="${esc(S.home&&S.home.src==="manual"?S.home.city:"")}"><button class="btn sm" id="w-ok">OK</button></div>
-    <datalist id="w-cities">${CITIES.map(c=>`<option value="${esc(c)}">`).join("")}</datalist><p class="small" id="w-msg"></p>
-    <div class="lab">Rayon</div><div class="opts">${[15,30,60].map(r=>`<button class="chip" data-rad="${r}" aria-pressed="${(S.radius||15)===r}">${r} km</button>`).join("")}</div></div>`,"where");
+    <button class="btn wide" id="w-loc">📍 Utiliser ma position</button>
+    ${placeSearchHTML("w-q","Ou cherche une ville, un village…")}<p class="small" id="w-msg"></p>
+    ${sliderHTML("w-r",S.radius||15,false)}</div>`,"where");
   $("w-loc").onclick=async()=>{try{await locate();closeSheet();afterCity();}catch(e){$("w-msg").textContent=e.message;}};
-  $("w-ok").onclick=()=>{const p=cityPos($("w-city").value);if(!p||WORLD[p.city]){$("w-msg").textContent="Choisis une ville française dans la liste.";return;}
-    S.home={lat:p.lat,lon:p.lon,city:p.city,src:"manual",at:Date.now()};save();closeSheet();afterCity();};
-  document.querySelectorAll("[data-rad]").forEach(b=>b.onclick=()=>{S.radius=+b.dataset.rad;save();PROF_V++;closeSheet();renderAll(true);});
+  bindPlaceSearch("w-q",p=>{S.home={lat:p.lat,lon:p.lon,city:p.name,src:"manual",at:Date.now()};save();closeSheet();afterCity();});
+  bindSlider("w-r",null,r=>{S.radius=r;save();PROF_V++;renderAll(true);});
 };
 function afterCity(){$("where-txt").textContent=homeCity();PROF_V++;loadEvents();ghSyncConfig().catch(()=>{});}
 let tt;function notify(ti,tx){$("t-ti").textContent=ti;$("t-tx").textContent=tx||"";$("toast").classList.add("show");clearTimeout(tt);tt=setTimeout(()=>$("toast").classList.remove("show"),3800);}
