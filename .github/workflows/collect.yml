@@ -55,7 +55,7 @@ jobs:
                 "(KHTML, like Gecko) Chrome/128.0 Safari/537.36")
           PAUSE = 1.0  # secondes entre deux pages, pour rester discret
 
-          LIMITS = {"sg": 40, "ra": 200, "br": 120, "tac": 30, "fest": 50, "dice_venues": 25, "offi_detail": 120, "bit": 60, "ra_art": 40}
+          LIMITS = {"sg": 40, "ra": 200, "br": 120, "tac": 30, "fest": 50, "dice_venues": 25, "offi_detail": 120, "bit": 60, "ra_art": 40, "race_pages": 300, "geocode": 120}
           HORIZON_DAYS = 365  # court terme et long terme (festivals, grosses dates)
 
           # FOMO couvre uniquement la France pour l'instant
@@ -71,6 +71,10 @@ jobs:
 
           def log(*a):
               print(*a, flush=True)
+
+
+          def norm_txt(s):
+              return unicodedata.normalize("NFD", str(s or "")).encode("ascii", "ignore").decode().lower()
 
 
           def slug(s):
@@ -576,7 +580,107 @@ jobs:
                           e["desc"] = html.unescape(d.group(1))
                   except Exception as ex:  # noqa: BLE001
                       log("   ! offi", e["link"], ex)
+              geocode_venues(out, "Paris")
               log(f"  Expos Officiel des spectacles: {len(out)}")
+              return out
+
+
+          # ---------------- Position précise des lieux (OpenStreetMap / Nominatim, avec mémoire) ----------------
+          # Le filtre « rayon » des expos (1 km par défaut) a besoin de l'adresse exacte du musée ou de la galerie.
+          GEO_PATH = os.path.join(DATA, "geo-cache.json")
+
+
+          def geocode_venues(events, city):
+              try:
+                  cache = json.load(open(GEO_PATH, encoding="utf-8"))
+              except Exception:  # noqa: BLE001
+                  cache = {}
+              new = 0
+              for e in events:
+                  if e.get("lat") or not e.get("v"):
+                      continue
+                  q = f"{e['v']}, {e.get('a') or ''} {city}, France".replace("  ", " ")
+                  k = slug(q)
+                  if k not in cache and new < LIMITS.get("geocode", 120):
+                      new += 1
+                      time.sleep(1.1)  # règle d'usage de Nominatim : une requête par seconde au plus
+                      try:
+                          r = json.loads(get("https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=fr&q=" + urllib.parse.quote(q),
+                                             headers={"User-Agent": "FOMO-collecteur/1.0 (fomo8820@gmail.com)", "Accept-Language": "fr"}))
+                          cache[k] = [round(float(r[0]["lat"]), 5), round(float(r[0]["lon"]), 5)] if r else None
+                      except Exception as ex:  # noqa: BLE001
+                          log(f"   ! géocodage {e['v']}: {ex}")
+                          continue
+                  if cache.get(k):
+                      e["lat"], e["lon"] = cache[k]
+              json.dump(cache, open(GEO_PATH, "w", encoding="utf-8"), ensure_ascii=False)
+              log(f"  Positions des lieux : {sum(1 for e in events if e.get('lat'))}/{len(events)} ({new} nouvelles recherches)")
+
+
+          # ---------------- Local : marchés de Paris (open data de la Ville de Paris, publié sur data.gouv.fr) ----------------
+          MARCHES_URL = "https://www.data.gouv.fr/api/1/datasets/r/db96deb6-d830-4192-bb06-34a11568c47a"  # GeoJSON
+          JOURS = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"]
+
+
+          def _hour(x, default):
+              m = re.search(r"(\d{1,2})\s*[h:.]\s*(\d{2})?", str(x or ""))
+              return f"{int(m.group(1)):02d}:{m.group(2) or '00'}" if m else default
+
+
+          def marches(city):
+              """Les marchés découverts de Paris (alimentaires, bio, fleurs, puces, brocante, création) sur les 14 prochains jours."""
+              if slug(city) != "paris":
+                  return []
+              j = json.loads(get(MARCHES_URL))
+              out, today = [], dt.date.today()
+              for f in j.get("features") or []:
+                  p = {str(k).lower(): v for k, v in (f.get("properties") or {}).items()}
+                  name = (p.get("nom_long") or p.get("nom_court") or "").strip()
+                  if not name:
+                      continue
+                  pts = []
+                  def walk(c):
+                      if isinstance(c, (list, tuple)) and len(c) == 2 and all(isinstance(x, (int, float)) for x in c):
+                          pts.append(c)
+                      elif isinstance(c, (list, tuple)):
+                          for x in c:
+                              walk(x)
+                  walk((f.get("geometry") or {}).get("coordinates"))
+                  gp = p.get("geo_point_2d")
+                  if isinstance(gp, (list, tuple)) and len(gp) == 2:
+                      lat, lon = gp
+                  elif isinstance(gp, dict):
+                      lat, lon = gp.get("lat"), gp.get("lon")
+                  elif pts:
+                      lon, lat = sum(x[0] for x in pts) / len(pts), sum(x[1] for x in pts) / len(pts)
+                  else:
+                      lat = lon = None
+                  prod = str(p.get("produit") or "")
+                  brocante = re.search(r"puces|brocante|antiquit", prod, re.I)
+                  title = name if re.match(r"(?i)march|puces", name) else "Marché " + name
+                  days = [i for i, jn in enumerate(JOURS) if str(p.get(jn) or "0") in ("1", "1.0", "True", "true", "oui")]
+                  if not days:
+                      txt = norm_txt(p.get("jours_tenue") or "")
+                      days = [i for i, jn in enumerate(JOURS) if jn in txt]
+                  if not days:
+                      continue
+                  # un seul événement par marché : prochain jour de tenue, et les jours de la semaine (le filtre de dates de l'app s'en sert)
+                  n = next(n for n in range(8) if (today + dt.timedelta(days=n)).weekday() in days)
+                  day = today + dt.timedelta(days=n)
+                  wd = day.weekday()
+                  h0 = _hour(p.get("h_deb_dim") if wd == 6 else p.get("h_deb_sam") if wd == 5 else p.get("h_deb_sem_1"), "08:00")
+                  h1 = _hour(p.get("h_fin_dim") if wd == 6 else p.get("h_fin_sam") if wd == 5 else p.get("h_fin_sem_1"), "13:30")
+                  jours = ", ".join(JOURS[i][:3] + "." for i in days) if len(days) < 7 else "Tous les jours"
+                  ar = f"Paris {p.get('ardt')}e" if p.get("ardt") else "Paris"
+                  out.append({"id": f"m-{p.get('id_marche') or slug(name)}", "src": "marches", "kind": "local", "market": True,
+                              "t": title, "d": f"{day.isoformat()}T{h0}", "end": f"{day.isoformat()}T{h1}", "days": days,
+                              "w": f"{jours} · {h0.replace(':', 'h')}–{h1.replace(':', 'h')}",
+                              "v": (p.get("localisation") or "").strip()[:120], "a": ar, "city": "Paris",
+                              "lat": float(lat) if lat else None, "lon": float(lon) if lon else None, "p": 0, "free": True,
+                              "tags": ["Brocante" if brocante else "Marché"] + [x for x in re.split(r"\s{2,}|,|/", prod) if x.strip()][:4],
+                              "desc": prod, "img": "", "lineup": [],
+                              "link": "https://www.paris.fr/lieux?type=marches"})
+              log(f"  Marchés de Paris : {len(out)} marchés")
               return out
 
 
@@ -642,8 +746,8 @@ jobs:
           "city": "Lyon",
           "country": "FR",
           "level": "international",
-          "status": "announced",
-          "link": "https://billetterie.ffr.fr"
+          "status": "on_sale",
+          "link": "https://billetterie.ffr.fr/fr/meeting/193/mxv_france_fidji_nc_2026"
           },
           {
           "sport": "Football",
@@ -691,7 +795,7 @@ jobs:
           "city": "Saint-Denis",
           "country": "FR",
           "level": "international",
-          "status": "announced",
+          "status": "on_sale",
           "link": "https://billetterie.ffr.fr"
           },
           {
@@ -729,8 +833,8 @@ jobs:
           "city": "Stuttgart",
           "country": "DE",
           "level": "international",
-          "status": "announced",
-          "link": "https://handball2027.com",
+          "status": "on_sale",
+          "link": "https://www.eventim.de/campaign/en/ihf2027-m",
           "tbc_time": True
           },
           {
@@ -742,8 +846,8 @@ jobs:
           "city": "Stuttgart",
           "country": "DE",
           "level": "international",
-          "status": "announced",
-          "link": "https://handball2027.com",
+          "status": "on_sale",
+          "link": "https://www.eventim.de/campaign/en/ihf2027-m",
           "tbc_time": True
           },
           {
@@ -755,8 +859,8 @@ jobs:
           "city": "Stuttgart",
           "country": "DE",
           "level": "international",
-          "status": "announced",
-          "link": "https://handball2027.com",
+          "status": "on_sale",
+          "link": "https://www.eventim.de/campaign/en/ihf2027-m",
           "tbc_time": True
           },
           {
@@ -768,8 +872,8 @@ jobs:
           "city": "Cologne",
           "country": "DE",
           "level": "international",
-          "status": "announced",
-          "link": "https://handball2027.com"
+          "status": "on_sale",
+          "link": "https://www.eventim.de/campaign/en/ihf2027-m"
           },
           {
           "sport": "Rugby",
@@ -1029,8 +1133,8 @@ jobs:
           "city": "Melbourne",
           "country": "AU",
           "level": "international",
-          "status": "announced",
-          "link": "https://www.rugbyworldcup.com"
+          "status": "on_sale",
+          "link": "https://rwc2027.rugbyworldcup.com"
           },
           {
           "sport": "Rugby",
@@ -1041,8 +1145,8 @@ jobs:
           "city": "Brisbane",
           "country": "AU",
           "level": "international",
-          "status": "announced",
-          "link": "https://www.rugbyworldcup.com"
+          "status": "on_sale",
+          "link": "https://rwc2027.rugbyworldcup.com"
           },
           {
           "sport": "Rugby",
@@ -1053,8 +1157,8 @@ jobs:
           "city": "Sydney",
           "country": "AU",
           "level": "international",
-          "status": "announced",
-          "link": "https://www.rugbyworldcup.com"
+          "status": "on_sale",
+          "link": "https://rwc2027.rugbyworldcup.com"
           },
           {
           "sport": "Rugby",
@@ -1065,8 +1169,8 @@ jobs:
           "city": "Sydney",
           "country": "AU",
           "level": "international",
-          "status": "announced",
-          "link": "https://www.rugbyworldcup.com"
+          "status": "on_sale",
+          "link": "https://rwc2027.rugbyworldcup.com"
           }
           ]
 
@@ -1143,6 +1247,38 @@ jobs:
           FIN_DISC = {"trail", "road", "triathlon", "cross_triathlon", "duathlon", "aquathlon", "swimrun", "fitnessrace"}
 
 
+          # plateformes d'inscription : FOMO renvoie directement vers la page d'inscription plutôt que vers Finishers
+          REG_DOMAINS = ("njuko.com", "protiming.fr", "klikego.com", "onsinscrit.com", "sportips.fr", "nextrun.fr", "tickrace.com", "ikinoa.com",
+                         "espace-competition.com", "espacetri", "fftri.com", "yaka-inscription.com", "adeorun.com", "timepulse.fr", "l-chrono.com",
+                         "chronometrage.com", "sportinnovation.fr", "endurancechrono.com", "ats-sport.com", "helloasso.com", "weezevent.com",
+                         "billetweb.fr", "hyrox.com", "utmb.world", "ironman.com", "my.raceresult.com", "inscriptions", "inscription", "registration")
+          SKIP_DOMAINS = ("finishers.com", "cloudinary.com", "facebook.com", "instagram.com", "twitter.com", "x.com", "youtube.com", "strava.com",
+                          "google.", "apple.com", "tiktok.com", "linkedin.com", "marathons.com", "kavval")
+          LINKS_PATH = os.path.join(DATA, "race-links.json")
+
+
+          def _urls_in(o, keys=None):
+              """Toutes les adresses web d'un document Finishers (et le nom du champ qui les porte)."""
+              out = []
+              def walk(x, k=""):
+                  if isinstance(x, dict):
+                      for kk, v in x.items():
+                          walk(v, kk)
+                  elif isinstance(x, list):
+                      for v in x:
+                          walk(v, k)
+                  elif isinstance(x, str) and x.startswith("http") and not any(d in x for d in SKIP_DOMAINS):
+                      out.append((k, x))
+              walk(o)
+              return out
+
+
+          def _pick_links(urls):
+              reg = next((u for _, u in urls if any(d in u.lower() for d in REG_DOMAINS)), None)
+              site = next((u for _, u in urls if u != reg), None)
+              return reg, site
+
+
           def races_all():
               """Toutes les courses à venir en France sur 12 mois, en une soixantaine de requêtes (au lieu de 12 000 pages)."""
               now = dt.datetime.now(dt.timezone.utc)
@@ -1150,6 +1286,17 @@ jobs:
               fields = ("eventId,eventName,eventSlug,raceDate,raceEndDate,raceDiscipline,raceDistance,raceDistanceUnit,raceElevationGain,"
                         "city,level1,level2,coordinates,editionStatus,raceStatus,image,eventLastEditionFinisherCount,raceName,popularity")
               groups, page, total = {}, 1, None
+              # première page complète : on repère les champs qui portent des liens (site officiel, inscription)
+              try:
+                  probe = {"searches": [{"collection": "races", "q": "*", "query_by": "eventName", "filter_by": f"raceDate:>={t0} && countryCode:=FR",
+                                         "per_page": 40}]}
+                  docs = [h.get("document") or {} for h in json.loads(get(FIN_TS, data=json.dumps(probe).encode(), headers={"Content-Type": "application/json"}))["results"][0].get("hits", [])]
+                  lk = sorted({k for d in docs for k, _ in _urls_in(d) if k})
+                  log(f"  Finishers : champs avec liens {lk or 'aucun'}")
+                  if lk:
+                      fields += "," + ",".join(lk)
+              except Exception as e:  # noqa: BLE001
+                  log(f"  Finishers (champs) : {e}")
               while page <= 120:
                   body = {"searches": [{"collection": "races", "q": "*", "query_by": "eventName", "include_fields": fields,
                                         "filter_by": f"raceDate:>={t0} && raceDate:<={t1} && countryCode:=FR",
@@ -1166,7 +1313,8 @@ jobs:
                           continue
                       if disc == "fitnessrace" and "hyrox" not in (r.get("eventName") or "").lower():
                           continue
-                      g = groups.setdefault(r["eventId"], {"doc": r, "races": []})
+                      g = groups.setdefault(r["eventId"], {"doc": r, "races": [], "urls": []})
+                      g["urls"] += _urls_in(r)
                       dist = r.get("raceDistance") or 0
                       km = round(dist / 1000, 1) if (r.get("raceDistanceUnit") or "meters") == "meters" else dist
                       g["races"].append({"name": (r.get("raceName") or [None])[0] if isinstance(r.get("raceName"), list) else r.get("raceName"),
@@ -1188,10 +1336,63 @@ jobs:
                               "city": r.get("city") or r.get("level2") or "", "lat": co[0], "lon": co[1],
                               "races": rs[:8], "p": None, "pop": r.get("eventLastEditionFinisherCount") or 0,
                               "img": ("https://res.cloudinary.com/kavval/image/upload/w_600,q_auto,f_auto/" + r["image"]) if r.get("image") else "",
-                              "link": f"https://www.finishers.com/course/{r.get('eventSlug')}", "lineup": [], "desc": ""})
+                              "link": f"https://www.finishers.com/course/{r.get('eventSlug')}", "lineup": [], "desc": "",
+                              "_urls": g["urls"], "_slug": r.get("eventSlug")})
               out.sort(key=lambda e: e["d"])
               log(f"  Finishers: {len(out)} épreuves en France ({total} courses trouvées)")
+              race_links(out)
               return out
+
+
+          def race_links(out):
+              """Lien direct vers l'inscription : d'abord les champs Finishers, sinon la fiche Finishers (bouton « S'inscrire »),
+              lue une fois puis gardée en mémoire dans data/race-links.json (quelques centaines de nouvelles fiches par nuit)."""
+              try:
+                  cache = json.load(open(LINKS_PATH, encoding="utf-8"))
+              except Exception:  # noqa: BLE001
+                  cache = {}
+              today = dt.date.today()
+              todo = []
+              for e in out:
+                  urls, slug_ = e.pop("_urls", []), e.pop("_slug", None)
+                  reg, site = _pick_links(urls)
+                  c = cache.get(slug_ or "") or {}
+                  reg, site = reg or c.get("reg"), site or c.get("site")
+                  if not reg and slug_ and slug_ not in cache:
+                      todo.append(e)
+                  if reg:
+                      e["reg"] = reg
+                  if site:
+                      e["site"] = site
+              # fiches à lire : d'abord les courses dont les inscriptions sont ouvertes et proches, puis les plus courues
+              todo.sort(key=lambda e: (e.get("tba", False), e["d"], -(e.get("pop") or 0)))
+              n = 0
+              for e in todo[:LIMITS.get("race_pages", 300)]:
+                  slug_ = e["link"].rsplit("/", 1)[-1]
+                  time.sleep(0.5)
+                  try:
+                      page = get(e["link"])
+                  except Exception as ex:  # noqa: BLE001
+                      cache[slug_] = {"at": today.isoformat(), "err": str(ex)[:60]}
+                      continue
+                  hrefs = [html.unescape(h) for h in re.findall(r'href="(https?://[^"]+)"', page)]
+                  reg, site = _pick_links([("", h) for h in hrefs if not any(d in h for d in SKIP_DOMAINS)])
+                  cache[slug_] = {"reg": reg, "site": site, "at": today.isoformat()}
+                  if reg:
+                      e["reg"] = reg
+                      n += 1
+                  if site:
+                      e["site"] = site
+              # on ne garde pas en mémoire les courses passées
+              keep = {e["link"].rsplit("/", 1)[-1] for e in out}
+              cache = {k: v for k, v in cache.items() if k in keep}
+              json.dump(cache, open(LINKS_PATH, "w", encoding="utf-8"), ensure_ascii=False)
+              nreg = sum(1 for e in out if e.get("reg"))
+              log(f"  Liens d'inscription directs : {nreg} courses ({n} nouveaux cette nuit, {max(0, len(todo) - LIMITS.get('race_pages', 300))} fiches restant à lire)")
+              for e in out:
+                  if e.get("reg"):
+                      e["more"] = e["link"]
+                      e["link"] = e["reg"]
 
 
           # ---------------- HYROX (site officiel) ----------------
@@ -1289,7 +1490,11 @@ jobs:
 
           def datatourisme(city):
               key = os.environ.get("DATATOURISME_KEY", "").strip()
-              if not key or slug(city) not in CITY_GEO:
+              if not key:
+                  log(f"  DATAtourisme {city}: pas de clé (le secret DATATOURISME_KEY est vide ou mal nommé)")
+                  return []
+              if slug(city) not in CITY_GEO:
+                  log(f"  DATAtourisme {city}: ville sans coordonnées, ignorée")
                   return []
               lat, lon = CITY_GEO[slug(city)]
               today = dt.date.today().isoformat()
@@ -1495,7 +1700,7 @@ jobs:
               return out
 
 
-          SOURCES = {"ra": resident_advisor, "dice": dice, "fnac": fnac, "dtour": datatourisme, "br": billetreduc, "tac": ticketac, "offi": offi_expos}
+          SOURCES = {"ra": resident_advisor, "dice": dice, "fnac": fnac, "dtour": datatourisme, "marches": marches, "br": billetreduc, "tac": ticketac, "offi": offi_expos}
 
 
           def main():
