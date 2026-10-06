@@ -1592,6 +1592,34 @@ jobs:
               return None
 
 
+          def _dt_periods(o):
+              tp = o.get("takesPlaceAt") or _find(o, ["takesPlaceAt"]) or []
+              tp = tp if isinstance(tp, list) else [tp]
+              out = []
+              for p in tp:
+                  if not isinstance(p, dict):
+                      continue
+                  st = _lbl(p.get("startDate") or p.get("schema:startDate"))
+                  en = _lbl(p.get("endDate") or p.get("schema:endDate")) or st
+                  if isinstance(st, str) and len(st) >= 10:
+                      out.append((st, en if isinstance(en, str) and len(en) >= 10 else st, _lbl(p.get("startTime") or "")))
+              return sorted(out)
+
+
+          def _dt_geo(o):
+              la, lo = _find(o, ["latitude", "schema:latitude", "lat"]), _find(o, ["longitude", "schema:longitude", "lon", "lng"])
+              if la is None or lo is None:
+                  gp = _find(o, ["geoPoint", "geo"])
+                  if isinstance(gp, str) and "," in gp:
+                      la, lo = gp.split(",")[:2]
+                  elif isinstance(gp, dict):
+                      la, lo = gp.get("lat") or gp.get("latitude"), gp.get("lon") or gp.get("longitude")
+              try:
+                  return float(_lbl(la) if not isinstance(la, (int, float)) else la), float(_lbl(lo) if not isinstance(lo, (int, float)) else lo)
+              except Exception:  # noqa: BLE001
+                  return None, None
+
+
           def datatourisme(city):
               key = os.environ.get("DATATOURISME_KEY", "").strip()
               if not key:
@@ -1603,46 +1631,52 @@ jobs:
               lat, lon = CITY_GEO[slug(city)]
               today = dt.date.today().isoformat()
               base = f"https://api.datatourisme.fr/v1/entertainmentAndEvent?geo_distance={lat},{lon},25km&page_size=100"
-              out, url, pages = [], base + f"&takesPlaceAt.endDate[gte]={today}", 0
+              out, url, pages, total, seen_n, past, sample = [], base + f"&takesPlaceAt.endDate%5Bgte%5D={today}", 0, None, 0, 0, None
               while url and pages < 15:
                   pages += 1
                   time.sleep(0.4)
                   try:
                       j = json.loads(get(url, headers={"X-API-Key": key, "Accept": "application/json"}))
                   except Exception as e:  # noqa: BLE001
-                      if pages == 1 and "[gte]" in url:
-                          url = base  # filtre de date non accepté : on filtre nous-mêmes
+                      if pages == 1 and "%5Bgte%5D" in url:
+                          log(f"  DATAtourisme {city}: filtre de date refusé ({str(e)[:60]}), on filtre nous-mêmes")
+                          url, pages = base, 0
                           continue
-                      log(f"  DATAtourisme {city}: {e}")
+                      log(f"  DATAtourisme {city}: {str(e)[:120]}")
                       break
-                  items = j.get("objects") or j.get("results") or j.get("data") or j.get("hydra:member") or (j if isinstance(j, list) else [])
+                  meta = (j.get("meta") or {}) if isinstance(j, dict) else {}
+                  if total is None:
+                      total = meta.get("total")
+                  items = (j.get("objects") or j.get("results") or j.get("data") or []) if isinstance(j, dict) else (j if isinstance(j, list) else [])
                   for o in items:
-                      start = _find(o, ["startDate", "schema:startDate"])
-                      end = _find(o, ["endDate", "schema:endDate"]) or start
-                      start, end = _lbl(start) or start, _lbl(end) or end
-                      if not isinstance(start, str) or (isinstance(end, str) and end[:10] < today):
+                      seen_n += 1
+                      sample = sample or o
+                      per = [p for p in _dt_periods(o) if p[1][:10] >= today]
+                      if not per:
+                          past += 1
                           continue
+                      start, end, st = per[0]
                       t = _lbl(o.get("label") or o.get("rdfs:label") or _find(o, ["label", "rdfs:label"]))
                       if not t:
                           continue
-                      la = _find(o, ["latitude", "schema:latitude"])
-                      lo = _find(o, ["longitude", "schema:longitude"])
+                      la, lo = _dt_geo(o)
                       town = _lbl(_find(o, ["addressLocality", "schema:addressLocality"])) or city
                       types = o.get("type") or o.get("@type") or []
                       tags = [x.split("#")[-1].split(":")[-1] for x in (types if isinstance(types, list) else [types]) if isinstance(x, str)]
                       desc = _lbl(_find(o, ["shortDescription", "dc:description", "description"]))
-                      st = _find(o, ["startTime", "schema:startTime"])
-                      d = start[:10] + ("T" + str(st)[:5] if isinstance(st, str) and re.match(r"\d\d:\d\d", str(st)) else "T10:00")
+                      d = start[:10] + ("T" + st[:5] if isinstance(st, str) and re.match(r"\d\d:\d\d", st) else "T10:00")
                       if d[:10] < today:
                           d = today + "T10:00"
                       out.append({"id": "dt-" + str(o.get("uuid") or o.get("@id") or slug(t + start))[-40:], "src": "datatourisme", "kind": "local",
-                                  "t": t, "d": d, "end": end if isinstance(end, str) and end[:10] != start[:10] else None,
-                                  "v": town, "a": town, "city": town, "lat": float(la) if la else None, "lon": float(lo) if lo else None,
+                                  "t": t, "d": d, "end": end[:10] if end[:10] != start[:10] else None,
+                                  "v": town, "a": town, "city": town, "lat": la, "lon": lo,
                                   "p": None, "tags": tags, "desc": (desc or "")[:300], "img": "", "lineup": [],
-                                  "link": _lbl(_find(o, ["homepage", "foaf:homepage", "url"])) or ""})
-                  nxt = (j.get("meta") or {}).get("next") if isinstance(j, dict) else None
-                  url = nxt if nxt and nxt.startswith("http") else None
-              log(f"  DATAtourisme {city}: {len(out)} fêtes, brocantes et animations")
+                                  "link": _lbl(_find(o, ["homepage", "foaf:homepage", "url", "website"])) or ""})
+                  nxt = meta.get("next")
+                  url = ("https://api.datatourisme.fr" + nxt if isinstance(nxt, str) and nxt.startswith("/") else nxt) if nxt else None
+              log(f"  DATAtourisme {city}: {len(out)} fêtes, brocantes et animations (réponse : {total} au total, {seen_n} lus, {past} déjà passés)")
+              if not out and sample:
+                  log("   aperçu d'une fiche : clés " + ",".join(list(sample.keys())[:25]) + " | takesPlaceAt " + json.dumps(sample.get("takesPlaceAt"), ensure_ascii=False)[:300])
               return out
 
 
@@ -1815,6 +1849,10 @@ jobs:
 
 
           def main():
+              # diagnostic : le robot dit s'il reçoit les clés (sans jamais les afficher)
+              for k in ("TM_KEY", "DATATOURISME_KEY"):
+                  v = os.environ.get(k, "")
+                  log(f"Secret {k} : " + (f"reçu ({len(v.strip())} caractères)" if v.strip() else "ABSENT (vérifie le nom dans Settings → Secrets and variables → Actions → Repository secrets)"))
               cfg = json.load(open(os.path.join(ROOT, "config", "cities.json"), encoding="utf-8"))
               # villes françaises : toutes les sources ; villes étrangères (choisies dans Soirées) : RA et DICE seulement
               # FOMO collecte pour tous ses utilisateurs : Paris à chaque passage, et les autres grandes villes à tour de rôle
