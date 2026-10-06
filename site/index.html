@@ -23,7 +23,7 @@
   --paper:#F4F5F8; --card:#FFFFFF; --sunk:#ECEEF4; --ink:#15162B; --ink2:#5C5F76; --ink3:#8C8FA6; --line:#E1E3EC;
   --hot:#FF2E63; --hot-soft:#FFE3EA; --ok:#0E8F6C; --ok-soft:#DCF3EB; --warn:#B26A00; --warn-soft:#FFF0D6;
   --v-soiree:#6A3BFF; --v-concert:#FF5A36; --v-festival:#F2A100; --v-sport:#0FA37F; --v-competition:#1F6FFF;
-  --v-expo:#D9479A; --v-theatre:#9B2C4E; --v-local:#6B7488;
+  --v-expo:#D9479A; --v-theatre:#9B2C4E; --v-local:#6B7488; --v-marche:#2E9E5B;
   --r-lg:22px; --r-md:14px; --r-sm:10px;
   --f:"Bricolage Grotesque",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
   --nav-h:64px; color-scheme:light;
@@ -43,7 +43,7 @@ a{color:inherit}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 
 .v-soiree{--vc:var(--v-soiree)}.v-concert{--vc:var(--v-concert)}.v-festival{--vc:var(--v-festival)}.v-sport{--vc:var(--v-sport)}
-.v-competition{--vc:var(--v-competition)}.v-expo{--vc:var(--v-expo)}.v-theatre{--vc:var(--v-theatre)}.v-local{--vc:var(--v-local)}
+.v-competition{--vc:var(--v-competition)}.v-expo{--vc:var(--v-expo)}.v-theatre{--vc:var(--v-theatre)}.v-local{--vc:var(--v-local)}.v-marche{--vc:var(--v-marche)}
 .bubble{background:var(--vc)}
 
 /* ---------- squelette ---------- */
@@ -301,6 +301,22 @@ details.more summary{cursor:pointer;font-weight:650;font-size:14.5px}
 .set-card h3{margin:0;font-size:17px}
 .strava-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;border:0;border-radius:999px;background:#FC4C02;color:#fff;font:inherit;font-weight:750;font-size:16px;padding:13px 16px;cursor:pointer}
 .linkbtn{border:0;background:none;color:var(--ink2);text-decoration:underline;font:inherit;cursor:pointer;padding:0}
+.mhead.sep{color:var(--ink);border-top:1px solid var(--line);padding-top:14px;margin-top:6px}
+.mkmap{position:relative;height:min(56vh,440px);border-radius:var(--r-md);overflow:hidden;background:#E8ECE6;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab}
+.mkmap .tiles img{position:absolute;width:256px;height:256px;max-width:none;pointer-events:none;-webkit-user-drag:none}
+.mkmap .pin{position:absolute;width:26px;height:26px;margin:-26px 0 0 -13px;border:0;padding:0;background:none;cursor:pointer}
+.mkmap .pin i{display:block;width:22px;height:22px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:#9AA0B4;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35);margin:0 auto}
+.mkmap .pin.open i{background:var(--v-marche)}.mkmap .pin.soon i{background:#E0A100}.mkmap .pin.sel i{transform:rotate(-45deg) scale(1.3)}
+.mkmap .me{position:absolute;width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:50%;background:#2F6BFF;border:3px solid #fff;box-shadow:0 0 0 6px rgba(47,107,255,.2)}
+.mkmap .zoom{position:absolute;right:10px;top:10px;display:flex;flex-direction:column;gap:6px;z-index:3}
+.mkmap .zoom button{width:38px;height:38px;border-radius:10px;border:0;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.25);font-size:20px;font-weight:700;cursor:pointer;color:#15162B}
+.mkmap .attr{position:absolute;right:0;bottom:0;background:rgba(255,255,255,.85);font-size:10px;padding:2px 6px;color:#444;z-index:3}
+.mkmap .attr a{color:#444}
+.mkmap .pop{position:absolute;z-index:4;transform:translate(-50%,calc(-100% - 34px));background:#fff;color:#15162B;border-radius:12px;padding:10px 12px;box-shadow:0 4px 16px rgba(0,0,0,.25);font-size:14px;max-width:230px;min-width:160px}
+.mkmap .pop b{display:block;margin-bottom:2px}.mkmap .pop small{color:#5C5F76;display:block}
+.mk-item .st{font-size:13px;font-weight:650}.mk-item .st.open{color:var(--v-marche)}.mk-item .st.soon{color:#B27A00}
+.mk-item .days{display:flex;gap:4px;margin-top:5px;flex-wrap:wrap}.mk-item .days span{font-size:11.5px;padding:2px 7px;border-radius:999px;background:var(--sunk);color:var(--ink3)}.mk-item .days span.on{background:var(--ink);color:var(--paper)}
+.mk-item .go{font-size:13px;font-weight:650;color:var(--ink);text-decoration:none;white-space:nowrap}
 </style>
 </head>
 <body>
@@ -332,6 +348,18 @@ details.more summary{cursor:pointer;font-weight:650;font-size:14.5px}
     <p class="note" id="vt-note" hidden></p>
     <div class="list" id="vt-list"></div>
     <button class="btn ghost sm more" id="vt-more" hidden>Afficher plus</button>
+  </section>
+
+  <!-- MARCHÉS : carte des marchés autour de toi -->
+  <section class="view" id="v-markets" hidden>
+    <div class="vhead"><button class="icon-btn back" data-go="discover" aria-label="Retour"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button><h1>Marchés</h1></div>
+    <div class="vbar v-marche" style="background:var(--vc)"></div>
+    <div class="filters" id="mk-days"></div>
+    <div class="filters" id="mk-rad"></div>
+    <div class="mkmap" id="mk-map" role="application" aria-label="Carte des marchés"></div>
+    <button class="btn ghost sm" id="mk-locate" hidden>Utiliser ma position précise</button>
+    <p class="note" id="mk-note" hidden></p>
+    <div class="list" id="mk-list"></div>
   </section>
 
   <!-- POUR TOI -->
@@ -395,7 +423,8 @@ const VERTS={
   competition:{n:"Compétitions",one:"course",main:1},
   expo:{n:"Expos",one:"expo"},
   theatre:{n:"Théâtre",one:"spectacle"},
-  local:{n:"Local",one:"sortie",noDeck:true}
+  local:{n:"Local",one:"sortie",noDeck:true},
+  marche:{n:"Marchés",one:"marché",noDeck:true,map:true}
 };
 const VKEYS=Object.keys(VERTS);
 const GENRES={
@@ -1287,7 +1316,7 @@ document.addEventListener("click",ev=>{
     const card=np.closest(".fcard");if(card){card.style.transition="opacity .2s, transform .2s";card.style.opacity="0";card.style.transform="translateX(-30px)";setTimeout(()=>{card.remove();if(!$("feed").children.length)renderForYou();},200);}return;}
   const inf=ev.target.closest("[data-info]");if(inf){openInfo(inf.dataset.info);return;}
   const g=ev.target.closest("[data-go]");if(g){if(!$("sheet").hidden)closeSheet();show(g.dataset.go);return;}
-  const v=ev.target.closest("[data-vert]");if(v){openVert(v.dataset.vert);return;}
+  const v=ev.target.closest("[data-vert]");if(v){if(v.dataset.vert==="marche"){show("markets");return;}openVert(v.dataset.vert);return;}
 });
 document.addEventListener("keydown",ev=>{if(ev.key==="Enter"&&ev.target.matches&&ev.target.matches(".item[data-info]"))openInfo(ev.target.dataset.info);});
 
@@ -1318,9 +1347,17 @@ const THEATRE_G={humour:{n:"Humour",rx:/humour|stand.?up|one.?(wo)?man|seul en s
 const LOCAL_T={fete:{n:"Fête de village",rx:/\bfete\b|\bbal\b|kermesse|foire|carnaval|feu d.artifice|feux d.artifice|guinguette|repas de quartier|banquet|\bloto\b|feria|fete de quartier|fete patronale|fete votive|fete de la musique|14 juillet|procession|frairie|comice/},
   sport:{n:"Sports",rx:/\bcourse\b|\brun\b|marathon|tournoi|\bmatch\b|randonnee|\brando\b|\bvelo\b|sport|yoga|fitness|petanque|natation|escalade|danse en plein air|zumba/},
   brocante:{n:"Brocante",rx:/brocante|vide.?grenier|braderie|\bpuces\b|bourse aux|\btroc\b|vide.?dressing|marche aux puces|antiquit/}};
-LOCAL_T.marche={n:"Marchés",rx:/\bmarches?\b|\bmarket\b|\bhalles?\b|producteurs/};
-const LT_ORDER=["brocante","marche","fete","sport"];
-const ltypeOf=e=>{if(e.market)return /brocante|puces/i.test((e.tags||[]).join(" ")+" "+e.t)?"brocante":"marche";const t=norm(e.t+" "+(e.tags||[]).join(" ")+" "+(e.w||""));for(const k of LT_ORDER)if(LOCAL_T[k].rx.test(t))return k;return"exp";};
+// « marché » (avec accent) et pas « marche » (randonnée, marche nordique…) : on regarde le texte d'origine
+LOCAL_T.marche={n:"Marchés",rx:/^$/};
+const isMarketTxt=e=>{const raw=e.t+" "+(e.tags||[]).join(" ");
+  if(/marche\s+(nordique|solidaire|populaire|afghane|des\s+fiert|blanche|gourmande\s+de)|randonn|\brando\b|balade/i.test(raw))return false;
+  return /(^|[^a-zà-ÿ])march[ée]s?(?![a-zà-ÿ])/i.test(raw)&&/é/i.test((raw.match(/march[ée]/i)||[""])[0])
+    ||/\bmarche\s+(de\s+no[eë]l|nocturne|fermier|paysan|bio\b|des?\s+producteurs|artisanal|aux\s+fleurs|de\s+cr[ée]ateurs|du\s+terroir)/i.test(raw)
+    ||/(^|[^a-z])(halles?|market|producteurs\s+locaux)(?![a-z])/i.test(raw);};
+const LT_ORDER=["brocante","fete","sport"];
+const ltypeOf=e=>{if(e.market)return /brocante|puces/i.test((e.tags||[]).join(" ")+" "+e.t)?"brocante":"marche";
+  const t=norm(e.t+" "+(e.tags||[]).join(" ")+" "+(e.w||""));if(LOCAL_T.brocante.rx.test(t))return"brocante";if(isMarketTxt(e))return"marche";
+  for(const k of LT_ORDER)if(LOCAL_T[k].rx.test(t))return k;return"exp";};
 const tgenresOf=e=>{const t=norm(e.t+" "+(e.tags||[]).join(" ")+" "+(e.desc||"")+" "+(e.kind||""));const o=Object.keys(THEATRE_G).filter(k=>THEATRE_G[k].rx.test(t));if(e.kind==="humour"&&!o.includes("humour"))o.unshift("humour");return o;};
 let CUR="concert",VPAGE=40,VPANEL=null;
 const VF=()=>{S.vf=S.vf||{};S.vf[CUR]=S.vf[CUR]||{};return S.vf[CUR];};
@@ -1448,8 +1485,8 @@ function vItems(cat,seg){
   L=groupMulti(L);
   if(cat==="expo"&&f.last){L.sort((a,b)=>D(a.until||a.end)-D(b.until||b.end));return L;}
   // tri : d'abord les billetteries (ou inscriptions) qui ouvrent dans les 7 jours, puis strictement chronologique
-  const soonOpen=e=>{const o=nextOpen(e);return o&&o-NOW<OPEN_SOON?o:null;};
-  L.forEach(e=>{e._open=soonOpen(e);});
+  // les événements dont on connaît la date d'ouverture de billetterie passent devant, de la plus proche à la plus lointaine
+  L.forEach(e=>{e._open=nextOpen(e);});
   const when=e=>e.approx?+new Date(D(e.d).getFullYear(),D(e.d).getMonth(),1)+1:ongoing(e)?(cat==="expo"?+D(e.until||e.end)-1e13:+NOW-1):+D(e.d);
   L.sort((a,b)=>(!!b._open)-(!!a._open)||(a._open&&b._open?a._open-b._open:0)||when(a)-when(b)||(a._k==null?999:a._k)-(b._k==null?999:b._k));
   return L;
@@ -1468,7 +1505,7 @@ function festProjected(real){
 }
 /* --- bulles --- */
 function bubbleData(){
-  return VKEYS.map(k=>{let n=0;try{n=vItems(k,null).filter(e=>!e.proj).length;}catch(e){}
+  return VKEYS.map(k=>{let n=0;if(k==="marche"){n=MK.items.filter(m=>km(locMk(),m)<=5).length;return{k,n,mine:0,main:false};}try{n=vItems(k,null).filter(e=>!e.proj).length;}catch(e){}
     const mine=VERTS[k].noDeck?0:feedCount(k);return{k,n,mine,main:!!VERTS[k].main};});
 }
 let FEEDC={v:-1,c:{}};
@@ -1494,7 +1531,7 @@ function renderBubbles(){
   const P=packCircles(items,W),H=Math.max(...P.map(p=>p.y+p.r))+4;
   box.style.height=H+"px";
   box.innerHTML=P.map(p=>`<button class="bubble v-${p.k}" role="listitem" data-vert="${p.k}" style="width:${p.r*2}px;height:${p.r*2}px;left:${p.x-p.r}px;top:${p.y-p.r}px">
-    <b style="font-size:${Math.max(13,Math.round(p.r/3.6))}px">${esc(VERTS[p.k].n)}</b><span>${LOADING&&!p.n?"…":p.mine?p.mine+" pour toi":fmtN(p.n)}</span></button>`).join("");
+    <b style="font-size:${Math.max(13,Math.round(p.r/3.6))}px">${esc(VERTS[p.k].n)}</b><span>${p.k==="marche"?(p.n?p.n+" autour":"Carte"):LOADING&&!p.n?"…":p.mine?p.mine+" pour toi":fmtN(p.n)}</span></button>`).join("");
   $("hello").textContent=S.name?"Salut "+S.name+", on sort ?":"Qu'est-ce qu'on fait ?";
 }
 addEventListener("resize",()=>{if(!$("v-discover").hidden)renderBubbles();});
@@ -1604,7 +1641,12 @@ function renderVList(){
     $("vt-more").hidden=true;return;}
   let h="",last="";
   const lastMode=CUR==="expo"&&f.last;
-  L.slice(0,VPAGE).forEach(e=>{const lab=lastMode?(()=>{const n=Math.ceil((D(e.until||e.end)-NOW)/864e5);return n<=1?"Dernier jour":n<=7?"Se termine cette semaine":"Se termine dans moins de 15 jours";})():e._open?(CUR==="competition"?"🔔 Inscriptions qui ouvrent cette semaine":"🔔 Billetterie qui ouvre cette semaine"):CUR==="expo"?monthBucket(e)[1]:dayBucket(e)[1];
+  const openLab=o=>{const what=CUR==="competition"?"Inscriptions":"Billetterie",t0=new Date(NOW);t0.setHours(0,0,0,0);const dd=(o-t0)/864e5;
+    if(dd<1)return"🔔 "+what+" aujourd'hui";if(dd<2)return"🔔 "+what+" demain";if(dd<7)return"🔔 "+what+" cette semaine";
+    return"🔔 "+what+" en "+MOL[o.getMonth()]+(o.getFullYear()!==NOW.getFullYear()?" "+o.getFullYear():"");};
+  let openDone=false;
+  L.slice(0,VPAGE).forEach(e=>{let lab=lastMode?(()=>{const n=Math.ceil((D(e.until||e.end)-NOW)/864e5);return n<=1?"Dernier jour":n<=7?"Se termine cette semaine":"Se termine dans moins de 15 jours";})():e._open?openLab(e._open):CUR==="expo"?monthBucket(e)[1]:dayBucket(e)[1];
+    if(!e._open&&!lastMode&&L[0]&&L[0]._open&&!openDone){openDone=true;h+=`<div class="mhead sep">Date d'ouverture pas encore connue</div>`;last="";}
     if(lab!==last){h+=`<div class="mhead">${esc(lab)}</div>`;last=lab;}
     h+=itemHTML(e,{pills:2,dist:e._k});});
   $("vt-list").innerHTML=h;$("vt-more").hidden=L.length<=VPAGE;$("vt-more").textContent="Afficher plus ("+(L.length-VPAGE)+")";
@@ -2334,6 +2376,142 @@ function ask(text){
 $("ask-form").onsubmit=ev=>{ev.preventDefault();ask($("ask-in").value);$("ask-in").value="";};
 $("ask-thread").addEventListener("click",ev=>{const b=ev.target.closest("[data-ask]");if(b)ask(b.dataset.ask);});
 
+/* ================= Marchés : carte des marchés autour de toi ================= */
+// Les marchés sont fixes et récurrents : on les prend dans OpenStreetMap (toute la France, avec jours et horaires
+// quand ils sont renseignés), plus les marchés officiels de la Ville de Paris collectés par le robot.
+const DAYS_FR=["Lun","Mar","Mer","Jeu","Ven","Sam","Dim"],DAYS_FRL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"];
+const OH_D={mo:0,tu:1,we:2,th:3,fr:4,sa:5,su:6};
+const OVERPASS=["https://overpass-api.de/api/interpreter","https://overpass.kumi.systems/api/interpreter"];
+let MK={key:"",items:[],busy:false,err:""},MKF={day:"all",r:5,sel:null},MKMAP=null;
+const wd=d=>(d.getDay()+6)%7; // lundi = 0
+const hmMin=t=>{const m=String(t).match(/(\d{1,2})[:h.](\d{2})/);return m?+m[1]*60+ +m[2]:null;};
+const minTxt=m=>Math.floor(m/60)+"h"+(m%60?String(m%60).padStart(2,"0"):"");
+// horaires OpenStreetMap (« Tu,Fr 07:00-13:30; Su 08:00-14:00 ») -> par jour, des plages en minutes
+function parseOH(raw){
+  const days=[[],[],[],[],[],[],[]];let ok=false,irregular=false;
+  String(raw||"").split(/;|\|\|/).forEach(rule=>{
+    let r=rule.trim().toLowerCase().replace(/\bph\s+off\b|\bph\b/g,"").trim();if(!r||/\boff\b|closed/.test(r))return;
+    if(/\[|week|jan|feb|mar\b|apr|may|jun|jul|aug|sep|oct|nov|dec|easter/.test(r))irregular=true;
+    r=r.replace(/\[[^\]]*\]/g,"").replace(/\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\b[^a-z]*(-\s*(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\b)?/g,"").replace(/week\s*[\d\-,\/]+/g,"").trim();
+    if(r==="24/7"){days.forEach(d=>d.push([0,1440]));ok=true;return;}
+    const m=r.match(/^((?:mo|tu|we|th|fr|sa|su)(?:\s*-\s*(?:mo|tu|we|th|fr|sa|su))?(?:\s*,\s*(?:mo|tu|we|th|fr|sa|su)(?:\s*-\s*(?:mo|tu|we|th|fr|sa|su))?)*)\s*(.*)$/);
+    if(!m)return;
+    const ds=[];m[1].split(",").forEach(part=>{const [a,b]=part.split("-").map(x=>OH_D[x.trim()]);if(a==null)return;if(b==null){ds.push(a);return;}for(let i=a;;i=(i+1)%7){ds.push(i);if(i===b)break;}});
+    const times=[];(m[2]||"").split(",").forEach(t=>{const x=t.match(/(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})/);if(x){const a=hmMin(x[1]),b=hmMin(x[2]);if(a!=null&&b!=null)times.push([a,b>a?b:b+1440]);}});
+    ds.forEach(d=>{days[d]=times.length?days[d].concat(times):days[d].concat([[-1,-1]]);});ok=true;});
+  return ok?{days,irregular,raw}:null;
+}
+// un marché collecté par le robot (Paris) : jours de tenue + horaires « 07h30–13h30 »
+function rulesFromDays(dl,w){const m=String(w||"").match(/(\d{1,2}h\d{2})\D+(\d{1,2}h\d{2})/);const t=m?[[hmMin(m[1]),hmMin(m[2])]]:[[-1,-1]];const days=[[],[],[],[],[],[],[]];(dl||[]).forEach(d=>days[d]=t.slice());return{days,irregular:false,raw:w||""};}
+// ouvert maintenant ? prochaine tenue ?
+function mkState(m,at){
+  at=at||NOW;if(!m.rules)return{k:"unk",t:"Jours non renseignés"};
+  const now=at.getHours()*60+at.getMinutes();
+  for(let n=0;n<8;n++){const day=(wd(at)+n)%7,rs=m.rules.days[day];if(!rs.length)continue;
+    for(const [a,b] of rs){
+      if(a<0){if(n===0)return{k:"today",t:"Aujourd'hui (horaires non précisés)",n};return{k:"soon",t:(n===1?"Demain":capital(DAYS_FRL[day]))+" (horaires non précisés)",n};}
+      if(n===0&&now>=a&&now<b)return{k:"open",t:"Ouvert jusqu'à "+minTxt(b%1440),n:0};
+      if(n===0&&now<a)return{k:"today",t:"Aujourd'hui de "+minTxt(a)+" à "+minTxt(b%1440),n:0,a};
+      if(n>0)return{k:"soon",t:(n===1?"Demain":capital(DAYS_FRL[day]))+" de "+minTxt(a)+" à "+minTxt(b%1440),n,a};}}
+  return{k:"unk",t:"Horaires : "+(m.rules.raw||"non renseignés")};
+}
+const mkOpenOn=(m,day)=>!!(m.rules&&m.rules.days[day].length);
+async function loadMarkets(force){
+  const c=locMk(),rad=Math.max(MKF.r,5)*1000+500,key=c.lat.toFixed(2)+","+c.lon.toFixed(2)+","+rad;
+  if(!force&&MK.key===key&&MK.items.length)return MK.items;
+  try{const c0=JSON.parse(localStorage.getItem("fomo2-mk")||"null");if(!force&&c0&&c0.key===key&&Date.now()-c0.at<7*864e5){MK={key,items:c0.items,busy:false,err:""};return MK.items;}}catch(e){}
+  MK.busy=true;MK.err="";renderMarkets(true);
+  const q=`[out:json][timeout:25];(node["amenity"="marketplace"](around:${rad},${c.lat},${c.lon});way["amenity"="marketplace"](around:${rad},${c.lat},${c.lon});relation["amenity"="marketplace"](around:${rad},${c.lat},${c.lon}););out center tags;`;
+  let j=null;
+  for(const u of OVERPASS){try{const r=await fetch(u,{method:"POST",body:"data="+encodeURIComponent(q),headers:{"Content-Type":"application/x-www-form-urlencoded"}});if(r.ok){j=await r.json();break;}}catch(e){}}
+  if(!j){MK.busy=false;MK.err="La carte des marchés ne répond pas, réessaie dans un instant.";return MK.items;}
+  const items=(j.elements||[]).map(el=>{const t=el.tags||{},lat=el.lat||(el.center&&el.center.lat),lon=el.lon||(el.center&&el.center.lon);if(!lat)return null;
+    const nm=t.name||t["name:fr"]||(t["addr:city"]?"Marché de "+t["addr:city"]:"Marché");
+    return{id:"osm-"+el.type+el.id,name:nm,lat,lon,rules:parseOH(t.opening_hours),oh:t.opening_hours||"",city:t["addr:city"]||"",street:t["addr:street"]||"",web:t.website||t["contact:website"]||"",covered:t.covered==="yes"||/halle/i.test(nm),src:"osm"};}).filter(Boolean);
+  // marchés officiels de Paris (robot FOMO) : jours et horaires fiables
+  EVENTS.filter(e=>e.market&&e.lat!=null).forEach(e=>{const near=items.find(x=>km(x,{lat:e.lat,lon:e.lon})<.15);const r=rulesFromDays(e.days,e.w);
+    if(near){if(!near.rules)near.rules=r;near.name=near.name==="Marché"?e.t:near.name;}else items.push({id:e.id,name:e.t,lat:e.lat,lon:e.lon,rules:r,oh:e.w,city:"Paris",street:e.venue,web:"",src:"paris"});});
+  MK={key,items,busy:false,err:""};
+  try{localStorage.setItem("fomo2-mk",JSON.stringify({key,at:Date.now(),items}));}catch(e){}
+  return items;
+}
+function locMk(){const h=homePos();return{lat:h.lat,lon:h.lon};}
+function mkFiltered(){
+  const c=locMk(),today=wd(NOW);
+  return MK.items.map(m=>Object.assign(m,{_k:km(c,m),_s:mkState(m)})).filter(m=>m._k<=MKF.r+.05)
+    .filter(m=>MKF.day==="all"||(MKF.day==="today"?mkOpenOn(m,today):MKF.day==="tomorrow"?mkOpenOn(m,(today+1)%7):MKF.day==="we"?mkOpenOn(m,5)||mkOpenOn(m,6):mkOpenOn(m,+MKF.day)))
+    .sort((a,b)=>{const o={open:0,today:1,soon:2,unk:3};return o[a._s.k]-o[b._s.k]||(a._s.n||0)-(b._s.n||0)||a._k-b._k;});
+}
+/* --- petite carte interactive (tuiles OpenStreetMap / CARTO), sans bibliothèque externe --- */
+function SlippyMap(el,onPin){
+  const T=256,st={z:14,lat:48.8566,lon:2.3522,w:0,h:0,pins:[],me:null,sel:null};
+  el.innerHTML=`<div class="tiles"></div><div class="pins"></div><div class="zoom"><button aria-label="Zoomer">+</button><button aria-label="Dézoomer">−</button></div><div class="attr">© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> · © CARTO</div>`;
+  const tl=el.querySelector(".tiles"),pl=el.querySelector(".pins");
+  const px=(lat,lon,z)=>{const n=T*2**z,s=Math.sin(lat*Math.PI/180);return{x:(lon+180)/360*n,y:(.5-Math.log((1+s)/(1-s))/(4*Math.PI))*n};};
+  const ll=(x,y,z)=>{const n=T*2**z,lon=x/n*360-180,k=Math.PI-2*Math.PI*y/n;return{lat:180/Math.PI*Math.atan(.5*(Math.exp(k)-Math.exp(-k))),lon};};
+  const tiles=new Map();
+  function draw(){
+    st.w=el.clientWidth;st.h=el.clientHeight;const c=px(st.lat,st.lon,st.z),x0=c.x-st.w/2,y0=c.y-st.h/2,n=2**st.z,want=new Set();
+    for(let tx=Math.floor(x0/T);tx<=Math.floor((x0+st.w)/T);tx++)for(let ty=Math.floor(y0/T);ty<=Math.floor((y0+st.h)/T);ty++){
+      if(ty<0||ty>=n)continue;const wx=((tx%n)+n)%n,k=st.z+"/"+wx+"/"+ty;want.add(k+"@"+tx);
+      let im=tiles.get(k+"@"+tx);if(!im){im=new Image();im.alt="";im.onerror=()=>{im.style.visibility="hidden";};im.src=`https://${"abcd"[(wx+ty)%4]}.basemaps.cartocdn.com/rastertiles/voyager/${k}.png`;tiles.set(k+"@"+tx,im);tl.appendChild(im);}
+      im.style.left=(tx*T-x0)+"px";im.style.top=(ty*T-y0)+"px";}
+    tiles.forEach((im,k)=>{if(!want.has(k)){im.remove();tiles.delete(k);}});
+    pl.innerHTML=st.pins.map(p=>{const q=px(p.lat,p.lon,st.z);return`<button class="pin ${p.cls}${st.sel===p.id?" sel":""}" data-pin="${esc(p.id)}" style="left:${q.x-x0}px;top:${q.y-y0}px" aria-label="${esc(p.label)}"><i></i></button>`;}).join("")
+      +(st.me?(()=>{const q=px(st.me.lat,st.me.lon,st.z);return`<span class="me" style="left:${q.x-x0}px;top:${q.y-y0}px"></span>`;})():"")
+      +(st.sel&&st.pop?(()=>{const p=st.pins.find(x=>x.id===st.sel);if(!p)return"";const q=px(p.lat,p.lon,st.z);return`<div class="pop" style="left:${q.x-x0}px;top:${q.y-y0}px">${st.pop}</div>`;})():"");
+  }
+  // déplacer, zoomer (molette, boutons, double toucher, pincer)
+  const pts=new Map();let last=null,pinch=null,moved=0;
+  el.addEventListener("pointerdown",ev=>{if(ev.target.closest(".zoom,.pop a"))return;el.setPointerCapture(ev.pointerId);pts.set(ev.pointerId,{x:ev.clientX,y:ev.clientY});moved=0;
+    if(pts.size===2){const [a,b]=[...pts.values()];pinch={d:Math.hypot(a.x-b.x,a.y-b.y)};}else last={x:ev.clientX,y:ev.clientY};});
+  el.addEventListener("pointermove",ev=>{if(!pts.has(ev.pointerId))return;pts.set(ev.pointerId,{x:ev.clientX,y:ev.clientY});
+    if(pts.size===2&&pinch){const [a,b]=[...pts.values()],d=Math.hypot(a.x-b.x,a.y-b.y);if(d/pinch.d>1.5){zoom(1);pinch.d=d;}else if(d/pinch.d<.66){zoom(-1);pinch.d=d;}return;}
+    if(!last)return;const dx=ev.clientX-last.x,dy=ev.clientY-last.y;moved+=Math.abs(dx)+Math.abs(dy);last={x:ev.clientX,y:ev.clientY};
+    const c=px(st.lat,st.lon,st.z),p=ll(c.x-dx,c.y-dy,st.z);st.lat=p.lat;st.lon=p.lon;draw();});
+  const up=ev=>{const wasTap=moved<6&&pts.size===1;pts.delete(ev.pointerId);if(pts.size<2)pinch=null;if(!pts.size)last=null;
+    if(wasTap){const b=document.elementsFromPoint(ev.clientX,ev.clientY).find(x=>x.dataset&&x.dataset.pin);if(b)onPin(b.dataset.pin);else if(!ev.target.closest(".pop")){st.sel=null;draw();}}};
+  el.addEventListener("pointerup",up);el.addEventListener("pointercancel",up);
+  el.addEventListener("wheel",ev=>{ev.preventDefault();zoom(ev.deltaY<0?1:-1);},{passive:false});
+  el.addEventListener("dblclick",()=>zoom(1));
+  const [bi,bo]=el.querySelectorAll(".zoom button");bi.onclick=()=>zoom(1);bo.onclick=()=>zoom(-1);
+  function zoom(d){st.z=Math.max(5,Math.min(18,st.z+d));draw();}
+  return{set(o){Object.assign(st,o);draw();},
+    fit(points,me){const all=points.concat(me?[me]:[]);if(!all.length)return;st.w=el.clientWidth||360;st.h=el.clientHeight||360;
+      let z=16;for(;z>5;z--){const ps=all.map(p=>px(p.lat,p.lon,z)),w=Math.max(...ps.map(p=>p.x))-Math.min(...ps.map(p=>p.x)),h=Math.max(...ps.map(p=>p.y))-Math.min(...ps.map(p=>p.y));if(w<st.w-60&&h<st.h-70)break;}
+      const ps=all.map(p=>px(p.lat,p.lon,z)),cx=(Math.max(...ps.map(p=>p.x))+Math.min(...ps.map(p=>p.x)))/2,cy=(Math.max(...ps.map(p=>p.y))+Math.min(...ps.map(p=>p.y)))/2,c=ll(cx,cy,z);
+      Object.assign(st,{z,lat:c.lat,lon:c.lon});draw();},
+    redraw:draw,state:st};
+}
+function mkDaysHTML(m){if(!m.rules)return"";const t=wd(NOW);return`<div class="days">${DAYS_FR.map((d,i)=>`<span class="${m.rules.days[i].length?"on":""}"${i===t?' style="outline:1.5px solid var(--v-marche)"':""}>${d}</span>`).join("")}</div>`;}
+const mkGo=m=>`https://www.google.com/maps/dir/?api=1&destination=${m.lat},${m.lon}`;
+function mkPop(m){return`<b>${esc(m.name)}</b><small>${esc(m._s.t)}</small>${m.street?`<small>${esc(m.street)}</small>`:""}<small><a href="${mkGo(m)}" target="_blank" rel="noopener">Itinéraire</a> · ${m._k<1?Math.round(m._k*1000)+" m":String(Math.round(m._k*10)/10).replace(".",",")+" km"}</small>`;}
+async function renderMarkets(skipLoad){
+  const t=wd(NOW),dayOpts=[["all","Tous"],["today","Aujourd'hui"],["tomorrow","Demain"],["we","Ce week-end"]].concat(DAYS_FR.map((d,i)=>[String(i),d]).filter(x=>+x[0]!==t&&+x[0]!==(t+1)%7));
+  $("mk-days").innerHTML=dayOpts.map(([k,n])=>`<button class="chip" data-mkd="${k}" aria-pressed="${MKF.day===k}">${n}</button>`).join("");
+  $("mk-rad").innerHTML=[1,2,5,10,20].map(r=>`<button class="chip" data-mkr="${r}" aria-pressed="${MKF.r===r}">${r} km</button>`).join("");
+  $("mk-locate").hidden=!!(S.home&&S.home.src==="gps");
+  if(!MKMAP)MKMAP=SlippyMap($("mk-map"),id=>{MKF.sel=MKF.sel===id?null:id;drawMk(false);const li=document.querySelector(`[data-mk="${CSS.escape(id)}"]`);if(li&&MKF.sel)li.scrollIntoView({block:"nearest",behavior:"smooth"});});
+  if(!skipLoad){await loadMarkets();}
+  drawMk(true);
+}
+function drawMk(fit){
+  const L=mkFiltered(),note=$("mk-note"),me=locMk();
+  note.hidden=!(MK.busy||MK.err||!L.length);note.textContent=MK.busy?"Je cherche les marchés autour de toi…":MK.err||(MK.items.length?"Aucun marché ce jour-là dans ce rayon : élargis le rayon ou change de jour.":"Aucun marché trouvé autour de toi.");
+  const sel=L.find(m=>m.id===MKF.sel);
+  MKMAP.set({pins:L.map(m=>({id:m.id,lat:m.lat,lon:m.lon,label:m.name,cls:m._s.k==="open"?"open":m._s.k==="today"?"soon":""})),me:S.home&&S.home.src==="gps"?me:{lat:me.lat,lon:me.lon},sel:MKF.sel,pop:sel?mkPop(sel):""});
+  if(fit)MKMAP.fit(L.slice(0,25),me);
+  $("mk-list").innerHTML=L.slice(0,80).map(m=>`<div class="item mk-item" data-mk="${esc(m.id)}" role="button" tabindex="0" style="grid-template-columns:1fr auto${MKF.sel===m.id?";border-color:var(--v-marche)":""}">
+    <div style="min-width:0"><div class="ti">${esc(m.name)}</div><div class="st ${m._s.k==="open"?"open":m._s.k==="today"?"soon":""}">${esc(m._s.t)}</div>
+      <div class="pl">${esc([m.street,m.city].filter(Boolean).join(", "))}${m.street||m.city?" · ":""}${m._k<1?Math.round(m._k*1000)+" m":String(Math.round(m._k*10)/10).replace(".",",")+" km"}</div>${mkDaysHTML(m)}</div>
+    <a class="go" href="${mkGo(m)}" target="_blank" rel="noopener">Itinéraire ›</a></div>`).join("");
+}
+$("mk-days").addEventListener("click",ev=>{const b=ev.target.closest("[data-mkd]");if(!b)return;MKF.day=MKF.day===b.dataset.mkd&&b.dataset.mkd!=="all"?"all":b.dataset.mkd;MKF.sel=null;renderMarkets(true);});
+$("mk-rad").addEventListener("click",async ev=>{const b=ev.target.closest("[data-mkr]");if(!b)return;MKF.r=+b.dataset.mkr;MKF.sel=null;if(MKF.r>5)await loadMarkets();renderMarkets(true);});
+$("mk-list").addEventListener("click",ev=>{if(ev.target.closest("a"))return;const it=ev.target.closest("[data-mk]");if(!it)return;MKF.sel=it.dataset.mk;const m=MK.items.find(x=>x.id===MKF.sel);
+  if(m){MKMAP.state.lat=m.lat;MKMAP.state.lon=m.lon;MKMAP.state.z=Math.max(MKMAP.state.z,15);}drawMk(false);$("mk-map").scrollIntoView({block:"nearest",behavior:"smooth"});});
+$("mk-locate").onclick=async()=>{try{await locate();MK.key="";await renderMarkets();}catch(e){notify("Position",e.message);}};
+
 /* ================= profil et connexions ================= */
 const GHELP=()=>`<ol><li>Avec un compte Gmail <b>personnel</b> (les comptes d'école ne peuvent pas créer de projet), va sur <a href="https://console.cloud.google.com/projectcreate" target="_blank" rel="noopener">console.cloud.google.com</a> et crée un projet « FOMO ».</li>
   <li><b>API et services → Bibliothèque</b> : active Google Calendar API, Gmail API et YouTube Data API v3.</li>
@@ -2449,7 +2627,7 @@ $("b-reset").onclick=function(){if(!armed){armed=true;this.textContent="Confirme
 
 /* ================= navigation ================= */
 let VIEW="discover",PREV="discover";
-const TAB_OF={discover:"discover",vert:"discover",foryou:"foryou",agenda:"agenda",ask:"ask",settings:null};
+const TAB_OF={discover:"discover",vert:"discover",markets:"discover",foryou:"foryou",agenda:"agenda",ask:"ask",settings:null};
 function show(v){
   if(v==="back")v=PREV==="settings"?"discover":PREV;
   if(v!==VIEW&&VIEW!=="settings")PREV=VIEW;VIEW=v;
@@ -2457,6 +2635,7 @@ function show(v){
   document.querySelectorAll("nav.tabs button").forEach(b=>b.setAttribute("aria-selected",b.dataset.v===TAB_OF[v]));
   $("ask-bar").hidden=v!=="ask";
   if(v==="discover")renderBubbles();if(v==="vert")renderVert();if(v==="foryou"){FY_N=12;FEED_T0=Date.now();renderForYou();}
+  if(v==="markets")renderMarkets();
   if(v==="agenda")renderAgenda();if(v==="ask")renderAsk();if(v==="settings")renderProfile();
   window.scrollTo(0,0);
 }
@@ -2507,6 +2686,7 @@ window.__fomo={get S(){return S},set S(v){S=v},get CFG(){return CFG},get EVENTS(
   if(!S.onboarded){OB_FB=back?esc(back):"";runOnboarding(S.obStep||0);}
   else if(back)show("settings");
   await loadEvents();
+  loadMarkets().then(()=>{if(VIEW==="discover")renderBubbles();}).catch(()=>{});
   startAutoRefresh();scheduleNotifs();
   if(S.onboarded&&Object.keys(S.rel).length<10)refreshRelated(8);
 })();
