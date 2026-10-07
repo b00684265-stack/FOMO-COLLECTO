@@ -2,17 +2,17 @@
  "cities": {
   "paris": {
    "name": "Paris",
-   "updated": "2026-10-06T15:28:46.392236+00:00",
-   "n": 3949,
+   "updated": "2026-10-07T04:33:14.937569+00:00",
+   "n": 4148,
    "sources": {
     "ra": {
-     "n": 163
+     "n": 157
     },
     "dice": {
-     "n": 438
+     "n": 439
     },
     "tm": {
-     "n": 2897
+     "n": 2883
     },
     "fnac": {
      "n": 0,
@@ -37,7 +37,7 @@
   },
   "france": {
    "name": "Festivals",
-   "updated": "2026-10-06T15:28:46.392236+00:00",
+   "updated": "2026-10-07T04:33:14.937569+00:00",
    "n": 1836,
    "sources": {
     "festivals": {
@@ -47,7 +47,7 @@
   },
   "sports": {
    "name": "Sport (France)",
-   "updated": "2026-10-06T15:28:46.392236+00:00",
+   "updated": "2026-10-07T04:33:14.937569+00:00",
    "n": 1010,
    "sources": {
     "sports": {
@@ -57,17 +57,17 @@
   },
   "races": {
    "name": "Courses (France)",
-   "updated": "2026-10-06T15:28:46.392236+00:00",
-   "n": 5156,
+   "updated": "2026-10-07T04:33:14.937569+00:00",
+   "n": 5199,
    "sources": {
     "races": {
-     "n": 5156
+     "n": 5199
     }
    }
   },
   "artists": {
    "name": "Dates de tes artistes",
-   "updated": "2026-10-06T15:28:46.392236+00:00",
+   "updated": "2026-10-07T04:33:14.937569+00:00",
    "n": 2,
    "sources": {
     "artists": {
@@ -256,7 +256,179 @@
      "err": "HTTP Error 404: Not Found"
     }
    }
+  },
+  "toulon": {
+   "name": "Toulon",
+   "updated": "2026-10-07T04:33:14.937569+00:00",
+   "n": 481,
+   "sources": {
+    "ra": {
+     "n": 0
+    },
+    "dice": {
+     "n": 0,
+     "err": "HTTP Error 404: Not Found"
+    },
+    "tm": {
+     "n": 311
+    },
+    "fnac": {
+     "n": 0,
+     "err": "HTTP Error 403: Forbidden"
+    },
+    "dtour": {
+     "n": 109
+    },
+    "marches": {
+     "n": 0
+    },
+    "br": {
+     "n": 64
+    },
+    "tac": {
+     "n": 0
+    },
+    "offi": {
+     "n": 0
+    }
+   }
+  },
+  "le-havre": {
+   "name": "Le Havre",
+   "updated": "2026-10-07T04:33:14.937569+00:00",
+   "n": 983,
+   "sources": {
+    "ra": {
+     "n": 0
+    },
+    "dice": {
+     "n": 0,
+     "err": "HTTP Error 404: Not Found"
+    },
+    "tm": {
+     "n": 97
+    },
+    "fnac": {
+     "n": 0,
+     "err": "HTTP Error 403: Forbidden"
+    },
+    "dtour": {
+     "n": 888
+    },
+    "marches": {
+     "n": 0
+    },
+    "br": {
+     "n": 0
+    },
+    "tac": {
+     "n": 0
+    },
+    "offi": {
+     "n": 0
+    }
+   }
+  },
+  "brest": {
+   "name": "Brest",
+   "updated": "2026-10-07T04:33:14.937569+00:00",
+   "n": 799,
+   "sources": {
+    "ra": {
+     "n": 0
+    },
+    "dice": {
+     "n": 0,
+     "err": "HTTP Error 404: Not Found"
+    },
+    "tm": {
+     "n": 156
+    },
+    "fnac": {
+     "n": 0,
+     "err": "HTTP Error 403: Forbidden"
+    },
+    "dtour": {
+     "n": 582
+    },
+    "marches": {
+     "n": 0
+    },
+    "br": {
+     "n": 62
+    },
+    "tac": {
+     "n": 0
+    },
+    "offi": {
+     "n": 0
+    }
+   }
+  },
+  "caen": {
+   "name": "Caen",
+   "updated": "2026-10-07T04:33:14.937569+00:00",
+   "n": 785,
+   "sources": {
+    "ra": {
+     "n": 0
+    },
+    "dice": {
+     "n": 0,
+     "err": "HTTP Error 404: Not Found"
+    },
+    "tm": {
+     "n": 173
+    },
+    "fnac": {
+     "n": 0,
+     "err": "HTTP Error 403: Forbidden"
+    },
+    "dtour": {
+     "n": 566
+    },
+    "marches": {
+     "n": 0
+    },
+    "br": {
+     "n": 47
+    },
+    "tac": {
+     "n": 0
+    },
+    "offi": {
+     "n": 0
+    }
+   }
+  },
+  "munich": {
+   "name": "Munich",
+   "updated": "2026-10-07T04:33:14.937569+00:00",
+   "n": 113,
+   "sources": {
+    "ra": {
+     "n": 115
+    },
+    "dice": {
+     "n": 0,
+     "err": "HTTP Error 404: Not Found"
+    }
+   }
+  },
+  "hambourg": {
+   "name": "Hambourg",
+   "updated": "2026-10-07T04:33:14.937569+00:00",
+   "n": 0,
+   "sources": {
+    "ra": {
+     "n": 0
+    },
+    "dice": {
+     "n": 0,
+     "err": "HTTP Error 404: Not Found"
+    }
+   }
   }
  },
- "updated": "2026-10-06T15:28:46.392236+00:00"
+ "updated": "2026-10-07T04:33:14.937569+00:00"
 }
