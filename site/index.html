@@ -53,8 +53,21 @@ a{color:inherit}
 .logo{font-weight:800;font-size:22px;letter-spacing:-.02em;font-variation-settings:"wdth" 78}
 .logo i{font-style:normal;color:var(--hot)}
 .top .right{display:flex;align-items:center;gap:8px}
-.where-chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--card);border-radius:999px;padding:6px 12px;font-size:14px;cursor:pointer}
-.where-chip svg{width:14px;height:14px}
+.where-chip{display:inline-flex;align-items:center;gap:9px;border:1.5px solid var(--line);background:var(--card);border-radius:18px;padding:7px 12px 7px 11px;min-height:48px;cursor:pointer;box-shadow:0 2px 10px -6px rgba(20,20,50,.25);max-width:58vw}
+.where-chip svg{width:19px;height:19px;color:var(--hot);flex:none}
+.where-chip .wt{display:flex;flex-direction:column;align-items:flex-start;line-height:1.1;min-width:0}
+.where-chip .wt b{font-size:16px;font-weight:750;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:40vw}
+.where-chip .wt small{font-size:12px;color:var(--ink3);font-weight:600}
+.where-chip .wc{color:var(--ink3);font-size:12px}
+.where-chip.custom{border-color:var(--hot)}
+.wsheet h3{font-size:24px;font-weight:800;letter-spacing:-.02em}
+.wopt{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:1.5px solid var(--line);background:var(--card);border-radius:16px;padding:14px;font-size:16px;font-weight:650;cursor:pointer}
+.wopt small{display:block;font-size:13px;color:var(--ink3);font-weight:500}
+.wopt[aria-pressed="true"]{border-color:var(--hot);background:var(--hot-soft)}
+.wopt .ic{font-size:22px}
+.wrecent{display:flex;flex-wrap:wrap;gap:8px}
+.wrad b{font-size:20px}
+.wsheet .range{height:40px}
 .icon-btn{width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:var(--card);display:grid;place-items:center;cursor:pointer}
 .icon-btn svg{width:18px;height:18px}
 .view{display:flex;flex-direction:column;gap:14px}
@@ -386,6 +399,23 @@ html,body{overscroll-behavior-y:contain}
 .sheet-x{position:sticky;top:8px;float:right;margin:-14px 12px 0 0;z-index:3;width:38px;height:38px;border-radius:50%;border:0;background:rgba(20,20,40,.55);color:#fff;font-size:17px;cursor:pointer;backdrop-filter:blur(6px)}
 .sheet .about{font-size:15px;line-height:1.45;color:var(--ink2);margin:0}
 .venue-link{border:0;background:none;padding:0;font:inherit;color:inherit;text-align:left;text-decoration:underline;text-decoration-color:var(--vc);text-underline-offset:3px;cursor:pointer}
+.about-s{color:var(--ink2);font-style:italic;font-size:13.5px;line-height:1.35;margin:2px 0 0}
+.fcard .about-s{font-size:14.5px;margin:4px 0 2px}
+.vtabs{display:flex;gap:8px;overflow-x:auto;scroll-snap-type:x proximity;padding:2px 2px 6px;margin:0 -2px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.vtabs::-webkit-scrollbar{display:none}
+.vtabs{-webkit-mask-image:linear-gradient(90deg,#000 88%,transparent);mask-image:linear-gradient(90deg,#000 88%,transparent);padding-right:28px}
+@media (min-width:520px){.vtabs{-webkit-mask-image:none;mask-image:none}}
+.vtabs{-webkit-mask-image:linear-gradient(90deg,#000 88%,transparent);mask-image:linear-gradient(90deg,#000 88%,transparent);padding-right:28px}
+@media (min-width:520px){.vtabs{-webkit-mask-image:none;mask-image:none}}
+.vtabs button{flex:none;scroll-snap-align:start;display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 8px 0 14px;border-radius:999px;border:1.5px solid var(--line);background:var(--card);color:var(--ink);font-weight:650;font-size:14.5px;white-space:nowrap;cursor:pointer;transition:background .15s,border-color .15s,color .15s,transform .1s}
+.vtabs button:active{transform:scale(.97)}
+.vtabs button .ti{font-size:16px;line-height:1}
+.vtabs button .tc{min-width:26px;height:26px;padding:0 8px;border-radius:999px;background:var(--sunk);color:var(--ink2);font-size:12.5px;font-weight:700;display:inline-flex;align-items:center;justify-content:center}
+.vtabs button[aria-selected="true"]{background:var(--vc);border-color:var(--vc);color:#fff;box-shadow:0 4px 14px -6px var(--vc)}
+.v-festival .vtabs button[aria-selected="true"],.vtabs.v-festival button[aria-selected="true"]{color:#2A1A00}
+.vtabs button[aria-selected="true"] .tc{background:rgba(255,255,255,.25);color:inherit}
+.vtabs button[data-empty]{display:none}
+@media (min-width:520px){.vtabs{flex-wrap:wrap;overflow:visible}}
 </style>
 </head>
 <body>
@@ -393,7 +423,7 @@ html,body{overscroll-behavior-y:contain}
   <header class="top">
     <div class="logo">FO<i>MO</i></div>
     <div class="right">
-      <button class="where-chip" id="where" aria-label="Changer de ville"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-6-5.3-6-11a6 6 0 0 1 12 0c0 5.7-6 11-6 11z"/><circle cx="12" cy="10" r="2.2"/></svg><span id="where-txt">Paris</span></button>
+      <button class="where-chip" id="where" aria-label="Changer de ville"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-6-5.3-6-11a6 6 0 0 1 12 0c0 5.7-6 11-6 11z"/><circle cx="12" cy="10" r="2.2"/></svg><span class="wt"><b id="where-txt">Paris</b><small id="where-r">Rayon auto</small></span><span class="wc" aria-hidden="true">▾</span></button>
       <button class="icon-btn" id="b-settings" aria-label="Réglages et connexions"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
     </div>
   </header>
@@ -409,7 +439,7 @@ html,body{overscroll-behavior-y:contain}
   <section class="view" id="v-vert" hidden>
     <div class="vhead"><button class="icon-btn back" data-go="discover" aria-label="Retour"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button><h1 id="vt-title"></h1></div>
     <div class="vbar" id="vt-bar"></div>
-    <div class="seg" id="vt-seg" role="tablist"></div>
+    <div class="vtabs" id="vt-seg" role="tablist"></div>
     <input class="txt search" id="vt-q" type="search" placeholder="Rechercher un événement, un artiste, un lieu…" autocomplete="off" aria-label="Rechercher">
     <div class="filters" id="vt-filters"></div>
     <div class="panel" id="vt-panel" hidden></div>
@@ -767,6 +797,7 @@ function fresh(){return{name:"",onboarded:false,qdone:false,home:null,radius:15,
 const load=(k,f)=>{try{const r=localStorage.getItem(k);if(r)return Object.assign(f(),JSON.parse(r));}catch(e){}return f();};
 let CFG=load(CFG_KEY,freshCfg),S=load(ST_KEY,fresh);
 // nouvel univers « Conférences » : ajouté aux utilisateurs qui ont déjà choisi leurs univers (ils peuvent le retirer dans Réglages)
+if(!S.migLoc){Object.values(S.vf||{}).forEach(f=>{delete f.loc;delete f.place;delete f.rad;delete f.r;});S.migLoc=1;}
 if((S.verts||[]).length&&!S.migSpec){S.verts=S.verts.filter(k=>k!=="conference").concat(["spectacle"]);S.migSpec=1;}
 if((S.verts||[]).length&&!S.migXp){S.verts=S.verts.concat(["experience"]);S.migXp=1;}
 // le robot FOMO collecte pour tous les utilisateurs : son dépôt public est lu directement, sans compte ni réglage
@@ -850,7 +881,7 @@ function waitIn(t){return /liste d.attente|waiting ?list|waitlist/i.test(t||"");
 // un musée, une visite ou un parcours lumineux vendu en « arts et spectacles » n'est pas du théâtre
 const MUSEUM_RX=/\bmusee|museum|galerie|fondation |grand palais|parc floral|jardin d.acclimatation|aquarium|\bzoo\b|chateau de versailles|catacombes|exposition|\bexpo\b|collections? permanentes|entree simple|visite guidee|visite en famille|odyssee lumineuse|illumination/;
 function finalize(e){
-  if(e.cat==="theatre"&&MUSEUM_RX.test(norm(e.t+" "+(e.venue||"")))){e.cat=/visite|lumin|illumin|immersi|aquarium|zoo|catacombes|parc floral/.test(norm(e.t+" "+(e.venue||"")))?"experience":"expo";}
+  if((e.cat==="theatre"||e.cat==="spectacle")&&e.src!=="fever"&&MUSEUM_RX.test(norm(e.t+" "+(e.venue||"")))){e.cat=/visite|lumin|illumin|immersi|aquarium|zoo|catacombes|parc floral/.test(norm(e.t+" "+(e.venue||"")))?"experience":"expo";}
   // enrichissements communs : genres, tailles de festival, types d'expo, sport
   const txt=e.t+" "+(e.w||"")+" "+(e.tags||[]).join(" ")+" "+(e.desc||"");
   if(!e.genres||!e.genres.length)e.genres=genresOf(txt+" "+(e.lineup||[]).join(" "));
@@ -1570,7 +1601,7 @@ function itemHTML(e,opt){
   const sub=e.cat==="sport"?[e.comp,placeOf(e)].filter(Boolean).join(", "):e.cat==="competition"?[(e.w||"").split(" / ").slice(0,2).join(" / "),e.city].filter(Boolean).join(", "):placeOf(e);
   const rg=opt.when?"":rangeText(e),sp=e.cat==="sport"&&SPORTS[e.sport]?SPORTS[e.sport]:null;
   return`<div class="item${sp?" sp":""}" data-info="${esc(e.id)}" role="button" tabindex="0">${dateBlock(e)}
-    <div style="min-width:0"><div class="ti">${esc(e.t)}</div>${rg?`<div class="pl rg">${esc(rg)}</div>`:""}<div class="pl">${esc(opt.when?[whenText(e),placeOf(e)].filter(Boolean).join(", "):sub)}</div>${opt.dist!=null&&e.cat==="local"?`<div class="pl">${opt.dist<1?Math.round(opt.dist*1000)+" m":String(Math.round(opt.dist*10)/10).replace(".",",")+" km"} de toi</div>`:""}
+    <div style="min-width:0"><div class="ti">${esc(e.t)}</div>${rg?`<div class="pl rg">${esc(rg)}</div>`:""}<div class="pl">${esc(opt.when?[whenText(e),placeOf(e)].filter(Boolean).join(", "):sub)}</div>${aboutShort(e)?`<div class="pl about-s">${esc(aboutShort(e))}</div>`:""}${opt.dist!=null&&e.cat==="local"?`<div class="pl">${opt.dist<1?Math.round(opt.dist*1000)+" m":String(Math.round(opt.dist*10)/10).replace(".",",")+" km"} de toi</div>`:""}
     ${p.length||opt.pct?`<div class="pills">${opt.pct?`<span class="pill hot">${opt.pct} % pour toi</span>`:""}${p.map(x=>`<span class="pill ${x.c}">${esc(x.t)}</span>`).join("")}</div>`:""}</div>
     ${sp?`<div class="spt" title="${esc(sp.n)}"><span aria-hidden="true">${sp.e}</span><small>${esc(sp.n)}</small></div>`:"<span></span>"}${opt.agenda?`<div class="iacts"><button class="cal" data-cal="${esc(e.id)}" aria-pressed="${inCal(e.id)}">📅 Retirer de l'agenda</button></div>`:opt.noActs?"":actsHTML(e)}</div>`;
 }
@@ -1588,7 +1619,7 @@ function fcardHTML(x){
   return`<article class="fcard v-${e.cat}" data-id="${esc(e.id)}">
     <div class="img v-${e.cat}" style="${imgStyle(e)}" data-info="${esc(e.id)}"><span class="dchip">${e._n>1||e.until||e.anytime||(e.end&&D(e.end)-D(e.d)>20*36e5)?esc(rangeText(e).split(" · ")[0]):bigDate(e)}</span>
       <span class="vtag v-${e.cat}">${esc(VERTS[e.cat].n)}${sub?", "+esc(sub):""}</span>${x.explore?`<span class="explore">Pour mieux te connaître</span>`:ring(x.pct)}${x.loved&&!x.dream?`<span class="explore loved">♥ Tu l'as aimé</span>`:""}</div>
-    <div class="bd"><h3>${esc(e.t)}</h3><div class="when">${esc(e._n>1||e.until||e.anytime||(e.end&&D(e.end)-D(e.d)>20*36e5)?rangeText(e):whenText(e))}${placeOf(e)?", "+esc(placeOf(e)):""}</div>
+    <div class="bd"><h3>${esc(e.t)}</h3>${aboutShort(e)?`<p class="about-s">${esc(aboutShort(e))}</p>`:""}<div class="when">${esc(e._n>1||e.until||e.anytime||(e.end&&D(e.end)-D(e.d)>20*36e5)?rangeText(e):whenText(e))}${placeOf(e)?", "+esc(placeOf(e)):""}</div>
       ${!x.explore&&x.r.length?`<ul class="why">${x.r.map((r,i)=>`<li${i===0&&x.warn?' class="warn"':""}>${esc(r)}</li>`).join("")}</ul>`:""}
       <div class="row" style="margin-top:8px">${infoPills(e).slice(0,3).map(p=>`<span class="pill ${p.c}">${esc(p.t)}</span>`).join("")}</div>
       <div class="acts">${heartBtn(e,"like-btn")}<button class="nope-btn" data-nope="${esc(e.id)}">✕ Pas pour moi</button>${calBtn(e)}</div>
@@ -1607,6 +1638,13 @@ $("scrim").onclick=closeSheet;
   sh.addEventListener("touchend",()=>{if(y0==null)return;sh.style.transition="";sh.style.transform="";if(dy>90)closeSheet();y0=null;dy=0;},{passive:true});})();
 document.addEventListener("keydown",ev=>{if(ev.key==="Escape"&&!$("sheet").hidden)closeSheet();});
 // en deux phrases : ce que c'est (texte de la billetterie quand il existe, sinon déduit du genre et du lieu)
+// version courte, sous l'événement dans les listes et les cartes
+function aboutShort(e){
+  if(!["theatre","spectacle","expo","experience"].includes(e.cat))return"";
+  const d=String(e.desc||"").replace(/\s+/g," ").trim();
+  if(d.length>=30&&!/^\d|€/.test(d)){const s=d.match(/^(.{30,130}?[.!?])(\s|$)/);return s?s[1]:d.slice(0,120).replace(/\s\S*$/,"")+"…";}
+  const t=e.cat==="theatre"?(tgenresOf(e).map(g=>THEATRE_G[g].n)[0]||"Pièce de théâtre"):e.cat==="spectacle"?((e.stypes||[]).map(t=>SPEC_T[t].n)[0]||"Spectacle"):e.cat==="expo"?((e.etypes||[])[0]?"Exposition · "+EXPO_TYPES[e.etypes[0]].n:"Exposition"):((e.xtypes||[])[0]?XP_T[e.xtypes[0]].n:"Expérience");
+  return t+(e.rating>=8?" · noté "+String(e.rating).replace(".",",")+"/10":"")+(e.buzz?" · très attendu":"");}
 function aboutText(e){
   if(!["theatre","spectacle","expo","experience"].includes(e.cat))return"";
   const d=String(e.desc||e.w||"").replace(/\s+/g," ").trim();
@@ -1676,15 +1714,15 @@ document.addEventListener("keydown",ev=>{if(ev.key==="Enter"&&ev.target.matches&
 /* ================= Découverte : les bulles, puis l'écran de chaque univers ================= */
 // segments en haut, filtres (appliqués à chaque toucher), menu de lieu identique partout
 const VCONF={
-  concert:{segs:[["soon","⏳ Bientôt en vente"],["last","🔥 Dernières places"],["now","🎟️ Billetterie ouverte"],["hype","⭐ Les plus attendus"]],filters:["loc","date","genre"],radius:60},
-  soiree:{segs:[["tonight","Ce soir"],["we","Ce week-end"],["later","Plus tard"]],filters:["loc","date","genre","vtype"],radius:35},
-  festival:{segs:[["soon","⏳ À venir"],["now","🎟️ Billetterie ouverte"]],filters:["loc","date","genre","size"],radius:0},
-  sport:{segs:[["soon","⏳ À venir"],["now","🎟️ Billetterie ouverte"]],filters:["loc","date","sport"],radius:120},
-  competition:{segs:[["soon","⏳ À venir"],["now","📝 Inscriptions ouvertes"]],filters:["loc","date","disc","dist","dplus"],radius:100},
-  theatre:{segs:[["soon","⏳ À venir"],["now","🎟️ Billetterie ouverte"]],filters:["loc","date","tgenre","fav"],radius:30},
-  expo:{segs:null,filters:["loc","last","date","etype","free"],radius:30,near:true},
-  spectacle:{segs:[["soon","⏳ À venir"],["now","🎟️ Billetterie ouverte"],["hype","⭐ Les plus attendus"]],filters:["loc","date","stype"],radius:30},
-  experience:{segs:null,filters:["loc","date","xtype","free"],radius:20},
+  concert:{segs:[["soon","⏳|Bientôt en vente"],["last","🔥|Dernières places"],["now","🎟️|En vente"]],filters:["date","genre"],radius:60},
+  soiree:{segs:[["tonight","🌙|Ce soir"],["we","🪩|Ce week-end"],["later","📆|Plus tard"]],filters:["date","genre","vtype"],radius:35},
+  festival:{segs:[["soon","⏳|Bientôt en vente"],["now","🎟️|En vente"]],filters:["date","genre","size"],radius:0},
+  sport:{segs:[["soon","⏳|Bientôt en vente"],["now","🎟️|En vente"]],filters:["date","sport"],radius:120},
+  competition:{segs:[["soon","⏳|Bientôt ouvertes"],["now","📝|Inscriptions ouvertes"]],filters:["date","disc","dist","dplus"],radius:100},
+  theatre:{segs:[["soon","⏳|Bientôt en vente"],["now","🎟️|En vente"]],filters:["date","tgenre","fav"],radius:30},
+  expo:{segs:null,filters:["last","date","etype","free"],radius:30,near:true},
+  spectacle:{segs:[["hype","⭐|Les plus attendus"],["now","🎟️|En vente"],["soon","⏳|Bientôt en vente"]],filters:["date","stype"],radius:30},
+  experience:{segs:null,filters:["date","xtype","free"],radius:20},
   local:{segs:null,filters:["date","ltype","free"],radius:5,near:true,fixedR:5}
 };
 const SEG_HELP={concert:{soon:"Annoncés, billetterie pas encore ouverte. Avec 📅, FOMO te prévient à l'ouverture.",last:"Grandes salles et stades (Accor Arena, La Défense Arena, Stade de France, Zénith…) dont la billetterie est ouverte : les places partent vite."},
@@ -1744,13 +1782,15 @@ function segOf(e){
 function locCenter(){const p=vPlaceOf(VF());return p||homePos();}
 // lieu choisi pour cet univers : une ville cherchée, la ville des soirées, ou (ancien réglage) une grande ville
 const LOC_CODES=c=>["fr","eu","intl"].includes(c)||/^[A-Z]{2}$/.test(c||"");
+// lieu de recherche de Découverte : choisi en haut à droite (sinon chez toi). Pour toi garde ses propres règles.
 function vPlaceOf(f){
+  if(S.browse&&S.browse.lat!=null)return S.browse;
   if(f.place&&f.place.lat!=null)return f.place;
   if(CUR==="soiree"&&S.nightCity){const p=S.nightCity.lat!=null?S.nightCity:cityPos(S.nightCity.city);if(p)return{name:S.nightCity.city,lat:p.lat,lon:p.lon};}
   if(f.loc&&!LOC_CODES(f.loc)){const p=cityPos(f.loc);if(p)return{name:p.city,lat:p.lat,lon:p.lon};}
   return null;}
 // rayon : choisi au curseur, sinon celui de l'univers (0 = sans limite)
-function curRad(conf,f){if(conf.fixedR)return conf.fixedR;if(f.rad!=null)return f.rad;if(conf.near)return f.r||2;if(CUR==="festival")return vPlaceOf(f)?80:0;return conf.radius;}
+function curRad(conf,f){if(conf.fixedR)return conf.fixedR;if(S.browseR!=null)return S.browseR;if(conf.near)return 5;if(CUR==="festival")return vPlaceOf(f)?80:0;return conf.radius;}
 function summer(){const y=NOW.getMonth()>8?NOW.getFullYear()+1:NOW.getFullYear();return[new Date(y,4,1),new Date(y,8,30,23,59)];}
 const ymd=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
 function dateRange(f){
@@ -1849,7 +1889,7 @@ function vItems(cat,seg){
     else if(loc!=="eu"&&R)L=L.filter(e=>e._k!=null&&e._k<=R);}
   else if(cat==="sport"){
     if(loc==="intl")L=L.filter(e=>e.country!=="FR");else if(loc==="fr")L=L.filter(e=>e.country==="FR");
-    else L=L.filter(e=>isBigSport(e)&&!pl&&f.rad==null||(e._k!=null&&(!R||e._k<=R)));}
+    else L=L.filter(e=>isBigSport(e)&&!pl&&S.browseR==null||(e._k!=null&&(!R||e._k<=R)));}
   else if(cat==="soiree"){const cn=norm(pl?pl.name:homeCity());L=L.filter(e=>e._k!=null?(!R||e._k<=R):norm(e.city)===cn);}
   else if(near){L=L.filter(e=>e._k!=null&&(!R||e._k<=R+.05));}
   else if(R)L=L.filter(e=>e._k==null||e._k<=R);
@@ -1977,9 +2017,12 @@ function chipLabel(k){
 }
 function renderVert(){
   const conf=VCONF[CUR],seg=curSeg(),fv=VF().venue;
-  $("vt-title").textContent=VERTS[CUR].n;$("vt-bar").className="vbar v-"+CUR;$("vt-bar").style.background="var(--vc)";
+  $("vt-title").textContent=VERTS[CUR].n;$("vt-bar").className="vbar v-"+CUR;$("vt-seg").className="vtabs v-"+CUR;$("vt-bar").style.background="var(--vc)";
   $("vt-seg").hidden=!conf.segs||!!fv;
-  if(conf.segs){$("vt-seg").innerHTML=conf.segs.map(([k,n])=>`<button role="tab" data-seg="${k}" aria-selected="${seg===k}">${esc(n)}<span class="n num">${vItems(CUR,k).length}</span></button>`).join("");}
+  // onglets : une rangée de pastilles qui défile au doigt ; un onglet vide est grisé
+  if(conf.segs){$("vt-seg").innerHTML=conf.segs.map(([k,n])=>{const [ic,lab]=n.includes("|")?n.split("|"):["",n],c=vItems(CUR,k).length;
+    return`<button role="tab" data-seg="${k}" aria-selected="${seg===k}"${c||seg===k?"":" data-empty"}><span class="ti" aria-hidden="true">${ic}</span><span class="tl">${esc(lab)}</span><span class="tc num">${c>999?Math.round(c/100)/10+"k":c}</span></button>`;}).join("");
+    const on=$("vt-seg").querySelector('[aria-selected="true"]');if(on)on.scrollIntoView({block:"nearest",inline:"center"});}
   $("vt-filters").innerHTML=(fv?`<button class="chip has" data-venue-off="1">📍 ${esc(fv)} <span aria-hidden="true">✕</span></button>`:"")+conf.filters.filter(k=>!fv).map(k=>{
     const [l,on]=chipLabel(k);const toggle=["fav","free","hype","last","buzz"].includes(k);
     return`<button class="chip${on?" has":""}${VPANEL===k?" open":""}" data-filt="${k}" aria-pressed="${toggle?!!on:VPANEL===k}">${esc(l)}${toggle?"":`<span class="caret">▾</span>`}</button>`;}).join("");
@@ -2047,7 +2090,7 @@ function renderVList(){
   let msg=SEG_HELP[CUR]&&seg?SEG_HELP[CUR][seg]||"":"";
   if(CUR==="soiree"&&S.nightCity&&S.nightCity.city!==homeCity()&&!L.length)msg="Je cherche les soirées de "+S.nightCity.city+" : elles arrivent dans une minute.";
   const precise=S.home&&S.home.src==="gps";
-  $("vt-locate").hidden=!(VCONF[CUR].near&&!precise);
+  $("vt-locate").hidden=true;
   note.hidden=!msg;note.textContent=msg;
   if(LOADING&&!L.length){$("vt-list").innerHTML=`<div class="empty"><div class="spin"></div>Chargement…</div>`;$("vt-more").hidden=true;return;}
   if(!L.length){const f=VF(),act=Object.keys(f).some(k=>{const v=f[k];return Array.isArray(v)?v.length:!!v;}),noColl=!CFG.ghRepo||!Object.keys(COLL.files||{}).length;
@@ -3407,7 +3450,7 @@ async function loadMarkets(force){
   try{localStorage.setItem("fomo2-mk",JSON.stringify({key,at:Date.now(),items}));}catch(e){}
   return items;
 }
-function locMk(){const h=MKF.place||homePos();return{lat:h.lat,lon:h.lon};}
+function locMk(){const h=S.browse||homePos();return{lat:h.lat,lon:h.lon};}
 function mkFiltered(){
   const c=locMk(),today=wd(NOW);
   return MK.items.map(m=>Object.assign(m,{_k:km(c,m),_s:mkState(m)})).filter(m=>m._k<=MKF.r+.05)
@@ -3489,9 +3532,7 @@ function mkPop(m){return`<b>${esc(m.name)}</b><small>${esc(m._s.t)}</small>${m.s
 async function renderMarkets(skipLoad){
   const t=wd(NOW),dayOpts=[["all","Tous"],["today","Aujourd'hui"],["tomorrow","Demain"],["we","Ce week-end"]].concat(DAYS_FR.map((d,i)=>[String(i),d]).filter(x=>+x[0]!==t&&+x[0]!==(t+1)%7));
   $("mk-days").innerHTML=dayOpts.map(([k,n])=>`<button class="chip" data-mkd="${k}" aria-pressed="${MKF.day===k}">${n}</button>`).join("");
-  if(!$("mk-q")){$("mk-rad").innerHTML=`<div class="mkwhere">${placeSearchHTML("mk-q",MKF.place?"Autour de "+MKF.place.name:"Autour de "+homeCity()+" · chercher une autre ville…")}${MKF.place?`<button class="lnk" id="mk-home">Revenir autour de moi</button>`:""}${sliderHTML("mk-r",MKF.r,false,50)}</div>`;
-    bindPlaceSearch("mk-q",p=>{MKF.place={name:p.name,lat:+p.lat,lon:+p.lon};MKF.sel=null;$("mk-rad").innerHTML="";renderMarkets();});
-    const hb=$("mk-home");if(hb)hb.onclick=()=>{MKF.place=null;MKF.sel=null;$("mk-rad").innerHTML="";renderMarkets();};
+  if(!$("mk-q")){$("mk-rad").innerHTML=`<div class="mkwhere">${sliderHTML("mk-r",MKF.r,false,50)}</div>`;
     let rt=null;bindSlider("mk-r",r=>{clearTimeout(rt);rt=setTimeout(()=>{MKF.r=r;MKF.sel=null;drawMk(true);},120);},async r=>{MKF.r=r;MKF.sel=null;if(r>5){await loadMarkets();}drawMk(true);});}
   $("mk-locate").hidden=!!(S.home&&S.home.src==="gps");
   if(!MKMAP){MKMAP=SlippyMap($("mk-map"),id=>{MKF.sel=id&&MKF.sel!==id?id:null;drawMk(false);});
@@ -3654,20 +3695,46 @@ function show(v){
 }
 document.querySelector("nav.tabs").addEventListener("click",ev=>{const b=ev.target.closest("button");if(b)show(b.dataset.v);});
 $("b-settings").onclick=()=>show("settings");
+/* --- lieu et rayon de Découverte : un seul réglage, en haut à droite --- */
+const WR=["auto",1,2,3,5,7,10,15,20,30,50,80,100,150,200,300,0];
+const wrLab=r=>r==="auto"||r==null?"Rayon auto":r===0?"Sans limite":r+" km";
+function whereLabel(){$("where-txt").textContent=S.browse?S.browse.name:homeCity();$("where-r").textContent=wrLab(S.browseR);
+  $("where").classList.toggle("custom",!!(S.browse||S.browseR!=null));}
+function setBrowse(p,r){
+  S.browse=p?{name:p.name,lat:+p.lat,lon:+p.lon,country:p.country||"FR"}:null;S.browseR=r==="auto"?null:r;
+  if(p){S.browseHist=[{name:p.name,lat:+p.lat,lon:+p.lon}].concat((S.browseHist||[]).filter(x=>x.name!==p.name)).slice(0,4);}
+  // soirées dans une autre ville : on va chercher ses soirées (Shotgun…)
+  S.nightCity=p&&norm(p.name)!==norm(homeCity())?{city:p.name,country:p.country||countryOfCity(p.name),lat:+p.lat,lon:+p.lon}:null;
+  save();whereLabel();PROF_V++;VPAGE=40;if(S.nightCity)refreshShotgun();
+  if(typeof MK!=="undefined"){MK.key="";}
+  renderAll(true);if(VIEW==="vert")renderVert();if(VIEW==="markets")renderMarkets();}
 $("where").onclick=()=>{
-  openSheet(`<div class="in filt-sheet"><h3>Ta ville</h3><p class="small">FOMO te propose d'abord ce qui se passe autour de toi.</p>
-    <button class="btn wide" id="w-loc">📍 Utiliser ma position</button>
-    ${placeSearchHTML("w-q","Ou cherche une ville, un village…")}<p class="small" id="w-msg"></p>
-    ${sliderHTML("w-r",S.radius||15,false)}</div>`,"where");
-  $("w-loc").onclick=async()=>{try{await locate();closeSheet();afterCity();}catch(e){$("w-msg").textContent=e.message;}};
-  bindPlaceSearch("w-q",p=>{S.home={lat:p.lat,lon:p.lon,city:p.name,src:"manual",at:Date.now()};save();closeSheet();afterCity();});
-  bindSlider("w-r",null,r=>{S.radius=r;save();PROF_V++;renderAll(true);});
+  let pick=S.browse,rad=S.browseR==null?"auto":S.browseR;
+  const gps=S.home&&S.home.src==="gps";
+  openSheet(`<div class="in wsheet"><h3>Où veux-tu sortir ?</h3>
+    <button class="wopt" id="w-me" aria-pressed="${!pick}"><span class="ic">📍</span><span>Autour de moi<small>${gps?"Ta position":esc(homeCity())}</small></span></button>
+    ${placeSearchHTML("w-q","Une autre ville : Lyon, Lille, Biarritz…")}
+    ${(S.browseHist||[]).length?`<div class="wrecent">${S.browseHist.map((h,i)=>`<button class="chip" data-wh-h="${i}" aria-pressed="${!!(pick&&pick.name===h.name)}">${esc(h.name)}</button>`).join("")}</div>`:""}
+    <p class="small" id="w-msg">${pick?"Autour de <b>"+esc(pick.name)+"</b>":""}</p>
+    <div class="wrad"><div class="rad-h"><span>Rayon</span><b id="w-rv">${wrLab(rad)}</b></div>
+      <input type="range" class="range" id="w-r" min="0" max="${WR.length-1}" step="1" value="${Math.max(0,WR.indexOf(rad))}" aria-label="Rayon">
+      <div class="rad-s"><span>Auto</span><span>Sans limite</span></div>
+      <p class="small">« Auto » : le bon rayon pour chaque univers (5 km pour les expos, 60 km pour les concerts, partout pour les festivals…).</p></div>
+    <button class="btn wide hot" id="w-ok">Voir les événements</button>
+    ${!gps?`<button class="lnk" id="w-gps" style="align-self:center">Utiliser ma position précise</button>`:""}</div>`,"where");
+  const msg=()=>{$("w-msg").innerHTML=pick?"Autour de <b>"+esc(pick.name)+"</b>":"";$("w-me").setAttribute("aria-pressed",String(!pick));};
+  $("w-me").onclick=()=>{pick=null;msg();};
+  document.querySelectorAll("[data-wh-h]").forEach(b=>b.onclick=()=>{pick=S.browseHist[+b.dataset.whH];msg();document.querySelectorAll("[data-wh-h]").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));});
+  bindPlaceSearch("w-q",p=>{pick=p;msg();});
+  const r=$("w-r");r.oninput=()=>{rad=WR[+r.value];$("w-rv").textContent=wrLab(rad);};
+  $("w-ok").onclick=()=>{closeSheet();setBrowse(pick,rad);};
+  const g=$("w-gps");if(g)g.onclick=async()=>{try{await locate();pick=null;closeSheet();afterCity();setBrowse(null,rad);}catch(e){$("w-msg").textContent=e.message;}};
 };
-function afterCity(){$("where-txt").textContent=homeCity();PROF_V++;loadEvents();ghSyncConfig().catch(()=>{});}
+function afterCity(){whereLabel();PROF_V++;loadEvents();ghSyncConfig().catch(()=>{});}
 let tt;function notify(ti,tx){$("t-ti").textContent=ti;$("t-tx").textContent=tx||"";$("toast").classList.add("show");clearTimeout(tt);tt=setTimeout(()=>$("toast").classList.remove("show"),3800);}
 function renderBadges(){const n=openings().filter(o=>o.at&&o.at-NOW<7*864e5).length;$("bd-ag").hidden=!n;$("bd-ag").textContent=n;}
 function renderAll(quiet){
-  $("where-txt").textContent=homeCity();
+  whereLabel();
   if(VIEW==="discover")renderBubbles();
   if(VIEW==="vert")renderVert();
   if(VIEW==="foryou"&&(!quiet||!$("feed").children.length||$("feed").querySelector(".empty")))renderForYou();
