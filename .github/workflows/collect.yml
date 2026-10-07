@@ -28,6 +28,9 @@ jobs:
         env:
           DATATOURISME_KEY: ${{ secrets.DATATOURISME_KEY }}
           TM_KEY: ${{ secrets.TM_KEY }}
+          FEVER_FEED_URL: ${{ secrets.FEVER_FEED_URL }}
+          IMPACT_SID: ${{ secrets.IMPACT_SID }}
+          IMPACT_TOKEN: ${{ secrets.IMPACT_TOKEN }}
         run: |
           mkdir -p collector config data
           [ -f config/cities.json ] || echo '{"home": "Paris", "cities": ["Paris"]}' > config/cities.json
@@ -57,7 +60,7 @@ jobs:
                 "(KHTML, like Gecko) Chrome/128.0 Safari/537.36")
           PAUSE = 1.0  # secondes entre deux pages, pour rester discret
 
-          LIMITS = {"sg": 40, "ra": 200, "br": 120, "tac": 30, "fest": 50, "dice_venues": 25, "offi_detail": 120, "bit": 60, "ra_art": 40, "race_pages": 300, "geocode": 120}
+          LIMITS = {"sg": 40, "ra": 200, "br": 120, "tac": 30, "fest": 50, "dice_venues": 25, "offi_detail": 120, "bit": 60, "ra_art": 40, "race_pages": 700, "geocode": 120}
           HORIZON_DAYS = 365  # court terme et long terme (festivals, grosses dates)
 
           # FOMO couvre uniquement la France pour l'instant
@@ -398,9 +401,18 @@ jobs:
                   k = slug(re.sub(r"\b(19|20)\d\d\b", "", e["t"]))
                   if not k or k in kb:
                       continue
+                  na = len(e["lineup"])
+                  cap = e.get("cap") or 0
+                  # taille : nombre d'artistes à l'affiche (et jauge quand RA la connaît)
+                  size = "big" if na >= 35 or cap >= 15000 else "medium" if na >= 12 or cap >= 3000 else "small"
+                  # cadre : en ville ou à la campagne (d'après le nom du lieu et de la ville)
+                  vv = (e["v"] + " " + e["city"]).lower()
+                  rural = bool(re.search(r"ch[aâ]teau|domaine|ferme|plage|beach|\blac\b|lake|for[eê]t|forest|bois|camping|base de loisirs|champ|field|farm|castle|island|[iî]le|montagne|mountain|valley|vall[ée]e|park|parc|garden|jardin|open air|airfield|a[ée]rodrome", vv))
                   kb[k] = {"n": re.sub(r"\s*\b(19|20)\d\d\b\s*", " ", e["t"]).strip(), "d": e["d"], "end": e.get("end"), "city": e["city"],
                            "country": e["country"], "v": e["v"], "genres": e["genres"], "cap": e.get("cap"), "pop": e.get("pop"),
-                           "lineup": e["lineup"][:12], "link": e["link"]}
+                           "lineup": e["lineup"][:20], "na": na, "size": size, "setting": "campagne" if rural else "ville", "link": e["link"]}
+              log(f"  Base festivals (RA, {y - 1} à {y + 1}) : {len(kb)} festivals, dont " +
+                  ", ".join(f"{sum(1 for x in kb.values() if x['size'] == z)} {z}" for z in ("small", "medium", "big")))
               return list(kb.values())
 
 
@@ -629,7 +641,7 @@ jobs:
               img = next((i["url"] for i in imgs if (i.get("width") or 0) <= 1100), imgs[0]["url"] if imgs else "")
               pr = (e.get("priceRanges") or [{}])[0]
               att = [a.get("name") for a in ((e.get("_embedded") or {}).get("attractions") or []) if a.get("name")]
-              return {"id": "tm-" + e["id"], "src": "tm", "kind": kind, "t": name, "d": d, "end": None,
+              return {"id": "tm-" + e["id"], "src": "tm", "kind": kind, "tmg": " / ".join(x for x in (gen, sub) if x and x != "Undefined"), "t": name, "d": d, "end": None,
                       "v": v.get("name") or "", "a": " ".join(x for x in [v.get("postalCode"), (v.get("city") or {}).get("name")] if x),
                       "city": (v.get("city") or {}).get("name") or "", "country": (v.get("country") or {}).get("countryCode") or "FR",
                       "lat": float(loc["latitude"]) if loc.get("latitude") else None, "lon": float(loc["longitude"]) if loc.get("longitude") else None,
@@ -674,8 +686,11 @@ jobs:
                   return []
               lat, lon = CITY_GEO[slug(city)]
               near = f"countryCode=FR&latlong={lat},{lon}&radius=40&unit=km"
-              out = tm_search(near + "&classificationName=music", 12, 2) + tm_search(near + "&classificationName=arts%20%26%20theatre", 6, 1)
-              log(f"  Ticketmaster {city}: {len(out)} concerts et spectacles")
+              music = tm_search(near + "&classificationName=music", 12, 2)
+              # toute la catégorie « Arts et spectacles » : théâtre, humour, comédies musicales, cirque, danse, magie, cabaret…
+              arts = tm_search(near + "&classificationName=arts%20%26%20theatre", 12, 3)
+              out = music + arts
+              log(f"  Ticketmaster {city}: {len(music)} concerts, {len(arts)} spectacles et pièces")
               return out
 
 
@@ -685,8 +700,214 @@ jobs:
               for e in out:
                   e["kind"] = "festival"
               big = [e for e in tm_search("countryCode=FR&classificationName=music&sort=relevance,desc", 12, 1)]
-              log(f"  Ticketmaster France : {len(out)} festivals, {len(big)} grandes dates")
-              return out + big
+              conf = tm_conferences()
+              log(f"  Ticketmaster France : {len(out)} festivals, {len(big)} grandes dates, {len(conf)} conférences et talks")
+              return out + big + conf
+
+
+          # ---------------- Fever (expériences) : flux officiel du programme d'affiliation Fever ----------------
+          # Fever ne publie pas ses expériences en libre accès : on lit le flux fourni aux partenaires affiliés (Impact),
+          # dont l'adresse est dans le secret GitHub FEVER_FEED_URL. Les liens du flux sont des liens partenaires.
+          FEVER_CITIES = {"paris", "lyon", "marseille", "bordeaux", "lille", "toulouse", "nice", "nantes", "montpellier", "strasbourg", "rennes", "grenoble"}
+
+
+          def _feed_items(txt):
+              """Flux JSON, XML ou CSV : une liste de fiches (dictionnaires à clés en minuscules)."""
+              t = txt.lstrip("\ufeff").lstrip()
+              if t[:1] in "[{":
+                  j = json.loads(t)
+                  if isinstance(j, dict):
+                      j = next((v for v in j.values() if isinstance(v, list)), [j])
+                  return [{str(k).lower(): v for k, v in x.items()} for x in j if isinstance(x, dict)]
+              if t.startswith("<"):
+                  import xml.etree.ElementTree as ET
+                  root = ET.fromstring(t)
+                  items = [el for el in root.iter() if len(el) > 2 and all(len(c) == 0 for c in el)]
+                  return [{c.tag.split("}")[-1].lower(): (c.text or "").strip() for c in el} for el in items]
+              import csv, io
+              sample = t[:5000]
+              delim = "\t" if sample.count("\t") > sample.count(",") else ("|" if sample.count("|") > sample.count(",") else ",")
+              return [{(k or "").strip().lower(): (v or "").strip() for k, v in row.items()} for row in csv.DictReader(io.StringIO(t), delimiter=delim)]
+
+
+          def _pick(d, *names):
+              for n in names:
+                  for k, v in d.items():
+                      if v not in (None, "") and (k == n or k.replace(" ", "").replace("_", "") == n.replace(" ", "").replace("_", "")):
+                          return v
+              return None
+
+
+          def _impact_items():
+              """Catalogue Fever par l'API partenaire d'Impact (identifiants du compte partenaire : Settings → API)."""
+              import base64
+              sid, tok = os.environ.get("IMPACT_SID", "").strip(), os.environ.get("IMPACT_TOKEN", "").strip()
+              auth = {"Authorization": "Basic " + base64.b64encode(f"{sid}:{tok}".encode()).decode(), "Accept": "application/json"}
+              base = f"https://api.impact.com/Mediapartners/{sid}"
+              cats = json.loads(get(base + "/Catalogs?PageSize=100", headers=auth))
+              cats = cats.get("Catalogs") or []
+              log("  Impact : catalogues accessibles : " + (", ".join(f"{c.get('Name')} ({c.get('CampaignName') or c.get('AdvertiserName') or ''}, {c.get('NumberOfItems') or '?'} fiches)" for c in cats)[:500] or "aucun"))
+              fev = [c for c in cats if re.search(r"fever", json.dumps(c), re.I)]
+              items = []
+              for c in fev:
+                  uri = f"/Mediapartners/{sid}/Catalogs/{c.get('Id')}/Items?PageSize=1000"
+                  for _ in range(60):
+                      j = json.loads(get("https://api.impact.com" + uri, headers=auth))
+                      items += [{str(k).lower(): v for k, v in x.items()} for x in (j.get("Items") or [])]
+                      uri = j.get("@nextpageuri") or ""
+                      if not uri:
+                          break
+                      time.sleep(0.3)
+              return items
+
+
+          def fever():
+              url = os.environ.get("FEVER_FEED_URL", "").strip()
+              has_api = os.environ.get("IMPACT_SID", "").strip() and os.environ.get("IMPACT_TOKEN", "").strip()
+              if not url and not has_api:
+                  log("  Fever : non connecté (secrets IMPACT_SID et IMPACT_TOKEN, ou FEVER_FEED_URL, absents)")
+                  return []
+              try:
+                  if has_api:
+                      items = _impact_items()
+                  else:
+                      raw = urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": UA}), timeout=120).read()
+                      if raw[:2] == b"\x1f\x8b":
+                          import gzip
+                          raw = gzip.decompress(raw)
+                      items = _feed_items(raw.decode("utf-8", "replace"))
+              except Exception as e:  # noqa: BLE001
+                  log(f"  Fever : lecture impossible ({str(e)[:160]})")
+                  return []
+              out, today = [], dt.date.today().isoformat()
+              for d in items:
+                  city = str(_pick(d, "city", "ville", "location city", "text1", "locality") or "")
+                  if not city:
+                      blob = " ".join(str(v) for v in d.values() if isinstance(v, str)).lower()
+                      city = next((c.title() for c in FEVER_CITIES if re.search(r"\b" + c + r"\b", blob)), "")
+                  country = str(_pick(d, "country", "countrycode", "pays") or "FR").upper()[:2]
+                  if (country not in ("FR", "") or not city) and slug(city) not in FEVER_CITIES:
+                      continue
+                  name = _pick(d, "name", "product name", "title", "productname", "titre")
+                  link = _pick(d, "product url", "url", "link", "deeplink", "tracking url", "producturl", "trackingurl")
+                  if not name or not link:
+                      continue
+                  start = str(_pick(d, "start date", "startdate", "date", "event date", "first date", "begin") or "")[:19]
+                  end = str(_pick(d, "end date", "enddate", "last date", "expiration date", "expirationdate") or "")[:19]
+                  if end and end[:10] < today:
+                      continue
+                  price = _pick(d, "current price", "price", "currentprice", "sale price", "from price", "min price")
+                  try:
+                      price = round(float(re.sub(r"[^0-9.,]", "", str(price)).replace(",", "."))) if price not in (None, "") else None
+                  except ValueError:
+                      price = None
+                  lat, lon = _pick(d, "latitude", "lat"), _pick(d, "longitude", "lon", "lng")
+                  cat = str(_pick(d, "category", "categories", "product type", "producttype", "subcategory", "labels") or "")
+                  out.append({"id": "fv-" + slug(str(_pick(d, "unique merchant sku", "sku", "id", "product id", "productid") or name))[:60], "src": "fever", "kind": "experience",
+                              "t": html.unescape(str(name)).strip(), "d": start or None, "end": end or None, "noDate": not start,
+                              "v": str(_pick(d, "venue", "venue name", "place", "lieu", "address name") or ""), "a": str(_pick(d, "address", "adresse", "street") or ""),
+                              "city": city, "lat": float(lat) if lat not in (None, "") else None, "lon": float(lon) if lon not in (None, "") else None,
+                              "p": price, "img": str(_pick(d, "image url", "imageurl", "image", "image link", "imagelink", "thumbnail") or ""),
+                              "link": str(link), "tags": [x.strip() for x in re.split(r"[>,|/;]", cat) if x.strip()][:6],
+                              "desc": re.sub(r"<[^>]+>", " ", html.unescape(str(_pick(d, "product description", "description", "short description", "desc") or "")))[:500]})
+              log(f"  Fever : {len(out)} expériences en France (sur {len(items)} fiches dans le flux)")
+              if items and not out:
+                  log("   colonnes du flux : " + ", ".join(list(items[0].keys())[:30]))
+              return out
+
+
+          # ---------------- Les plus attendus : articles des magazines de sorties ----------------
+          # On lit quelques pages « à voir » des magazines (dans le respect de leur robots.txt), on garde le texte
+          # pour que l'app reconnaisse les spectacles cités. Rien n'est republié : seuls les titres d'événements servent.
+          BUZZ_PAGES = [
+              ("Sortir à Paris", "https://www.sortiraparis.com/scenes/spectacle/guides/54900-spectacles-et-pieces-theatres-a-voir-en-ce-moment-a-paris"),
+              ("Sortir à Paris", "https://www.sortiraparis.com/scenes/theatre"),
+              ("Sortir à Paris", "https://www.sortiraparis.com/scenes/spectacle"),
+              ("Le Bonbon", "https://www.lebonbon.fr/paris/sorties/"),
+              ("Le Bonbon", "https://www.lebonbon.fr/paris/culture/"),
+              ("Télérama", "https://www.telerama.fr/scenes"),
+              ("Télérama", "https://www.telerama.fr/sortir"),
+              ("L'Officiel des spectacles", "https://www.offi.fr/theatre/programme.html"),
+              ("L'Officiel des spectacles", "https://www.offi.fr/humour/programme.html"),
+          ]
+          BUZZ_PATH = os.path.join(DATA, "buzz.json")
+
+
+          def _page_text(page):
+              page = re.sub(r"(?is)<(script|style|noscript|svg|header|footer|nav)[^>]*>.*?</\1>", " ", page)
+              return re.sub(r"\s+", " ", html.unescape(re.sub(r"<[^>]+>", " ", page))).strip()
+
+
+          def buzz_pages():
+              import urllib.robotparser
+              try:
+                  cfg = json.load(open(os.path.join(ROOT, "config", "buzz.json"), encoding="utf-8"))
+                  pages = [(x["from"], x["url"]) for x in cfg.get("pages", [])] or BUZZ_PAGES
+              except Exception:  # noqa: BLE001
+                  pages = BUZZ_PAGES
+              robots, out, per_site = {}, [], {}
+              now = dt.datetime.now(dt.timezone.utc).isoformat()[:19]
+
+              def allowed(u):
+                  host = urllib.parse.urlsplit(u).netloc
+                  if host not in robots:
+                      rp = urllib.robotparser.RobotFileParser()
+                      try:
+                          rp.parse(get(f"https://{host}/robots.txt", tries=1).splitlines())
+                      except Exception:  # noqa: BLE001
+                          rp = None  # pas de robots.txt lisible : on reste prudent mais on lit
+                      robots[host] = rp
+                  rp = robots[host]
+                  return rp is None or rp.can_fetch(UA, u)
+
+              todo = list(pages)
+              seen = set()
+              while todo:
+                  src, u = todo.pop(0)
+                  if u in seen or per_site.get(src, 0) >= 14:
+                      continue
+                  seen.add(u)
+                  if not allowed(u):
+                      log(f"   {src} : lecture refusée par robots.txt ({u[:80]})")
+                      continue
+                  time.sleep(2)
+                  try:
+                      page = get(u, tries=1)
+                  except Exception as e:  # noqa: BLE001
+                      log(f"   {src} : {u[:80]} → {str(e)[:60]}")
+                      continue
+                  per_site[src] = per_site.get(src, 0) + 1
+                  title = html.unescape((re.search(r"(?is)<title>(.*?)</title>", page) or [None, ""])[1]).strip()
+                  out.append({"from": src, "at": now, "subject": title[:200], "text": _page_text(page)[:15000], "url": u})
+                  # depuis une page de liste : quelques articles du même site (critiques, sélections)
+                  if (src, u) in pages:
+                      host = urllib.parse.urlsplit(u).netloc
+                      links = []
+                      for h in re.findall(r'href="([^"#]+)"', page):
+                          v = urllib.parse.urljoin(u, html.unescape(h))
+                          if urllib.parse.urlsplit(v).netloc == host and v not in seen and re.search(r"guide|article|critique|spectacle|theatre|scene|sortir|humour|a-voir|incontournable|selection|\d{4,}", v) and not re.search(r"\.(jpg|png|pdf)$|/tag/|/auteur|/author|login|abonn", v):
+                              links.append(v)
+                      for v in list(dict.fromkeys(links))[:8]:
+                          todo.append((src, v))
+              log("  Les plus attendus (magazines) : " + (", ".join(f"{k} {n} pages" for k, n in per_site.items()) or "aucune page lue"))
+              return out
+
+
+          CONF_TITLE = re.compile(r"conf[ée]rence|\btalk|masterclass|master class|d[ée]bat|rencontre avec|en conversation|in conversation|une soir[ée]e avec|"
+                                  r"ted ?x|keynote|colloque|cours public|lecture|seminaire|séminaire|podcast live|live podcast", re.I)
+
+
+          def tm_conferences():
+              """Conférences, talks et podcasts en live vendus sur Ticketmaster (souvent dans de belles salles : Grand Rex, Olympia, Folies Bergère…)."""
+              out, seen = [], set()
+              for kw in ["conférence", "conference", "talk", "masterclass", "podcast", "rencontre avec", "débat"]:
+                  for e in tm_search("countryCode=FR&keyword=" + urllib.parse.quote(kw), 12, 1):
+                      if e["id"] in seen or not CONF_TITLE.search(e["t"] + " " + (e.get("desc") or "")):
+                          continue
+                      seen.add(e["id"])
+                      e["kind"] = "conference"
+                      out.append(e)
+              return out
 
 
           # ---------------- Position précise des lieux (OpenStreetMap / Nominatim, avec mémoire) ----------------
@@ -1448,55 +1669,123 @@ jobs:
               return out
 
 
+          ASSET_RX = re.compile(r"cloudfront\.net|/_next/|\.(?:js|css|png|jpe?g|svg|webp|gif|ico|woff2?|ttf|json|xml)(?:\?|$)|googleapis|gstatic|sentry|schema\.org|w3\.org|"
+                                r"cdn\.|cookiebot|didomi|axeptio|googletagmanager|doubleclick|hotjar|onetrust|mapbox|openstreetmap|gravatar|wp-json|unpkg|jsdelivr", re.I)
+          REG_KEY_RX = re.compile(r'"(?:registration|inscription|booking|ticket(?:ing)?|signup|register|subscribe|entry)\w*"\s*:\s*"(https?://[^"]+)"', re.I)
+          SITE_KEY_RX = re.compile(r'"(?:website|officialWebsite|official_website|siteUrl|site_url|webSite|organizerWebsite|eventWebsite|homepage)"\s*:\s*"(https?://[^"]+)"', re.I)
+          REG_TEXT_RX = re.compile(r"inscri|s.inscrire|register|registration|dossard|billetterie|r[ée]server|je cours|book now|entries", re.I)
+
+
+          def _page_urls(page):
+              """Toutes les adresses d'une page, y compris celles cachées dans les données de l'application (JSON)."""
+              txt = html.unescape(page).replace("\\u002F", "/").replace("\\/", "/").replace("\\u0026", "&").replace('\\"', '"')
+              regs = [u for u in REG_KEY_RX.findall(txt) if not ASSET_RX.search(u)]
+              sites = [u for u in SITE_KEY_RX.findall(txt) if not ASSET_RX.search(u) and not any(d in u for d in SKIP_DOMAINS)]
+              allu = [u.rstrip(".,;)") for u in re.findall(r'https?://[^\s"\'<>\\)]+', txt)]
+              allu = [u for u in allu if not ASSET_RX.search(u) and not any(d in u for d in SKIP_DOMAINS)]
+              return regs, sites, allu
+
+
+          def _reg_from_site(site):
+              """Deuxième étape : sur le site officiel de la course, le lien du bouton « Inscription »."""
+              try:
+                  page = get(site, tries=1)
+              except Exception:  # noqa: BLE001
+                  return None
+              base = urllib.parse.urlsplit(site)
+              cands = []
+              for m in re.finditer(r'<a\b[^>]*href=["\']([^"\'#]+)["\'][^>]*>([\s\S]{0,300}?)</a>', page, re.I):
+                  href, text = html.unescape(m.group(1)).strip(), re.sub(r"<[^>]+>", " ", m.group(2))
+                  if href.startswith("mailto:") or href.startswith("tel:") or href.startswith("javascript"):
+                      continue
+                  u = urllib.parse.urljoin(site, href)
+                  if ASSET_RX.search(u) or any(d in u for d in SKIP_DOMAINS):
+                      continue
+                  score = 0
+                  if any(d in u.lower() for d in REG_DOMAINS if d not in ("inscription", "inscriptions", "registration")):
+                      score += 3
+                  if REG_TEXT_RX.search(text):
+                      score += 2
+                  if re.search(r"inscri|regist|entr(y|ies)|billet|ticket", u, re.I):
+                      score += 1
+                  if score >= 2:
+                      cands.append((score, u))
+              if not cands:
+                  _, _, allu = _page_urls(page)
+                  u = next((x for x in allu if any(d in x.lower() for d in REG_DOMAINS if d not in ("inscription", "inscriptions", "registration"))), None)
+                  return u
+              cands.sort(key=lambda x: -x[0])
+              return cands[0][1] if urllib.parse.urlsplit(cands[0][1]).netloc or base.netloc else None
+
+
           def race_links(out):
-              """Lien direct vers l'inscription : d'abord les champs Finishers, sinon la fiche Finishers (bouton « S'inscrire »),
-              lue une fois puis gardée en mémoire dans data/race-links.json (quelques centaines de nouvelles fiches par nuit)."""
+              """Lien direct vers la plateforme d'inscription (pas la fiche Finishers) :
+              1. les données de la fiche Finishers (champ d'inscription, plateforme connue, ou site officiel),
+              2. sinon le site officiel de la course, où l'on suit le bouton « Inscription ».
+              Chaque course n'est lue qu'une fois, puis gardée en mémoire dans data/race-links.json."""
               try:
                   cache = json.load(open(LINKS_PATH, encoding="utf-8"))
               except Exception:  # noqa: BLE001
                   cache = {}
+              V = 2  # version de la méthode : les fiches lues avec l'ancienne méthode sont relues
               today = dt.date.today()
               todo = []
               for e in out:
-                  urls, slug_ = e.pop("_urls", []), e.pop("_slug", None)
+                  urls, slug_ = e.pop("_urls", []), e.pop("_slug", None) or e["link"].rsplit("/", 1)[-1]
                   reg, site = _pick_links(urls)
-                  c = cache.get(slug_ or "") or {}
-                  reg, site = reg or c.get("reg"), site or c.get("site")
-                  if not reg and slug_ and slug_ not in cache:
+                  c = cache.get(slug_) or {}
+                  if c.get("v") == V:
+                      reg, site = reg or c.get("reg"), site or c.get("site")
+                  elif not reg:
                       todo.append(e)
+                  if site and ASSET_RX.search(site):
+                      site = None
                   if reg:
                       e["reg"] = reg
                   if site:
                       e["site"] = site
-              # fiches à lire : d'abord les courses dont les inscriptions sont ouvertes et proches, puis les plus courues
+              # d'abord les courses proches dont les inscriptions sont ouvertes, puis les plus courues
               todo.sort(key=lambda e: (e.get("tba", False), e["d"], -(e.get("pop") or 0)))
-              n = 0
-              for e in todo[:LIMITS.get("race_pages", 300)]:
+              n, n2, t0 = 0, 0, time.time()
+              for e in todo[:LIMITS.get("race_pages", 700)]:
+                  if time.time() - t0 > 40 * 60:
+                      log("   (liens d'inscription : temps écoulé, la suite à la prochaine collecte)")
+                      break
                   slug_ = e["link"].rsplit("/", 1)[-1]
-                  time.sleep(0.5)
+                  time.sleep(0.3)
                   try:
-                      page = get(e["link"])
+                      page = get(e["link"], tries=2)
                   except Exception as ex:  # noqa: BLE001
-                      cache[slug_] = {"at": today.isoformat(), "err": str(ex)[:60]}
+                      cache[slug_] = {"at": today.isoformat(), "err": str(ex)[:60], "v": V}
                       continue
-                  hrefs = [html.unescape(h) for h in re.findall(r'href="(https?://[^"]+)"', page)]
-                  reg, site = _pick_links([("", h) for h in hrefs if not any(d in h for d in SKIP_DOMAINS)])
-                  cache[slug_] = {"reg": reg, "site": site, "at": today.isoformat()}
+                  regs, sites, allu = _page_urls(page)
+                  if not regs and not sites and not allu and not cache.get("_diag"):
+                      cache["_diag"] = 1
+                      log("   aperçu d'une fiche Finishers sans lien : " + ", ".join(sorted({urllib.parse.urlsplit(u).netloc for u in re.findall(r'https?://[^\s"\'<>\\)]+', page)}))[:400])
+                  reg = next(iter(regs), None) or next((u for u in allu if any(d in u.lower() for d in REG_DOMAINS)), None)
+                  site = next(iter(sites), None) or next((u for u in allu if u != reg), None)
+                  if not reg and site:
+                      reg = _reg_from_site(site)
+                      if reg:
+                          n2 += 1
+                  cache[slug_] = {"reg": reg, "site": site, "at": today.isoformat(), "v": V}
                   if reg:
                       e["reg"] = reg
                       n += 1
                   if site:
                       e["site"] = site
-              # on ne garde pas en mémoire les courses passées
               keep = {e["link"].rsplit("/", 1)[-1] for e in out}
-              cache = {k: v for k, v in cache.items() if k in keep}
+              cache = {k: v for k, v in cache.items() if k in keep and k != "_diag"}
               json.dump(cache, open(LINKS_PATH, "w", encoding="utf-8"), ensure_ascii=False)
-              nreg = sum(1 for e in out if e.get("reg"))
-              log(f"  Liens d'inscription directs : {nreg} courses ({n} nouveaux cette nuit, {max(0, len(todo) - LIMITS.get('race_pages', 300))} fiches restant à lire)")
+              nreg, nsite = sum(1 for e in out if e.get("reg")), sum(1 for e in out if not e.get("reg") and e.get("site"))
+              log(f"  Liens d'inscription : {nreg} directs ({n} nouveaux dont {n2} trouvés sur le site officiel), {nsite} vers le site officiel, "
+                  f"{len(out) - nreg - nsite} encore vers Finishers ({max(0, len(todo) - LIMITS.get('race_pages', 700))} fiches restant à lire)")
+              # le bouton de l'app mène à l'inscription ; sinon au site officiel ; Finishers seulement en dernier recours
               for e in out:
-                  if e.get("reg"):
+                  target = e.get("reg") or e.get("site")
+                  if target:
                       e["more"] = e["link"]
-                      e["link"] = e["reg"]
+                      e["link"] = target
 
 
           # ---------------- HYROX (site officiel) ----------------
@@ -1852,7 +2141,7 @@ jobs:
 
           def main():
               # diagnostic : le robot dit s'il reçoit les clés (sans jamais les afficher)
-              for k in ("TM_KEY", "DATATOURISME_KEY"):
+              for k in ("TM_KEY", "DATATOURISME_KEY", "IMPACT_SID", "IMPACT_TOKEN", "FEVER_FEED_URL"):
                   v = os.environ.get(k, "")
                   log(f"Secret {k} : " + (f"reçu ({len(v.strip())} caractères)" if v.strip() else "ABSENT (vérifie le nom dans Settings → Secrets and variables → Actions → Repository secrets)"))
               cfg = json.load(open(os.path.join(ROOT, "config", "cities.json"), encoding="utf-8"))
@@ -1934,6 +2223,10 @@ jobs:
                       fest += tm_france()
                   except Exception as e:  # noqa: BLE001
                       log(f"  Ticketmaster France : échec ({e})")
+                  try:
+                      fest += fever()
+                  except Exception as e:  # noqa: BLE001
+                      log(f"  Fever : échec ({e})")
                   json.dump({"city": "France", "updated": now.isoformat(), "sources": {"festivals": {"n": len(fest)}}, "events": fest},
                             open(os.path.join(DATA, "france.json"), "w", encoding="utf-8"), ensure_ascii=False)
                   index["cities"]["france"] = {"name": "Festivals", "updated": now.isoformat(), "n": len(fest), "sources": {"festivals": {"n": len(fest)}}}
@@ -1956,13 +2249,21 @@ jobs:
               kbp = os.path.join(DATA, "festivals-kb.json")
               try:
                   old = json.load(open(kbp, encoding="utf-8")) if os.path.exists(kbp) else {}
-                  if not old.get("updated") or (now - dt.datetime.fromisoformat(old["updated"])).days >= 7 or not old.get("festivals"):
+                  if not old.get("updated") or (now - dt.datetime.fromisoformat(old["updated"])).days >= 7 or not old.get("festivals") or old.get("v") != 2:
                       kb = festivals_kb()
                       if kb:
-                          json.dump({"updated": now.isoformat(), "festivals": kb}, open(kbp, "w", encoding="utf-8"), ensure_ascii=False)
+                          json.dump({"updated": now.isoformat(), "v": 2, "festivals": kb}, open(kbp, "w", encoding="utf-8"), ensure_ascii=False)
                           index["cities"]["festivals-kb"] = {"name": "Base festivals", "updated": now.isoformat(), "n": len(kb), "sources": {"ra": {"n": len(kb)}}}
               except Exception as e:  # noqa: BLE001
                   log(f"  base festivals : échec ({e})")
+              save_index()
+              try:
+                  bz = buzz_pages()
+                  if bz:
+                      json.dump({"updated": now.isoformat(), "buzz": bz}, open(BUZZ_PATH, "w", encoding="utf-8"), ensure_ascii=False)
+                      index["cities"]["buzz"] = {"name": "Les plus attendus", "updated": now.isoformat(), "n": len(bz), "sources": {"buzz": {"n": len(bz)}}}
+              except Exception as e:  # noqa: BLE001
+                  log(f"  Les plus attendus : échec ({e})")
               save_index()
               save_national("sports", "Sport (France)", sports)
               save_index()
