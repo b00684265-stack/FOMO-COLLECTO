@@ -490,7 +490,7 @@ html,body{overscroll-behavior-y:contain}
   <section class="view" id="v-settings" hidden>
     <div class="vhead"><button class="icon-btn back" data-go="back" aria-label="Retour"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button><h1>Réglages</h1></div>
     <p class="sub">Tout reste dans ce navigateur : FOMO n'a pas de serveur et ne stocke rien ailleurs.</p>
-    <p class="note" id="file-warn" hidden>Tu as ouvert le fichier depuis ton ordinateur : les connexions Google, Spotify, SoundCloud et Strava ne marchent que depuis l'adresse web de FOMO.</p>
+    <p class="note" id="file-warn" hidden>Tu as ouvert le fichier depuis ton ordinateur : les liens de musique et Strava ne marchent que depuis l'adresse web de FOMO.</p>
     <div class="row"><button class="btn ghost sm" id="b-redo">Refaire l'accueil</button><button class="btn ghost sm" id="b-reload">Recharger les événements</button><button class="btn ghost sm" id="b-reset">Tout réinitialiser</button></div>
     <div id="conns" class="view" style="gap:8px"></div>
   </section>
@@ -3628,7 +3628,7 @@ function userSettingsHTML(){
     <div class="set-card"><h3>Ta ville</h3><div class="ds">${S.home?esc(connSummary("loc")):"Choisis ta ville ou active ta position."}</div>
       ${loc.top()}<div class="row"><button class="btn sm" data-conn="loc"${st.busy?" disabled":""}>${st.busy?"Localisation…":"Utiliser ma position précise"}</button></div>
       ${st.msg?`<div class="${st.err?"er":"res"}">${esc(st.msg)}</div>`:""}</div>
-    <div class="set-card"><h3>Ta musique</h3>${artistPickerHTML("set-pa")}
+    <div class="set-card"><h3>Ta musique</h3><div class="ds">Connecte tes profils pour que FOMO connaisse tes goûts.</div>
       ${musicLinksHTML("set-ml")}</div>
     <div class="set-card"><h3>Ton sport</h3>${sportPickerHTML("set-ps")}</div>`;
 }
@@ -3636,21 +3636,10 @@ function bindHomePlace(){
   bindPlaceSearch("f-city",p=>{S.home={lat:p.lat,lon:p.lon,city:p.name,src:"manual",at:Date.now()};STATUS.loc={};save();renderConns();afterCity();});
   bindSlider("f-rad",null,r=>{S.radius=r;save();PROF_V++;renderConns();loadEvents(true);});}
 function renderConns(){
-  $("file-warn").hidden=!(isFile&&ADMIN());
+  $("file-warn").hidden=!isFile;
   const user=userSettingsHTML();
-  if(!ADMIN()){$("conns").innerHTML=user;bindArtistPicker("set-pa",renderConns);bindMusicLinks("set-ml",renderConns);bindSportPicker("set-ps");bindHomePlace();return;}
-  $("conns").innerHTML=user+`<div class="grp">Réglages FOMO (fondateur)</div>`+CONNS.filter(c=>!(c.k==="loc"||c.k==="deezer"||c.grp==="Ta position")).map(c=>{if(c.grp)return `<div class="grp">${c.grp}</div>`;const on=connDone(c.k),st=STATUS[c.k]||{};
-    return `<div class="cn${on?" on":""}" id="cn-${c.k}"><div class="hd"><div class="lg" aria-hidden="true">${c.i}</div><div style="min-width:0"><b>${c.n}</b><div class="ds">${c.ds}</div></div>
-      ${on&&c.k!=="loc"?`<button class="btn ghost sm" data-disc="${c.k}">Déconnecter</button>`:`<button class="btn sm" data-conn="${c.k}"${st.busy?" disabled":""}>${st.busy?"Connexion…":c.btn||"Connecter"}</button>`}</div>
-      ${on&&connSummary(c.k)?`<div class="res">✓ ${esc(connSummary(c.k))}</div>`:""}
-      ${st.msg?`<div class="${st.err?"er":"res"}">${esc(st.msg)}</div>`:""}
-      ${(!on||c.k==="loc")&&c.top?c.top():""}
-      ${!on&&c.needG&&!CFG.gClientId?`<div class="ds">Renseigne d'abord ton ID client dans la carte Google Agenda.</div>`:""}
-      ${!on&&c.fields.length?c.fields.map(([f,l,ph])=>`<div class="fld"><label for="f-${f}">${l}</label><input class="txt" id="f-${f}" data-cfg="${f}" type="${/Token|Secret/i.test(f)?"password":"text"}" autocomplete="off" spellcheck="false" placeholder="${esc(ph)}" value="${esc(CFG[f])}"></div>`).join(""):""}
-      ${!on&&c.help?`<details><summary>Comment obtenir l'accès</summary>${c.help()}</details>`:""}
-      ${on&&["gcal","gh","spotify","youtube","gmail"].includes(c.k)?`<div class="row"><button class="btn ghost sm" data-conn="${c.k}">${c.k==="gh"?"Relire et relancer une collecte":"Resynchroniser"}</button></div>`:""}
-    </div>`;}).join("");
-  bindArtistPicker("set-pa",renderConns);bindMusicLinks("set-ml",renderConns);bindSportPicker("set-ps");bindHomePlace();
+  // les réglages techniques (collecteur, Ticketmaster, Google, alertes) ne sont plus affichés : tout passe par le site et les robots
+  $("conns").innerHTML=user;bindMusicLinks("set-ml",renderConns);bindSportPicker("set-ps");bindHomePlace();
 }
 document.addEventListener("input",ev=>{const f=ev.target.dataset&&ev.target.dataset.cfg;if(f){CFG[f]=ev.target.value;save();}});
 document.addEventListener("click",async ev=>{
