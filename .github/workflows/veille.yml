@@ -58,7 +58,7 @@ jobs:
           OUT = os.path.join(DATA, "announcements.json")
           STATE = os.path.join(DATA, "veille-state.json")
           KEEP_DAYS = 400
-          EXTRACT_V = 4  # 4 : newsletters de sorties gardées pour « les plus attendus »  # à augmenter quand la lecture des mails change : les anciens mails sont relus
+          EXTRACT_V = 5  # 4 : newsletters de sorties gardées pour « les plus attendus »  # à augmenter quand la lecture des mails change : les anciens mails sont relus
 
           CITIES = ["Paris", "Lyon", "Marseille", "Bordeaux", "Lille", "Nantes", "Toulouse", "Nice", "Montpellier", "Strasbourg", "Rennes",
                     "Grenoble", "Annecy", "Biarritz", "Brest", "Rouen", "Caen", "Reims", "Dijon", "Tours", "Angers", "La Rochelle", "Avignon",
@@ -88,6 +88,9 @@ jobs:
                             "weezevent", "billetweb", "axs", "ra.co", "festicket", "songkick", "bandsintown", "lnfr", "gdp.fr", "corida")
 
 
+          LAST_IMG_TEXT = ""
+
+
           def norm(s):
               s = unicodedata.normalize("NFD", str(s or "")).encode("ascii", "ignore").decode().lower()
               return re.sub(r"\s+", " ", s).strip()
@@ -115,6 +118,14 @@ jobs:
               links = []
               for h in htm:
                   links += re.findall(r'href="(https?://[^"]+)"[^>]*>([\s\S]{0,120}?)</a>', h)
+              # newsletters faites d'images : le nom des événements est souvent dans le texte alternatif ou le nom du fichier image
+              global LAST_IMG_TEXT
+              bits = []
+              for h in htm:
+                  bits += [html.unescape(a) for a in re.findall(r'(?:alt|title)="([^"]{3,160})"', h)]
+                  bits += [re.sub(r"[-_]+", " ", os.path.splitext(u.rsplit("/", 1)[-1])[0]) for u in re.findall(r'<img[^>]+src="([^"]+)"', h)]
+                  bits.append(re.sub(r"\s+", " ", html.unescape(re.sub(r"<[^>]+>", " ", re.sub(r"(?is)<(script|style)[^>]*>.*?</\1>", " ", h)))))
+              LAST_IMG_TEXT = " | ".join(bits)[:12000]
               txt = "\n".join(plain)
               if not txt.strip() and htm:
                   t = re.sub(r"(?is)<(script|style)[^>]*>.*?</\1>", " ", "\n".join(htm))
@@ -470,7 +481,8 @@ jobs:
                   # newsletters de sorties (Sortir à Paris, Le Bonbon, Télérama, L'Officiel des spectacles…) : on garde le texte
                   # pour repérer les spectacles « les plus attendus » (l'app cherche leurs titres dedans)
                   if BUZZ_RX.search(addr + " " + (name or "")):
-                      buzz.append({"from": BUZZ_NAME(addr, name), "at": when.isoformat()[:19], "subject": subject[:200], "text": re.sub(r"\s+", " ", txt)[:8000]})
+                      buzz.append({"from": BUZZ_NAME(addr, name), "at": when.isoformat()[:19], "subject": subject[:200],
+                                   "text": (re.sub(r"\s+", " ", re.sub(r"https?://\S+", " ", txt))[:8000] + " | " + LAST_IMG_TEXT)[:20000]})
                   got = extract_race(when, subject, (name or "") + " " + addr, txt, links) or extract(when, subject, name or addr.split("@")[0], txt, links)
                   for g in got:
                       g["via"] = addr.split("@")[-1].lower()
