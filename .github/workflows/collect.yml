@@ -590,6 +590,9 @@ jobs:
                           m = re.search(r"(?:plein tarif|tarif)\s*:?\s*(\d+(?:[,.]\d+)?)\s*€", t, re.I) or re.search(r"(\d+(?:[,.]\d+)?)\s*€", t)
                           if m:
                               e["p"] = round(float(m.group(1).replace(",", ".")))
+                      md = re.search(r'<meta[^>]+(?:name|property)=["\'](?:og:)?description["\'][^>]*content=["\']([^"\']{20,})["\']', p, re.I)
+                      if md and not e.get("desc"):
+                          e["desc"] = html.unescape(md.group(1)).strip()[:400]
                       r = re.search(r'itemprop="ratingValue" content="([\d.]+)"', p)
                       rc = re.search(r'itemprop="ratingCount" content="(\d+)"', p)
                       if r:
@@ -648,7 +651,7 @@ jobs:
                       "p": round(pr["min"]) if pr.get("min") else None, "genres": [x for x in [gen, sub] if x and x not in ("Undefined", "Other")],
                       "sale_at": pub if pub and pub > now else None, "presale_at": pres[0]["startDateTime"] if pres else None,
                       "presale_name": pres[0].get("name") if pres else None,
-                      "soldout": code == "offsale" and not (pub and pub > now), "img": img, "link": e.get("url") or "", "lineup": att, "desc": ""}
+                      "soldout": code == "offsale" and not (pub and pub > now), "img": img, "link": e.get("url") or "", "lineup": att, "desc": re.sub(r"\s+", " ", html.unescape(re.sub(r"<[^>]+>", " ", str(e.get("description") or e.get("info") or ""))))[:400]}
 
 
           def tm_search(params, months=12, pages=1):
