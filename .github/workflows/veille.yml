@@ -58,7 +58,7 @@ jobs:
           OUT = os.path.join(DATA, "announcements.json")
           STATE = os.path.join(DATA, "veille-state.json")
           KEEP_DAYS = 400
-          EXTRACT_V = 3  # à augmenter quand la lecture des mails change : les anciens mails sont relus
+          EXTRACT_V = 4  # 4 : newsletters de sorties gardées pour « les plus attendus »  # à augmenter quand la lecture des mails change : les anciens mails sont relus
 
           CITIES = ["Paris", "Lyon", "Marseille", "Bordeaux", "Lille", "Nantes", "Toulouse", "Nice", "Montpellier", "Strasbourg", "Rennes",
                     "Grenoble", "Annecy", "Biarritz", "Brest", "Rouen", "Caen", "Reims", "Dijon", "Tours", "Angers", "La Rochelle", "Avignon",
@@ -422,6 +422,18 @@ jobs:
                        "at": msg_date.isoformat(), "country": "FR"}]
 
 
+          BUZZ_RX = re.compile(r"fnac|sortiraparis|lebonbon|bonbon|telerama|offi\.fr|officiel des spectacles|parissecret|timeout|figaro|parisianist|cultur|theatreonline|billetreduc|fnacspectacles|ticketmaster", re.I)
+
+
+          def BUZZ_NAME(addr, name):
+              d = addr.split("@")[-1].lower()
+              for k, v in (("fnac", "Fnac"), ("sortiraparis", "Sortir à Paris"), ("bonbon", "Le Bonbon"), ("telerama", "Télérama"), ("offi", "L'Officiel des spectacles"),
+                           ("parissecret", "Paris Secret"), ("timeout", "Time Out"), ("figaro", "Le Figaro"), ("billetreduc", "BilletReduc"), ("ticketmaster", "Ticketmaster")):
+                  if k in d or k in (name or "").lower():
+                      return v
+              return name or d
+
+
           def main():
               user, pwd = os.environ.get("FOMO_MAIL"), os.environ.get("FOMO_MAIL_PASSWORD")
               if not user or not pwd:
@@ -442,7 +454,7 @@ jobs:
                   since = (dt.date.today() - dt.timedelta(days=60)).strftime("%d-%b-%Y")
                   typ, data = box.uid("search", None, f"SINCE {since}")
               uids = [int(x) for x in (data[0] or b"").split() if int(x) > last]
-              found = []
+              found, buzz = [], []
               for uid in uids[-500:]:
                   typ, md = box.uid("fetch", str(uid), "(RFC822)")
                   if not md or not md[0]:
@@ -455,6 +467,10 @@ jobs:
                   except Exception:  # noqa: BLE001
                       when = dt.datetime.now()
                   txt, links = body_of(msg)
+                  # newsletters de sorties (Sortir à Paris, Le Bonbon, Télérama, L'Officiel des spectacles…) : on garde le texte
+                  # pour repérer les spectacles « les plus attendus » (l'app cherche leurs titres dedans)
+                  if BUZZ_RX.search(addr + " " + (name or "")):
+                      buzz.append({"from": BUZZ_NAME(addr, name), "at": when.isoformat()[:19], "subject": subject[:200], "text": re.sub(r"\s+", " ", txt)[:8000]})
                   got = extract_race(when, subject, (name or "") + " " + addr, txt, links) or extract(when, subject, name or addr.split("@")[0], txt, links)
                   for g in got:
                       g["via"] = addr.split("@")[-1].lower()
@@ -470,7 +486,12 @@ jobs:
               lim = (now - dt.timedelta(days=KEEP_DAYS)).isoformat()
               res = [a for a in keep.values() if (a.get("d") or "9999") >= now.isoformat()[:10] and a.get("at", "") >= lim]
               res.sort(key=lambda a: a.get("at", ""), reverse=True)
-              json.dump({"updated": now.isoformat(), "announcements": res}, open(OUT, "w", encoding="utf-8"), ensure_ascii=False)
+              old_buzz = json.load(open(OUT, encoding="utf-8")).get("buzz", []) if os.path.exists(OUT) else []
+              blim = (now - dt.timedelta(days=60)).isoformat()
+              allb = {(b["from"], b["subject"]): b for b in old_buzz + buzz if b.get("at", "") >= blim}
+              buzz_out = sorted(allb.values(), key=lambda b: b["at"], reverse=True)[:150]
+              json.dump({"updated": now.isoformat(), "announcements": res, "buzz": buzz_out}, open(OUT, "w", encoding="utf-8"), ensure_ascii=False)
+              print(f"Newsletters sorties gardées pour « les plus attendus » : {len(buzz)} nouvelles, {len(buzz_out)} en base")
               json.dump({"last_uid": last, "v": EXTRACT_V, "updated": now.isoformat()}, open(STATE, "w", encoding="utf-8"))
               print(f"{len(uids)} nouveaux mails, {len(found)} annonces extraites, {len(res)} annonces à venir en base")
               return 0
