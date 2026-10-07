@@ -364,6 +364,15 @@ details.more summary{cursor:pointer;font-weight:650;font-size:14.5px}
 .fb.er{color:var(--hot)}
 .fy-when{margin:12px 0 10px}
 .adm{margin-top:14px;padding:10px 12px;border:1px dashed var(--line);border-radius:12px;font-size:13.5px}.adm .btn{margin:6px 6px 0 0}
+.ask-list{display:flex;flex-direction:column;gap:12px;width:100%}
+.ask-card{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--vc);border-radius:var(--r-md);overflow:hidden}
+.ask-card .item{border:0;border-radius:0;margin:0;box-shadow:none}
+.ask-why{padding:0 14px 8px;font-size:13.5px;color:var(--ink2)}
+.ask-acts{display:grid;grid-template-columns:1fr 46px;gap:8px;padding:0 12px 12px}
+.ask-love{border:1.5px solid var(--hot);background:var(--card);color:var(--hot);border-radius:999px;padding:10px 12px;font-weight:700;font-size:14.5px;cursor:pointer}
+.ask-love[aria-pressed="true"]{background:var(--hot);color:#fff}
+.ask-no{border:1px solid var(--line);background:var(--sunk);color:var(--ink2);border-radius:999px;font-size:15px;cursor:pointer}
+.ask-more{align-self:center;margin:4px 0 8px}
 </style>
 </head>
 <body>
@@ -1453,7 +1462,7 @@ function itemHTML(e,opt){
   return`<div class="item${sp?" sp":""}" data-info="${esc(e.id)}" role="button" tabindex="0">${dateBlock(e)}
     <div style="min-width:0"><div class="ti">${esc(e.t)}</div>${rg?`<div class="pl rg">${esc(rg)}</div>`:""}<div class="pl">${esc(opt.when?[whenText(e),placeOf(e)].filter(Boolean).join(", "):sub)}</div>${opt.dist!=null&&e.cat==="local"?`<div class="pl">${opt.dist<1?Math.round(opt.dist*1000)+" m":String(Math.round(opt.dist*10)/10).replace(".",",")+" km"} de toi</div>`:""}
     ${p.length||opt.pct?`<div class="pills">${opt.pct?`<span class="pill hot">${opt.pct} % pour toi</span>`:""}${p.map(x=>`<span class="pill ${x.c}">${esc(x.t)}</span>`).join("")}</div>`:""}</div>
-    ${sp?`<div class="spt" title="${esc(sp.n)}"><span aria-hidden="true">${sp.e}</span><small>${esc(sp.n)}</small></div>`:"<span></span>"}${opt.agenda?`<div class="iacts"><button class="cal" data-cal="${esc(e.id)}" aria-pressed="${inCal(e.id)}">📅 Retirer de l'agenda</button></div>`:actsHTML(e)}</div>`;
+    ${sp?`<div class="spt" title="${esc(sp.n)}"><span aria-hidden="true">${sp.e}</span><small>${esc(sp.n)}</small></div>`:"<span></span>"}${opt.agenda?`<div class="iacts"><button class="cal" data-cal="${esc(e.id)}" aria-pressed="${inCal(e.id)}">📅 Retirer de l'agenda</button></div>`:opt.noActs?"":actsHTML(e)}</div>`;
 }
 function ring(pct){const r=26,c=2*Math.PI*r;return`<div class="score" aria-label="${pct} % pour toi"><svg viewBox="0 0 58 58"><circle cx="29" cy="29" r="${r}" fill="none" stroke="var(--line)" stroke-width="4"/><circle cx="29" cy="29" r="${r}" fill="none" stroke="var(--hot)" stroke-width="4" stroke-linecap="round" stroke-dasharray="${c*pct/100} ${c}" transform="rotate(-90 29 29)"/></svg><b>${pct}<small>%</small></b></div>`;}
 function imgStyle(e){return e.img?`background-image:linear-gradient(180deg,rgba(0,0,0,0) 50%,rgba(0,0,0,.25)),url('${esc(e.img).replace(/'/g,"%27")}')`:"";}
@@ -2653,132 +2662,389 @@ $("ag-filter").addEventListener("click",ev=>{const b=ev.target.closest("[data-ag
 $("ag-cal").addEventListener("click",ev=>{const mn=ev.target.closest("[data-mn]");if(mn){AG_M=new Date(AG_M.getFullYear(),AG_M.getMonth()+ +mn.dataset.mn,1);AG_DAY=null;renderAgenda();return;}
   const d=ev.target.closest("[data-day]");if(d){AG_DAY=AG_DAY===d.dataset.day?null:d.dataset.day;renderAgenda();}});
 
-/* ================= Demande-moi : recherche en langage naturel, dans le navigateur ================= */
-const ASK_EX=["Un festival house ou électro à taille humaine, dans un pays proche de la France, en août 2027",
-  "Une soirée techno ce week-end","Les concerts de rap à Paris en mars","Un trail de 30 km avec du dénivelé au printemps",
-  "Un match des Bleus au Stade de France","Une expo gratuite ce mois-ci"];
-const CAT_RX=[["festival",/festival|festoche|open air festival/],["competition",/\b(course|courses|courir|trail|marathon|semi|triathlon|hyrox|10 ?km|5 ?km|ultra|dossard)\b/],
-  ["soiree",/\b(soiree|soirees|club|clubbing|rave|teuf|boite|warehouse|after|dj set|faire la fete)\b/],["sport",/\b(match|matchs|foot|football|rugby|basket|hand|handball|tennis|cyclisme|velo|tour de france|six nations|bleus|xv de france|ligue 1|top 14|roland|stade)\b/],
-  ["concert",/\b(concert|concerts|live|tournee|en live|chanteur|chanteuse|groupe)\b/],["expo",/\b(expo|expos|exposition|musee|galerie)\b/],["theatre",/\b(theatre|piece|humour|stand.?up|spectacle|one man)\b/]];
+/* ================= Demande-moi : compréhension fine de la demande, 3 propositions fiables au maximum ================= */
+const ASK_EX=["Une soirée techno ce samedi à Paris","Un concert de rap pas cher la semaine prochaine","Un festival house à taille humaine en août 2027",
+  "Une expo pour les enfants ce week-end","Un trail de 30 km avec du dénivelé au printemps","Une conférence sur l'IA ce mois-ci"];
+const ASK_MAX=3;
+// univers : le premier qui correspond l'emporte (du plus précis au plus général)
+const CAT_RX=[["festival",/festival|festoche|festivals/],["conference",/conference|conf\b|debat|colloque|table.?ronde|\btalk\b|masterclass|rencontre avec|cours public/],
+  ["competition",/\b(course|courses|courir|trail|marathon|semi|triathlon|hyrox|10 ?km|5 ?km|ultra|dossard|s.inscrire|inscription)\b/],
+  ["soiree",/\b(soiree|soirees|club|clubbing|rave|teuf|boite|warehouse|after|dj set|faire la fete|sortir danser|danser)\b/],
+  ["sport",/\b(match|matchs|foot|football|rugby|basket|hand|handball|tennis|cyclisme|tour de france|six nations|bleus|xv de france|ligue 1|top 14|roland|psg|om\b)\b/],
+  ["concert",/\b(concert|concerts|en live|tournee|chanteur|chanteuse|groupe|voir jouer)\b/],["expo",/\b(expo|expos|exposition|expositions|musee|musees|galerie|vernissage)\b/],
+  ["theatre",/\b(theatre|piece|pieces|humour|stand.?up|spectacle|one man|one woman|comedie|impro|magie|cirque)\b/],
+  ["local",/brocante|vide.?grenier|braderie|kermesse|fete de (village|quartier)|\bloto\b|guinguette|foire/]];
 const MON_RX={janvier:0,fevrier:1,mars:2,avril:3,mai:4,juin:5,juillet:6,aout:7,septembre:8,octobre:9,novembre:10,decembre:11};
-function parseAsk(text){
-  const t=norm(text),q={raw:text,lab:[]};
+const MON_AB={janv:0,jan:0,fev:1,fevr:1,avr:3,juil:6,sept:8,sep:8,oct:9,nov:10,dec:11};
+const WDAYS={lundi:1,mardi:2,mercredi:3,jeudi:4,vendredi:5,samedi:6,dimanche:0};
+// mots trop courants pour désigner un artiste, une salle ou un événement
+const ASK_STOP=new Set(("le la les un une des de du d l au aux a en et ou ce cet cette ces mon ma mes ton ta tes son sa ses pour par sur dans avec sans pas plus moins tres trop "+
+  "je tu il elle on nous vous ils elles me te se moi toi qui que quoi quel quelle quels quelles est sont etre avoir veux voudrais aimerais cherche trouve trouver propose proposes donne montre "+
+  "aller voir faire sortir soir soiree soirees concert concerts festival festivals expo expos match matchs course courses theatre spectacle spectacles conference conferences "+
+  "ce soir demain week end weekend semaine mois annee prochain prochaine prochains cette ete hiver printemps automne paris france live club "+
+  "nuit nuits fete fetes amis ami copains copine copain potes musee musees prix place places billet billets ville centre quartier plein air journee matin apres midi jour jours heure heures "+
+  "famille enfants enfant sortie sorties ambiance danse danser chill rooftop peniche salle salles scene dehors exterieur interieur endroit lieu lieux truc trucs genre style styles "+
+  "nouveau nouvelle nouveaux meilleur meilleure meilleurs top best open new tour world show night party day love "+
+  "pas cher gratuit gratuits petit petite grand grande gros grosse taille humaine bien bon bonne super cool sympa truc chose quelque idee idees envie "+
+  "lundi mardi mercredi jeudi vendredi samedi dimanche janvier fevrier mars avril mai juin juillet aout septembre octobre novembre decembre "+
+  "musique music rock rap pop jazz techno house electro disco funk soul metal punk classique reggae folk hip hop the and of").split(" "));
+
+function lev(a,b,max){if(Math.abs(a.length-b.length)>max)return max+1;const v=new Array(b.length+1);for(let j=0;j<=b.length;j++)v[j]=j;
+  for(let i=1;i<=a.length;i++){let prev=v[0];v[0]=i;let best=v[0];for(let j=1;j<=b.length;j++){const tmp=v[j];v[j]=Math.min(v[j]+1,v[j-1]+1,prev+(a[i-1]===b[j-1]?0:1));prev=tmp;if(v[j]<best)best=v[j];}if(best>max)return max+1;}
+  return v[b.length];}
+const askKey=s=>norm(s).replace(/[’']/g," ").replace(/[^a-z0-9]+/g," ").trim();
+const askKeyN=s=>askKey(s).replace(/^(l|le|la|les|the|au|aux) /,"");
+
+/* --- index des noms connus : artistes, événements, salles, équipes, festivals --- */
+let AIDX=null,AIDX_V="",AVOC=null;
+// vocabulaire déjà compris par ailleurs (styles, villes, pays, sports, mots courants) : ce ne sont pas des noms
+function askVocab(cat){const base=askVocabBase();if(cat!=="conference"&&cat!=="expo")return base;
+  const v=new Set(base),T=cat==="expo"?EXPO_TYPES:CONF_T;Object.values(T).forEach(x=>(x.kw||[]).forEach(k=>askKey(k.replace("*","")).split(" ").forEach(w=>{if(w.length>=3)v.add(w);})));return v;}
+function askVocabBase(){if(AVOC)return AVOC;const v=new Set(ASK_STOP),add=s=>askKey(s).split(" ").forEach(w=>{if(w.length>=3)v.add(w);});
+  [GENRES,SPORTS].forEach(T=>Object.values(T).forEach(x=>{add(x.n);(x.kw||[]).forEach(k=>add(k.replace("*","")));}));
+  [EXPO_TYPES,CONF_T].forEach(T=>Object.values(T).forEach(x=>add(x.n)));
+  TEAMS.forEach(([n,al])=>{add(n);al.forEach(add);});
+  Object.values(DISC).forEach(x=>add(x.n));CITIES.forEach(add);Object.keys(WORLD).forEach(add);Object.values(COUNTRY).forEach(add);Object.keys(CTRY_WORDS).forEach(add);
+  Object.keys(MON_RX).forEach(add);Object.keys(WDAYS).forEach(add);Object.values(THEATRE_G).forEach(x=>add(x.n));Object.values(LOCAL_T).forEach(x=>add(x.n));
+  ("veux voudrais cherche aimerais trouve propose envie aller voir sortir faire quelque chose truc sympa cool bien bonne idee idees pour moi nous deux copine copain pote potes amis "+
+   "concert concerts soiree soirees festival festivals expo expos exposition expositions musee galerie theatre piece pieces spectacle spectacles humour stand comedie impro magie cirque "+
+   "conference conferences debat debats colloque rencontre rencontres talk match matchs course courses trail trails marathon semi triathlon hyrox ultra brocante brocantes vide grenier "+
+   "marche marches braderie kermesse foire guinguette loto fete bal ce cette ces soir nuit demain apres week end weekend semaine prochaine prochain mois annee bientot prochainement noel nouvel reveillon "+
+   "gratuit gratuite gratuits gratuites cher chere pas petit prix budget euros euro balles abordable moins plus max maximum sous rayon pres loin autour coin quartier pied proche "+
+   "open air plein exterieur rooftop peniche journee jour matin midi taille humaine intimiste gros grosse grand grande enorme moyen etranger europe pays voisin voisins frontiere "+
+   "enfant enfants famille gamin gamins kids jeune public denivele montagne grimpe route velo vtt km live tournee chanteur chanteuse groupe danser danse dj set club clubbing rave teuf boite after warehouse "+
+   "billetterie ouverte ouvert vente places place complet reste encore autres autre plutot sinon aussi pareil debut fin les des une avec sans surtout").split(" ").forEach(w=>v.add(w));
+  AVOC=v;return v;}
+function askIndex(){
+  const v=EVENTS.length+"|"+(EVENTS[0]&&EVENTS[0].id);if(AIDX&&AIDX_V===v)return AIDX;
+  const m=new Map(),add=(name,kind,e)=>{const k=askKeyN(name);if(k.length<3||ASK_STOP.has(k)||GENERIC.has(k)||/^\d+$/.test(k))return;
+    if(k.length<4&&k.split(" ").length===1&&!/[A-Z]{3}/.test(name))return;
+    let x=m.get(k);if(!x){x={k,name:String(name).trim(),kinds:new Set(),ev:new Set()};m.set(k,x);}x.kinds.add(kind);if(e)x.ev.add(e.id);};
+  EVENTS.forEach(e=>{
+    (e.lineup||[]).slice(0,30).forEach(n=>add(n,"artist",e));
+    const head=e.t.split(/ [-–|:] | \(|, | \+ | x | w\/ | feat\.? /i)[0];
+    if(head.length>=3&&head.length<=60)add(head,e.cat==="concert"?"artist":"event",e);
+    if(e.t.length<=70)add(e.t.replace(/\b(19|20)\d\d\b/g,"").trim(),"event",e);
+    if(e.tracked)add(e.tracked,"artist",e);
+    if(e.venue&&e.venue.length>=4)add(e.venue.split(/ [-–(]/)[0],"venue",e);
+    if(e.home)add(e.home,"team",e);if(e.away)add(e.away,"team",e);
+    if(e.comp)add(e.comp,"comp",e);});
+  FKB().forEach(f=>add(f.n.replace(/\b(19|20)\d\d\b/g,"").trim(),"fest",null));
+  FESTS.forEach(f=>add(f[0],"fest",null));
+  // pour la recherche approchée : par première lettre
+  const byFirst={};m.forEach(x=>{(byFirst[x.k[0]]=byFirst[x.k[0]]||[]).push(x);});
+  AIDX={m,byFirst};AIDX_V=v;return AIDX;
+}
+// repère dans la phrase les noms connus (exacts, ou à une faute de frappe près), les plus longs d'abord
+function askEntities(text){
+  const I=askIndex(),w=askKey(text).split(" ").filter(Boolean),used=new Array(w.length).fill(false),out=[];
+  for(let n=Math.min(6,w.length);n>=1;n--){
+    for(let i=0;i+n<=w.length;i++){
+      if(used.slice(i,i+n).some(Boolean))continue;
+      const g=w.slice(i,i+n).join(" ").replace(/^(l|le|la|les|the|au|aux) /,"");if(n===1&&(ASK_STOP.has(g)||g.length<3))continue;
+      if(n>1&&(ASK_STOP.has(w[i])&&w[i].length<4||ASK_STOP.has(w[i+n-1])&&w[i+n-1].length<4))continue;
+      let hit=I.m.get(g),fuzzy=false;
+      if(!hit&&g.length>=(n===1?7:6)){const max=g.length>=11?2:1;let best=null,bd=max+1;
+        (I.byFirst[g[0]]||[]).forEach(x=>{if(Math.abs(x.k.length-g.length)>max)return;const d=lev(g,x.k,max);if(d<bd){bd=d;best=x;}});
+        if(best&&bd<=max){hit=best;fuzzy=true;}}
+      if(hit){for(let j=i;j<i+n;j++)used[j]=true;out.push(Object.assign({},hit,{fuzzy,words:n}));}
+    }
+  }
+  return out;
+}
+
+/* --- quand --- */
+function askWhen(t,q){
+  const y0=NOW.getFullYear(),day=x=>new Date(NOW.getFullYear(),NOW.getMonth(),NOW.getDate()+x),end=d=>new Date(d.getFullYear(),d.getMonth(),d.getDate()+1,6,0);
+  const set=(a,b,lab)=>{q.from=a;q.to=b;q.lab.push(lab);q.dateLab=lab;};
+  const ym=t.match(/\b(20\d\d)\b/),yr=ym?+ym[1]:null;
+  // date précise : « le 12 octobre », « 12/10 », « 12 oct »
+  let dm=t.match(/\b(\d{1,2})(?:er)? (janvier|fevrier|mars|avril|mai|juin|juillet|aout|septembre|octobre|novembre|decembre|janv|fevr?|avr|juil|sept?|oct|nov|dec)\b/);
+  if(dm){const m=MON_RX[dm[2]]??MON_AB[dm[2]];let d=new Date(yr||y0,m,+dm[1]);if(!yr&&end(d)<NOW)d=new Date(y0+1,m,+dm[1]);set(d,end(d),"Le "+d.getDate()+" "+MOL[m]);return;}
+  dm=t.match(/\b(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\b/);
+  if(dm&&+dm[2]>=1&&+dm[2]<=12){let y=dm[3]?(+dm[3]<100?2000+ +dm[3]:+dm[3]):y0;let d=new Date(y,+dm[2]-1,+dm[1]);if(!dm[3]&&end(d)<NOW)d=new Date(y0+1,+dm[2]-1,+dm[1]);set(d,end(d),"Le "+d.getDate()+" "+MOL[d.getMonth()]);return;}
+  // jour de la semaine : « samedi », « vendredi soir », « samedi prochain »
+  const wd=Object.keys(WDAYS).find(k=>new RegExp("\\b"+k+"\\b").test(t));
+  if(wd&&!/week.?end/.test(t)){let n=(WDAYS[wd]-NOW.getDay()+7)%7;if(n===0&&NOW.getHours()>=23)n=7;if(new RegExp(wd+" (prochain|d.apres)").test(t)&&n<7)n+=n===0?7:0;
+    if(/semaine prochaine/.test(t)&&n<7)n+=7;const d=day(n),soir=new RegExp(wd+" soir").test(t);
+    set(soir?new Date(+d+17*36e5):d,end(d),capital(wd)+(soir?" soir":"")+(n>=7?" prochain":""));return;}
+  const mm=Object.keys(MON_RX).find(m=>new RegExp("\\b"+m+"\\b").test(t));
+  if(mm){const m=MON_RX[mm];let y=yr||y0;if(!yr&&new Date(y,m+1,0)<NOW)y++;const a=new Date(y,m,1);set(a<NOW?new Date(NOW):a,new Date(y,m+1,0,23,59),capital(MOL[m])+" "+y);
+    if(/debut/.test(t))q.to=new Date(y,m,10,23,59);if(/fin/.test(t))q.from=new Date(y,m,20);return;}
+  if(/ce soir|cette nuit|tonight/.test(t)){set(new Date(NOW),new Date(+day(1)+6*36e5),"Ce soir");return;}
+  if(/apres.?demain/.test(t)){set(day(2),end(day(2)),"Après-demain");return;}
+  if(/demain/.test(t)){const s=/demain soir/.test(t);set(s?new Date(+day(1)+17*36e5):day(1),end(day(1)),s?"Demain soir":"Demain");return;}
+  if(/week.?end prochain|prochain week.?end/.test(t)){const dow=NOW.getDay(),fri=day((dow===0?5:5-dow+(dow>=5?7:0))+(dow===6?-1+7:0));set(new Date(+fri+17*36e5),new Date(+fri+3*864e5+6*36e5),"Le week-end prochain");return;}
+  if(/week.?end|\bwe\b/.test(t)){const dow=NOW.getDay(),fri=day(dow===0?-2:dow===6?-1:5-dow);set(dow===0||dow===6?new Date(NOW):new Date(+fri+17*36e5),new Date(+fri+3*864e5+6*36e5),"Ce week-end");return;}
+  if(/semaine prochaine/.test(t)){const n=(8-NOW.getDay())%7||7;set(day(n),new Date(+day(n+7)+6*36e5),"La semaine prochaine");return;}
+  if(/cette semaine|dans la semaine|ces jours.ci/.test(t)){set(new Date(NOW),day(7),"Cette semaine");return;}
+  if(/ce mois/.test(t)){set(new Date(NOW),new Date(y0,NOW.getMonth()+1,0,23,59),"Ce mois-ci");return;}
+  if(/mois prochain/.test(t)){set(new Date(y0,NOW.getMonth()+1,1),new Date(y0,NOW.getMonth()+2,0,23,59),"Le mois prochain");return;}
+  if(/noel/.test(t)){const y=new Date(y0,11,26)<NOW?y0+1:y0;set(/avant noel/.test(t)?new Date(NOW):new Date(y,11,1),new Date(y,11,25,23,59),"Avant Noël");return;}
+  if(/nouvel an|reveillon|31 decembre/.test(t)){set(new Date(y0,11,31,12),new Date(y0+1,0,1,12),"Nouvel an");return;}
+  if(/\bete\b/.test(t)){const y=yr||(NOW.getMonth()>7?y0+1:y0);set(new Date(y,5,1),new Date(y,8,15),"Été "+y);return;}
+  if(/printemps/.test(t)){const y=yr||(NOW.getMonth()>4?y0+1:y0);set(new Date(y,2,20),new Date(y,5,20),"Printemps "+y);return;}
+  if(/automne/.test(t)){const y=yr||y0;set(new Date(Math.max(+NOW,+new Date(y,8,22))),new Date(y,11,20),"Automne "+y);return;}
+  if(/hiver/.test(t)){const y=yr||y0;set(new Date(Math.max(+NOW,+new Date(y,11,1))),new Date(y+1,2,1),"Hiver");return;}
+  const dn=t.match(/dans (\d+|un|une|deux|trois) (jours?|semaines?|mois)/);
+  if(dn){const n={un:1,une:1,deux:2,trois:3}[dn[1]]||+dn[1],u=dn[2][0],k=n*(u==="j"?1:u==="s"?7:30);set(day(Math.max(0,k-(u==="j"?0:3))),day(k+(u==="j"?1:7)),"Dans "+n+" "+dn[2]);return;}
+  if(/bientot|prochainement/.test(t)){set(new Date(NOW),day(21),"Bientôt");return;}
+  if(yr){set(new Date(Math.max(+NOW,+new Date(yr,0,1))),new Date(yr,11,31,23,59),String(yr));}
+}
+
+/* --- compréhension de la phrase --- */
+function parseAsk(text,prev){
+  const t=norm(text).replace(/[’']/g," "),q={raw:text,lab:[],genres:[],notGenres:[],teams:[]};
   for(const [c,rx] of CAT_RX)if(rx.test(t)){q.cat=c;break;}
-  q.genres=genresOf(text).filter(g=>!(q.cat==="soiree"&&g==="electro"&&/club/.test(t)&&genresOf(text).length>1));
-  if(/taille humaine|petit|intimiste|pas trop gros|confidentiel|a taille humaine/.test(t))q.size="small";else if(/\bmoyen/.test(t))q.size="medium";else if(/\b(gros|grand|enorme|immense|geant)\b/.test(t))q.size="big";
+  if(!q.cat&&/\bmarches?\b/i.test(text)&&/marchés?|marche de noel|marches de noel/i.test(text))q.cat="local";
+  // styles voulus et refusés (« pas de techno », « sans rap »)
+  const neg=[...t.matchAll(/(?:pas de|sans|surtout pas|pas du|pas la|pas le) ([a-z0-9 ]{2,24})/g)].map(m=>m[1]);
+  q.notGenres=genresOf(neg.join(" , "));
+  q.genres=genresOf(text).filter(g=>!q.notGenres.includes(g));
+  if(q.cat==="theatre")q.tg=Object.keys(THEATRE_G).filter(k=>THEATRE_G[k].rx.test(t));
+  if(q.cat==="expo"){q.et=typesOf(text);}
+  if(q.cat==="conference"){q.ct=ctypesOf(text);}
+  if(q.cat==="local"){q.lt=/brocante|vide.?grenier|braderie|puces/.test(t)?"brocante":/\bmarches?\b/.test(t)?"marche":/fete|bal\b|kermesse|foire|guinguette|loto/.test(t)?"fete":null;}
+  if(q.cat==="sport"||!q.cat){q.sport=sportOf(t);}
+  if(/enfant|gamin|petits?\b|kids|en famille|jeune public|avec ma fille|avec mon fils|des \d ans/.test(t)){q.kids=true;q.lab.push("Pour les enfants");}
+  if(/taille humaine|intimiste|pas trop gros|confidentiel|petit festival|petite salle/.test(t))q.size="small";else if(/\bmoyen/.test(t))q.size="medium";else if(/\b(gros|grand|enorme|immense|geant)s? (festival|concert)|grosse affiche/.test(t))q.size="big";
   if(/pays (proche|voisin)s?|pres de la france|pas loin de la france|frontali|a cote de la france/.test(t)){q.countries=NEIGHBORS.slice();q.lab.push("Pays voisins de la France");}
   else if(/etranger|en europe|europeen/.test(t)){q.abroad=/etranger/.test(t);q.eu=true;q.lab.push(q.abroad?"À l'étranger":"Europe");}
-  for(const w in CTRY_WORDS)if(new RegExp("\\b"+w+"\\b").test(t)&&!(w==="france"&&q.countries)){(q.countries=q.countries||[]).push(CTRY_WORDS[w]);q.lab.push(COUNTRY[CTRY_WORDS[w]]||w);}
-  const city=[...CITIES,...Object.keys(WORLD)].sort((a,b)=>b.length-a.length).find(c=>new RegExp("(^|[^a-z])"+norm(c).replace(/[-]/g,"[- ]")+"($|[^a-z])").test(t)&&!/^(nice|tours|pau|vienne|metz)$/i.test(c)||new RegExp("(a|au|sur|pres de|vers) "+norm(c)+"\\b").test(t));
+  for(const w in CTRY_WORDS)if(new RegExp("\\b"+w+"\\b").test(t)&&!(w==="france"&&(q.countries||/en france|toute la france/.test(t)&&!q.cat))){(q.countries=q.countries||[]).push(CTRY_WORDS[w]);q.lab.push(COUNTRY[CTRY_WORDS[w]]||w);}
+  const city=[...CITIES,...Object.keys(WORLD),...Object.keys(S.geoX||{})].sort((a,b)=>b.length-a.length).find(c=>{const k=norm(c).replace(/[-]/g,"[- ]");
+    return /^(nice|tours|pau|vienne|metz|orange|sete|bar|vannes)$/i.test(c)?new RegExp("\\b(a|au|sur|pres de|vers|de) "+k+"\\b").test(t):new RegExp("(^|[^a-z])"+k+"($|[^a-z])").test(t);});
   if(city){q.city=city;q.lab.push(city);}
-  if(/pres de chez moi|autour de moi|a cote de chez moi|pas loin|dans le coin|pres d.ici/.test(t)){q.near=true;q.lab.push("Autour de moi");}
-  // quand
-  const y0=NOW.getFullYear(),day=x=>new Date(NOW.getFullYear(),NOW.getMonth(),NOW.getDate()+x);
-  const ym=t.match(/\b(20\d\d)\b/),yr=ym?+ym[1]:null;
-  const mm=Object.keys(MON_RX).find(m=>new RegExp("\\b"+m+"\\b").test(t));
-  if(mm){const m=MON_RX[mm];let y=yr||y0;if(!yr&&new Date(y,m+1,0)<NOW)y++;q.from=new Date(y,m,1);q.to=new Date(y,m+1,0,23,59);q.lab.push(capital(mm.replace("fevrier","février").replace("aout","août").replace("decembre","décembre"))+" "+y);}
-  else if(/ce soir/.test(t)){q.from=new Date(NOW);q.to=new Date(+day(1)+6*36e5);q.lab.push("Ce soir");}
-  else if(/demain/.test(t)){q.from=day(1);q.to=new Date(+day(2)+6*36e5);q.lab.push("Demain");}
-  else if(/week.?end/.test(t)){const dow=NOW.getDay(),fri=day(dow===0?-2:dow===6?-1:5-dow);q.from=new Date(+fri+17*36e5);q.to=new Date(+fri+3*864e5+6*36e5);q.lab.push("Ce week-end");}
-  else if(/cette semaine/.test(t)){q.from=new Date(NOW);q.to=day(7);q.lab.push("Cette semaine");}
-  else if(/ce mois/.test(t)){q.from=new Date(NOW);q.to=new Date(y0,NOW.getMonth()+1,0,23,59);q.lab.push("Ce mois-ci");}
-  else if(/mois prochain/.test(t)){q.from=new Date(y0,NOW.getMonth()+1,1);q.to=new Date(y0,NOW.getMonth()+2,0,23,59);q.lab.push("Le mois prochain");}
-  else if(/\bete\b/.test(t)){const y=yr||(NOW.getMonth()>7?y0+1:y0);q.from=new Date(y,5,1);q.to=new Date(y,8,15);q.lab.push("Été "+y);}
-  else if(/printemps/.test(t)){const y=yr||(NOW.getMonth()>4?y0+1:y0);q.from=new Date(y,2,20);q.to=new Date(y,5,20);q.lab.push("Printemps "+y);}
-  else if(/automne/.test(t)){const y=yr||y0;q.from=new Date(y,8,22);q.to=new Date(y,11,20);q.lab.push("Automne "+y);}
-  else if(/hiver/.test(t)){const y=yr||y0;q.from=new Date(y,11,1);q.to=new Date(y+1,2,1);q.lab.push("Hiver");}
-  else if(yr){q.from=new Date(yr,0,1);q.to=new Date(yr,11,31,23,59);q.lab.push(String(yr));}
-  const dn=t.match(/dans (\d+) (jours?|semaines?|mois)/);if(dn&&!q.from){const n=+dn[1],u=dn[2][0];q.from=new Date(NOW);q.to=day(n*(u==="j"?1:u==="s"?7:31));q.lab.push("Dans "+n+" "+dn[2]);}
-  if(/gratuit/.test(t)){q.free=true;q.lab.push("Gratuit");}
-  const pm=t.match(/(moins de|max(?:imum)?|pas plus de|sous) (\d+) ?(e|eur|euros|€)/);if(pm){q.pmax=+pm[2];q.lab.push("Moins de "+pm[2]+" €");}
-  if(/open ?air|plein air|en exterieur|rooftop/.test(t)){q.open=true;q.lab.push("Open air");}
+  const rk=t.match(/(?:a moins de|dans un rayon de|max(?:imum)?) (\d{1,3}) ?km/);
+  if(/pres de chez moi|autour de moi|a cote de chez moi|pas loin|dans le coin|pres d.ici|dans mon quartier|a pied|proche de moi/.test(t)||rk){q.near=rk?+rk[1]:/a pied|quartier/.test(t)?3:15;q.lab.push("À moins de "+q.near+" km");}
+  askWhen(t,q);
+  if(/\b(en journee|de jour|l.apres.?midi|le matin|day ?party|teuf de jour)\b/.test(t)){q.day=true;q.lab.push("En journée");}
+  if(/gratuit|gratos|sans payer/.test(t)){q.free=true;q.lab.push("Gratuit");}
+  const pm=t.match(/(?:moins de|max(?:imum)?|pas plus de|sous|budget(?: de)?|a) (\d+) ?(?:e|eur|euros|balles)\b/);
+  if(pm&&!/km/.test(pm[0])){q.pmax=+pm[1];q.lab.push("Moins de "+pm[1]+" €");}else if(/pas cher|petit prix|petit budget|abordable|bon marche/.test(t)){q.pmax=25;q.lab.push("Petit prix");}
+  if(/open ?air|plein air|en exterieur|rooftop|peniche|en plein air/.test(t)){q.open=true;q.lab.push("Open air");}
+  if(/billetterie (pas encore )?ouverte|encore des places|reste des places|pas complet/.test(t))q.avail=true;
+  if(/bientot en vente|pas encore en vente|ouverture de (la )?billetterie|avant tout le monde/.test(t)){q.soon=true;q.lab.push("Billetterie bientôt ouverte");}
   // courses
-  const km=t.match(/(\d+(?:[.,]\d+)?) ?km\b/);if(km){q.km=parseFloat(km[1].replace(",","."));q.lab.push(q.km+" km");}else if(/semi/.test(t)){q.km=21.1;q.lab.push("Semi");}else if(/marathon/.test(t)){q.km=42.2;q.lab.push("Marathon");}
-  if(/denivele|d\+|montagne|grimpe/.test(t)){const dp=t.match(/(\d{3,4}) ?m/);q.dplus=dp?+dp[1]:800;q.lab.push("Avec du dénivelé");}
-  q.disc=/trail/.test(t)?"trail":/hyrox/.test(t)?"hyrox":/triathlon/.test(t)?"triathlon":/route|marathon|semi|10 ?km/.test(t)&&q.cat==="competition"?"route":null;
-  q.sport=sportOf(t);q.teams=teamsIn(text).map(x=>x.n);
-  if(/bleus|equipe de france|xv de france/.test(t))q.teams.push("Équipe de France");
-  // un artiste cité
-  const names=new Set();EVENTS.forEach(e=>{(e.lineup||[]).forEach(n=>{if(n&&n.length>=4)names.add(n);});if(e.cat==="concert"&&e.t.length<=28&&e.t.length>=4)names.add(e.t.split(/ [-–:] /)[0]);});
-  q.artist=[...names].find(n=>new RegExp("(^|[^a-z0-9])"+norm(n).replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"($|[^a-z0-9])").test(t))||null;
-  if(q.artist)q.lab.unshift(q.artist);
+  const kmm=t.match(/(\d+(?:[.,]\d+)?) ?km\b/);if(kmm&&!rk&&(q.cat==="competition"||!q.cat)){q.km=parseFloat(kmm[1].replace(",","."));q.cat=q.cat||"competition";q.lab.push(q.km+" km");}
+  else if(/semi.?marathon|\bsemi\b/.test(t)){q.km=21.1;q.lab.push("Semi");}else if(/marathon/.test(t)){q.km=42.2;q.lab.push("Marathon");}
+  if(/denivele|d\+|montagne|grimpe|qui monte/.test(t)){const dp=t.match(/(\d{3,4}) ?m\b/);q.dplus=dp?+dp[1]:800;q.lab.push(dp?dp[1]+" m D+":"Avec du dénivelé");}
+  q.disc=/trail/.test(t)?"trail":/hyrox/.test(t)?"hyrox":/triathlon/.test(t)?"triathlon":/\bvtt\b/.test(t)?"vtt":/route|marathon|semi|10 ?km/.test(t)&&q.cat==="competition"?"route":null;
+  q.teams=teamsIn(text).map(x=>x.n);if(/\bbleus\b|equipe de france|xv de france/.test(t))q.teams.push("Équipe de France");
+  // « jazz à Lyon » : Lyon est une ville, pas l'OL (sauf si on parle de match)
+  if(q.city&&q.cat!=="sport"&&!/match|\bfoot|rugby|basket|hand|equipe|\bclub\b|supporter/.test(t))q.teams=q.teams.filter(n=>n==="Équipe de France");
+  if(q.teams.includes("Équipe de France")&&q.countries){q.countries=q.countries.filter(c=>c!=="FR");if(!q.countries.length)delete q.countries;q.lab=q.lab.filter(l=>l!=="France");}
+  // noms connus : artistes, salles, événements, équipes
+  const ents=askEntities(text).filter(x=>!(q.city&&norm(x.name)===norm(q.city))&&!q.teams.some(n=>norm(n)===x.k));
+  q.ents=ents;
+  const art=ents.filter(x=>x.kinds.has("artist")||x.kinds.has("event")||x.kinds.has("fest")),ven=ents.filter(x=>x.kinds.has("venue")&&!x.kinds.has("artist"));
+  if(ven.length){q.venue=ven[0];q.lab.push("📍 "+ven[0].name);}
+  if(art.length){q.who=art.filter(x=>x!==q.venue);q.who.forEach(x=>q.lab.unshift((x.fuzzy?"≈ ":"")+x.name));}
+  if(!q.cat&&q.sport&&(q.teams.length||/match/.test(t)))q.cat="sport";
+  // suite de conversation : « et plutôt samedi ? », « moins cher », « d'autres »
+  if(prev&&/^(et |plutot|ou |mais |plus |moins |pareil|aussi|encore|d.autres?|autre|sinon|et si)/.test(t)){
+    for(const k of ["cat","city","near","from","to","genres","size","countries","free","pmax","open","kids","tg","et","ct","sport","teams","disc","km","dplus","venue","who","day"]){
+      const empty=q[k]==null||(Array.isArray(q[k])&&!q[k].length);if(empty&&prev[k]!=null)q[k]=prev[k];}
+    if(/moins cher/.test(t)&&!q.pmax)q.pmax=Math.max(10,Math.round(((prev.lastP||40))*.7));
+    const drop=new Set([q.dateLab&&prev.dateLab,q.city&&prev.city,q.cat&&prev.cat&&VERTS[prev.cat].n].filter(Boolean));
+    q.lab=[...new Set((prev.lab||[]).filter(l=>!drop.has(l)&&!q.lab.some(n=>n.split(" ")[0]===l.split(" ")[0])).concat(q.lab))];q.dateLab=q.dateLab||prev.dateLab;q.followup=true;}
   if(q.cat)q.lab.unshift(VERTS[q.cat].n);
-  q.genres.forEach(g=>q.lab.push(GENRES[g].n));if(q.size)q.lab.push(SIZE[q.size]);if(q.disc)q.lab.push(DISC[q.disc].n);if(q.sport&&q.cat==="sport")q.lab.push(SPORTS[q.sport].n);
+  q.genres.forEach(g=>q.lab.push(GENRES[g].n));q.notGenres.forEach(g=>q.lab.push("Sans "+GENRES[g].n));
+  (q.tg||[]).forEach(g=>q.lab.push(THEATRE_G[g].n));(q.et||[]).forEach(g=>q.lab.push(EXPO_TYPES[g].n));(q.ct||[]).forEach(g=>q.lab.push(CONF_T[g].n));
+  if(q.size)q.lab.push(SIZE[q.size]);if(q.disc)q.lab.push(DISC[q.disc].n);if(q.sport&&q.cat==="sport")q.lab.push(SPORTS[q.sport].n);q.teams.forEach(n=>q.lab.push(n));
+  q.lab=[...new Set(q.lab)];
+  // les mots qui restent (ni critère, ni nom connu) : peut-être un artiste ou un lieu que FOMO n'a pas encore
+  const used=new Set();(ents||[]).forEach(x=>x.k.split(" ").forEach(w=>used.add(w)));[q.city,...(q.teams||[])].filter(Boolean).forEach(c=>askKey(c).split(" ").forEach(w=>used.add(w)));
+  const raw=String(text).replace(/[’']/g," ").split(/[^A-Za-zÀ-ÿ0-9]+/).filter(Boolean);
+  const V=askVocab(q.cat),isLeft=w=>{const k=askKey(w);return k.length>=3&&!used.has(k)&&!V.has(k)&&!V.has(k.replace(/s$/,""))&&!/^\d+$/.test(k);};
+  const li=raw.map((w,i)=>isLeft(w)?i:-1).filter(i=>i>=0),left=li.map(i=>raw[i]);
+  if(left.length&&!(q.who||[]).length&&!(q.cat==="sport"&&q.teams.length)){q.left=left.map(askKey);
+    // un nom propre : une majuscule ailleurs qu'en début de phrase, ou une demande courte faite surtout de ce nom
+    q.nameLike=left.some((w,j)=>/^[A-ZÀ-Ý]/.test(w)&&li[j]>0)||raw.length<=4;
+    q.leftRaw=raw.slice(li[0],li[li.length-1]+1).join(" ");
+    // la phrase entière, si c'est le nom d'un événement (« Nuit blanche »)
+    const ph=askKeyN(text);if(ph.split(" ").length>=2&&ph.split(" ").length<=6)q.phrase=ph;}
+  q.strength=(q.cat?1:0)+(q.who&&q.who.length?3:0)+(q.venue?2:0)+(q.from?1:0)+(q.genres.length?1:0)+(q.city||q.near?1:0)+(q.teams.length?2:0);
   return q;
 }
-function askMatch(e,q){
+
+/* --- correspondance stricte : tout ce qui a été demandé doit être vrai --- */
+function askMatch(e,q,relax){
+  relax=relax||{};
   if(q.cat&&e.cat!==q.cat)return false;
-  if(!q.cat&&VERTS[e.cat].noDeck)return false;
-  const d=D(e.d),end=e.end?D(e.end):d;
-  if(q.from&&(end<q.from||d>q.to))return false;
-  if(!q.from&&!e.approx&&d<NOW)return false;
-  if(q.genres.length&&["concert","soiree","festival"].includes(e.cat)&&!(e.genres||[]).some(g=>q.genres.includes(g)))return false;
-  if(q.size&&e.cat==="festival"&&e.size&&e.size!==q.size)return false;
-  if(q.size&&e.cat==="festival"&&!e.size)return false;
+  if(!q.cat&&(VERTS[e.cat]||{}).noDeck&&!q.venue&&!(q.who||[]).length)return false;
+  if(S.disliked[e.id])return false;
+  const d=D(e.d),end=D(e.until||e.end||e.d);
+  if(q.from&&!relax.date&&(end<q.from||d>q.to))return false;
+  if(q.from&&!relax.date&&q.to-q.from<=3*864e5&&!e.until&&end-d<20*36e5&&d<q.from&&!(e.cat==="theatre"||e.cat==="expo"))return false;
+  if(q.from&&relax.date&&(end<new Date(+q.from-7*864e5)||d>new Date(+q.to+10*864e5)))return false;
+  if(!e.approx&&end<NOW)return false;
+  if(q.who&&q.who.length&&!relax.who){const hay=norm(e.t+" | "+(e.lineup||[]).join(" | ")+" | "+(e.tracked||""));if(!q.who.some(x=>x.ev.has(e.id)||hay.includes(norm(x.name))))return false;}
+  // un nom propre : dans le line-up, en tête du titre, ou dans le titre d'un concert, d'une soirée, d'un spectacle
+  if(q.text&&q.nameLike&&!relax.who){const ph=q.text.join(" "),T=askKey(e.t),L=" "+askKey((e.lineup||[]).join(" , "))+" ";
+    if(!(L.includes(" "+ph+" ")||T.startsWith(ph)||(["concert","soiree","festival","theatre"].includes(e.cat)&&(" "+T+" ").includes(" "+ph+" "))))return false;}
+  else if(q.text&&!relax.who){const hay=" "+askKey(e.t+" "+(e.lineup||[]).join(" ")+" "+(e.venue||"")+" "+(e.tags||[]).join(" ")+(q.nameLike?"":" "+(e.desc||"").slice(0,400)));if(!q.text.every(w=>hay.includes(" "+w)))return false;}
+  if(q.lt&&ltypeOf(e)!==q.lt)return false;
+  if(q.venue&&!q.venue.ev.has(e.id)&&!norm(e.venue||"").includes(norm(q.venue.name)))return false;
+  if(q.genres.length&&!relax.genre&&["concert","soiree","festival"].includes(e.cat)&&!(e.genres||[]).some(g=>q.genres.includes(g)))return false;
+  if(q.genres.length&&!q.cat&&!["concert","soiree","festival"].includes(e.cat))return false;
+  // sans lieu précisé : autour de chez toi (sauf festivals et compétitions, qui valent le déplacement)
+  if(!q.city&&!q.near&&!q.countries&&!q.abroad&&!q.venue&&!(q.who||[]).length&&!q.teams.length&&!["festival","competition"].includes(e.cat)&&!e.approx){
+    const p=eventPos(e);if(p&&km(homePos(),p)>(relax.place?200:60))return false;}
+  if(q.notGenres.length&&(e.genres||[]).some(g=>q.notGenres.includes(g)))return false;
+  if(q.size&&!relax.size&&e.cat==="festival"&&e.size!==q.size)return false;
   if(q.countries&&!q.countries.includes(e.country))return false;
   if(q.abroad&&e.country==="FR")return false;
-  if(q.city){const c=cityPos(q.city),p=eventPos(e);if(c&&p){if(km(c,p)>50)return false;}else if(!norm(e.city+" "+e.venue).includes(norm(q.city)))return false;}
-  if(q.near){const p=eventPos(e);if(!p||km(homePos(),p)>60)return false;}
+  if(q.city){const c=cityPos(q.city),p=eventPos(e),R=relax.place?120:40;if(c&&p){if(km(c,p)>R)return false;}else if(!norm(e.city+" "+e.venue).includes(norm(q.city)))return false;}
+  if(q.near&&!q.city){const p=eventPos(e),R=relax.place?q.near*3:q.near;if(!p||km(homePos(),p)>R)return false;}
   if(q.free&&!(e.free||e.p===0))return false;
-  if(q.pmax&&e.p!=null&&e.p>q.pmax)return false;
-  if(q.open&&!isOpenAir(e))return false;
+  if(q.pmax&&!relax.price&&e.p!=null&&e.p>q.pmax)return false;
+  if(q.open&&!relax.open&&!isOpenAir(e))return false;
+  if(q.kids&&!relax.kids&&!/enfant|jeune public|famille|des \d+ ans|a partir de \d+ ans|kids|petits/.test(norm(e.t+" "+(e.tags||[]).join(" ")+" "+(e.desc||"")+" "+(e.etypes||[]).join(" "))))return false;
+  if(q.day&&e.cat==="soiree"){const h=D(e.d).getHours();if(!(isOpenAir(e)||(h>=10&&h<19)))return false;}
+  if((q.tg||[]).length&&!relax.type&&!tgenresOf(e).some(g=>q.tg.includes(g)))return false;
+  if((q.et||[]).length&&!relax.type&&!(e.etypes||[]).some(g=>q.et.includes(g)))return false;
+  if((q.ct||[]).length&&!relax.type&&!(e.ctypes||[]).some(g=>q.ct.includes(g)))return false;
   if(q.disc&&!(e.disc||[]).includes(q.disc))return false;
   if(q.km&&e.cat==="competition"&&!(e.kms||[]).some(k=>Math.abs(k-q.km)<=Math.max(3,q.km*.2)))return false;
   if(q.dplus&&e.cat==="competition"&&!(e.dplus||[]).some(x=>x>=q.dplus*.6))return false;
   if(q.sport&&e.cat==="sport"&&e.sport!==q.sport)return false;
-  if(q.teams.length&&e.cat==="sport"&&!q.teams.some(n=>n==="Équipe de France"?/(^|– )france( –|$| \()/i.test(e.t):teamsIn(e.t).some(x=>x.n===n)))return false;
-  if(q.artist&&!norm(e.t+" "+(e.lineup||[]).join(" ")).includes(norm(q.artist)))return false;
+  if(q.teams.length&&e.cat==="sport"&&!q.teams[q.teams.length>1&&!q.teams.includes("Équipe de France")&&!relax.who?"every":"some"](n=>n==="Équipe de France"?/(^|– )france( –|$| \()/i.test(e.t):teamsIn(e.t+" "+(e.home||"")+" "+(e.away||"")).some(x=>x.n===n)))return false;
+  if(q.teams.length&&e.cat!=="sport")return false;
+  if(q.soon&&!(e.saleAt||e.presaleAt||e.ann||e.status==="announced"))return false;
+  if(q.avail&&e.soldout)return false;
   return true;
 }
-// éditions probables : la base des festivals de l'année (RA) et les festivals connus, projetés à la même période l'année suivante
+// éditions probables des festivals pas encore annoncés
 function projectedFestivals(q){
   const out=[],seen=new Set(EVENTS.filter(e=>e.cat==="festival").map(e=>norm(e.t).replace(/\b20\d\d\b/g,"").replace(/[^a-z]/g,"").slice(0,14)));
   const add=o=>{const k=norm(o.t).replace(/[^a-z]/g,"").slice(0,14);if(seen.has(k))return;seen.add(k);out.push(o);};
   FKB().forEach(f=>{if(f.multi===false)return;const d0=D(f.d);if(isNaN(d0))return;let d=new Date(d0);while(d<NOW)d=new Date(d.getFullYear()+1,d.getMonth(),d.getDate());
     const pos=cityPos(f.city)||{};const e=finalize({id:"fk-"+norm(f.n).replace(/[^a-z0-9]+/g,"-"),src:"ra",cat:"festival",t:f.n+" "+d.getFullYear(),w:"Édition "+d.getFullYear()+" probable, d'après "+d0.getFullYear(),
       genres:genresOf((f.genres||[]).join(" ")),cap:f.cap,pop:f.pop,lineup:f.lineup||[],country:f.country,city:f.city,venue:f.v,lat:pos.lat,lon:pos.lon,d:d.toISOString(),approx:true,proj:true,link:f.link,img:""});
-    if(askMatch(e,q))add(e);});
+    if(askMatch(e,Object.assign({},q,{who:null,venue:null})))add(e);});
   FESTS.forEach(f=>{const m=f[5]-1;let y=NOW.getFullYear();if(new Date(y,m,28)<NOW)y++;if(q.from&&q.from.getFullYear()>y&&q.from.getMonth()===m)y=q.from.getFullYear();
     const pos=cityPos(f[4])||{};const e=finalize({id:"kb-"+norm(f[0]).replace(/[^a-z0-9]+/g,"-"),src:"kb",cat:"festival",t:f[0]+" "+y,w:"Édition "+y+" probable",genres:f[1],size:f[2],sizeGuess:false,
       country:f[3],city:f[4],venue:f[4],lat:pos.lat,lon:pos.lon,d:new Date(y,m,15,16).toISOString(),approx:true,proj:true,link:"https://www.google.com/search?q="+encodeURIComponent(f[0]+" "+y),img:""});
-    if(askMatch(e,q))add(e);});
+    if(askMatch(e,Object.assign({},q,{who:null,venue:null})))add(e);});
+  if(q.who&&q.who.length)return out.filter(e=>q.who.some(x=>norm(e.t).includes(norm(x.name))));
   return out;
 }
 const PROJ={};
-function runAsk(text){
-  const q=parseAsk(text);
-  let R=EVENTS.filter(e=>askMatch(e,q));
-  let proj=[];if((q.cat==="festival"||!q.cat&&/festival/.test(norm(text)))&&R.length<6){proj=projectedFestivals(Object.assign({},q,{cat:"festival"}));proj.forEach(e=>PROJ[e.id]=e);}
-  const ranked=R.map(e=>({e,...score(e)})).sort((a,b)=>b.s-a.s);
-  return{q,res:ranked.slice(0,15),proj:proj.slice(0,10),total:R.length};
+// pertinence : ce qui a été demandé d'abord, puis tes goûts, puis la proximité dans le temps
+function askRank(e,q){
+  const x=score(e);let r=x.s;
+  if(q.who&&q.who.length){const hay=norm(e.t+" | "+(e.lineup||[]).join(" | "));const nm=q.who.find(w=>hay.includes(norm(w.name))||w.ev.has(e.id));
+    if(nm){r+=8;if(norm(e.t).startsWith(norm(nm.name))||((e.lineup||[])[0]&&norm(e.lineup[0])===norm(nm.name)))r+=4;}}
+  if(q.genres.length)r+=(e.genres||[]).filter(g=>q.genres.includes(g)).length*1.2;
+  if(q.near||q.city){const c=q.city?cityPos(q.city):homePos(),p=eventPos(e);if(c&&p)r-=Math.min(3,km(c,p)/20);}
+  if(!q.from){const days=(D(e.d)-NOW)/864e5;r-=Math.max(0,days)/120;}
+  if(e.soldout)r-=4;if(e.approx)r-=1.5;if(e.img)r+=.2;
+  return Object.assign({e,rank:r},x);
 }
-function askReply(text){
-  const {q,res,proj,total}=runAsk(text);
+// ce que FOMO a retenu, en une ligne
+function askWhy(x,q){
+  const e=x.e,o=[];
+  if(q.who&&q.who.length){const hay=norm(e.t+" "+(e.lineup||[]).join(" "));const w=q.who.find(w=>hay.includes(norm(w.name)));if(w)o.push(w.name+" à l'affiche");}
+  const g=(e.genres||[]).filter(g=>!q.genres.length||q.genres.includes(g)).slice(0,2).map(g=>GENRES[g].n);if(g.length)o.push(g.join(", "));
+  const p=eventPos(e),c=q.city?cityPos(q.city):homePos();if(p&&c){const k=km(c,p);if(k<60)o.push(k<1?"à "+Math.round(k*1000)+" m":"à "+String(Math.round(k*10)/10).replace(".",",")+" km"+(q.city?" de "+q.city:""));}
+  if(e.free||e.p===0)o.push("gratuit");else if(e.p!=null)o.push("dès "+e.p+" €");
+  if(e.saleAt&&D(e.saleAt)>NOW)o.push("billetterie le "+D(e.saleAt).getDate()+" "+MO[D(e.saleAt).getMonth()]);
+  (x.r||[]).filter(r=>!/km|€|Gratuit/.test(r)).slice(0,1).forEach(r=>o.push(r.charAt(0).toLowerCase()+r.slice(1)));
+  return [...new Set(o)].slice(0,4).join(" · ");
+}
+let ASKQ=null,ASKR=[],ASKN=0;
+function runAsk(text,more){
+  const q=more&&ASKQ?ASKQ:parseAsk(text,ASKQ);
+  // on cherche strictement ; s'il n'y a rien, on élargit une contrainte à la fois (et on le dit)
+  const steps=[[{},""],[{date:true},"j'ai élargi un peu les dates"],[{size:true},"sans tenir compte de la taille"],[{genre:true},"tous styles confondus"],
+    [{type:true},"tous types confondus"],[{price:true},"un peu au-dessus de ton budget"],[{place:true},"un peu plus loin"],[{open:true,kids:true},"en enlevant une contrainte"],[{who:true,date:true},"je n'ai rien trouvé avec ce nom, voici ce qui s'en approche"]];
+  if(!more&&q.left&&q.left.length&&!q.text&&!q.unknown){
+    const ph=q.phrase&&EVENTS.filter(e=>askMatch(e,Object.assign({},q,{cat:null,text:q.phrase.split(" ")}))&&(" "+askKey(e.t)+" ").includes(" "+q.phrase+" "));
+    const hit=ph&&ph.length?null:EVENTS.filter(e=>askMatch(e,Object.assign({},q,{text:q.left})));
+    if(ph&&ph.length){q.text=q.phrase.split(" ");q.cat=null;q.lab=["« "+text.trim()+" »"];q.strength=3;}
+    else if(hit.length){q.text=q.left;q.lab.push("« "+q.leftRaw+" »");}
+    else if(q.nameLike)q.unknown=q.leftRaw;}
+  let R=[],relaxed="";
+  if(q.unknown&&!q.strength){ASKQ=q;ASKR=[];return{q,res:[],proj:[],total:0,relaxed:""};}
+  for(const [rl,lab] of steps){R=EVENTS.filter(e=>askMatch(e,q,rl));if(R.length){relaxed=lab;break;}}
+  const ranked=groupMulti(R.map(x=>x)).map(e=>askRank(e,q)).filter(x=>!(VERTS[x.e.cat]||{}).noDeck||q.cat==="local"||q.venue||(q.who||[]).length);
+  // fiable : sans nom précis demandé, on ne garde que ce qui te correspond vraiment
+  ranked.sort((a,b)=>b.rank-a.rank);
+  let proj=[];if((q.cat==="festival"||!q.cat&&/festival/.test(norm(text)))&&ranked.length<ASK_MAX){proj=projectedFestivals(Object.assign({},q,{cat:"festival"}));proj.forEach(e=>PROJ[e.id]=e);}
+  // pas trois fois la même salle ou le même artiste quand la demande est large
+  let res=ranked;if(!(q.who&&q.who.length)&&!q.venue){const seenV=new Set(),out=[],rest=[];
+    ranked.forEach(x=>{const k=norm(x.e.venue||x.e.t).slice(0,14);if(seenV.has(k))rest.push(x);else{seenV.add(k);out.push(x);}});res=out.concat(rest);}
+  ASKQ=q;ASKR=res;
+  q.lastP=(res[0]&&res[0].e.p)||q.lastP;
+  return{q,res,proj,total:res.length,relaxed};
+}
+function askCard(x,q){
+  const e=x.e,inA=inCal(e.id),why=askWhy(x,q);
+  return`<div class="ask-card v-${e.cat}">${itemHTML(e,{when:true,pct:x.ok?x.pct:null,pills:1,noActs:true})}
+    ${why?`<div class="ask-why">${esc(why)}</div>`:""}
+    <div class="ask-acts"><button class="ask-love" data-askl="${esc(e.id)}" aria-pressed="${inA}">${inA?"✓ Dans ton agenda":"♥ J'aime, ajoute à mon agenda"}</button><button class="ask-no" data-askn="${esc(e.id)}" aria-label="Pas pour moi">✕</button></div></div>`;
+}
+function askReply(text,more){
+  const {q,res,proj,total,relaxed}=runAsk(text,more);
+  const start=more?ASKN:0,show=res.slice(start,start+ASK_MAX);ASKN=start+show.length;
+  const room=Math.max(0,ASK_MAX-show.length),pj=start?[]:proj.slice(0,room);
   const what=q.cat?VERTS[q.cat].one:"sortie";
   let h=`<div class="msg bot">`;
-  if(!res.length&&!proj.length)h+=`Je n'ai rien trouvé qui colle à tout ça. Essaie d'élargir : enlève une contrainte (la taille, le style ou les dates).`;
-  else if(res.length)h+=`${total>15?"Voici les 15 meilleurs sur "+total:total+" "+what+(total>1?"s":"")} pour toi, classés selon tes goûts.`;
-  else h+=`Les éditions correspondantes ne sont pas encore annoncées. Voici celles qui devraient avoir lieu, d'après l'édition précédente : like-les, je te préviens dès que les dates et la billetterie tombent.`;
-  if(q.lab.length)h+=`<div class="understood">${q.lab.map(l=>`<span class="pill">${esc(l)}</span>`).join("")}</div>`;
+  if(q.unknown&&!more){h+=`Je ne trouve pas « ${esc(q.unknown)} » sur FOMO pour l'instant.${q.nameLike&&["concert","festival","soiree",undefined].includes(q.cat)?` <span class="ask-tm" data-q="${esc(q.unknown)}">Je regarde sur les billetteries…</span>`:""}`;
+    if(show.length)h+=` Voici ce qui colle au reste de ta demande${relaxed?", "+relaxed:""} :`;h+=`</div>`+(show.length?`<div class="list ask-list">${show.map(x=>askCard(x,q)).join("")}</div>`:"");
+    if(ASKN<ASKR.length&&show.length)h+=`<div class="ask-more"><button class="btn ghost sm" data-askmore="1">Autres idées</button></div>`;return h;}
+  if(!q.lab.length&&!q.strength)h+=`Je n'ai pas reconnu de critère précis dans ta demande. Voici quand même mes ${show.length>1?show.length+" meilleures idées":"meilleure idée"} pour toi en ce moment. Précise un type de sortie, un artiste, un lieu ou une date et je serai plus juste.`;
+  else if(!show.length&&!pj.length)h+=more?`C'est tout ce que j'ai pour cette demande.`:`Rien sur FOMO ne correspond à tout ça pour l'instant. Retire une contrainte (le style, la date ou le lieu) et je recherche.`;
+  else if(more)h+=`Voici ${show.length>1?"les "+show.length+" suivantes":"la suivante"}.`;
+  else if(show.length)h+=`${show.length===1?"Ma meilleure proposition":"Mes "+show.length+" meilleures propositions"}${total>show.length?" (sur "+total+")":""}${relaxed?", "+relaxed:""}. Touche ♥ et je l'ajoute à ton agenda.`;
+  else h+=`Pas encore annoncé. Voici ${pj.length>1?"les éditions qui devraient avoir lieu":"l'édition qui devrait avoir lieu"}, d'après l'édition précédente : touche ♥, je te préviens dès que la billetterie ouvre.`;
+  if(q.lab.length&&!more)h+=`<div class="understood"><span class="small">J'ai compris :</span>${q.lab.map(l=>`<span class="pill">${esc(l)}</span>`).join("")}</div>`;
   h+=`</div>`;
-  h+=`<div class="list">${res.map(x=>itemHTML(x.e,{when:true,pct:x.ok?x.pct:null,pills:1})).join("")}${proj.map(e=>itemHTML(e,{when:true,pills:1})).join("")}</div>`;
-  if(res.length&&proj.length)h+=`<div class="msg bot">Et pour plus tard, les éditions probables (pas encore annoncées) sont incluses à la fin.</div>`;
+  let list=show;
+  if(!q.lab.length&&!q.strength&&!more){list=feedItems("all").slice(0,ASK_MAX).map(x=>Object.assign({rank:x.s},x));ASKR=list;ASKN=list.length;}
+  h+=`<div class="list ask-list">${list.map(x=>askCard(x,q)).join("")}${pj.map(e=>askCard({e,ok:false,r:[]},q)).join("")}</div>`;
+  if(ASKN<ASKR.length&&list.length)h+=`<div class="ask-more"><button class="btn ghost sm" data-askmore="1">Autres idées</button></div>`;
   return h;
+}
+// artiste absent de FOMO : ses prochaines dates en France chez Ticketmaster (serveur FOMO), sinon on le suit pour toi
+async function askTicketing(name,el){
+  let evs=[];
+  if(!isFile){try{const r=await fetch(TM_FN+"?q="+encodeURIComponent(name));if(r.ok)evs=((await r.json()).events)||[];}catch(e){}}
+  const L=evs.map(x=>collNorm(x,{city:""})).filter(Boolean);
+  L.forEach(e=>{if(!EVENTS.some(y=>y.id===e.id))EVENTS.push(e);});
+  S.dreamRaw=(S.dreamRaw||[]).filter(x=>!evs.some(y=>y.id===x.id)).concat(evs).slice(-40);
+  S.qa=(S.qa||[]).filter(a=>norm(a.n)!==norm(name)).concat([{n:name,w:2}]);save();PROF_V++;
+  if(!L.length){el.textContent="Aucune date annoncée en France pour l'instant. Je l'ajoute à tes artistes : je te propose ses dates dès qu'elles tombent.";return;}
+  const G=groupMulti(L).slice(0,ASK_MAX).map(e=>askRank(e,{genres:[],who:[]}));
+  const msg=el.closest(".msg");msg.textContent="« "+name+" » n'était pas encore sur FOMO : "+(G.length>1?"voici ses prochaines dates trouvées sur la billetterie.":"voici sa prochaine date trouvée sur la billetterie.")+" Touche ♥ et je l'ajoute à ton agenda.";
+  msg.insertAdjacentHTML("afterend",`<div class="list ask-list">${G.map(x=>askCard(x,{genres:[],who:[{name,ev:new Set()}]})).join("")}</div>`);
 }
 function renderAsk(){
   const th=$("ask-thread");
-  if(!th.children.length){th.innerHTML=`<div class="msg bot">Dis-moi ce que tu cherches : le type de sortie, le style, la taille, le lieu, la période, ton budget. Quelques idées :</div>
+  if(!th.children.length){th.innerHTML=`<div class="msg bot">Dis-moi ce que tu cherches : un artiste, un style, un lieu, une date, ton budget. Je te propose les 3 sorties qui collent le mieux, et ♥ les ajoute à ton agenda. Quelques idées :</div>
     <div class="ask-ex">${ASK_EX.map(x=>`<button data-ask="${esc(x)}">${esc(x)}</button>`).join("")}</div>`;}
 }
-function ask(text){
-  text=String(text||"").trim();if(!text)return;
+function ask(text,more){
+  text=String(text||"").trim();if(!text&&!more)return;
   const th=$("ask-thread");const ex=th.querySelector(".ask-ex");if(ex)ex.remove();
-  th.insertAdjacentHTML("beforeend",`<div class="msg me">${esc(text)}</div>`+(LOADING&&!EVENTS.length?`<div class="msg bot">Les événements sont encore en chargement, je cherche dans ce qui est déjà là.</div>`:"")+askReply(text));
-  S.asks=(S.asks||[]).concat([{t:text,at:Date.now()}]).slice(-30);save();
-  setTimeout(()=>{const m=th.querySelectorAll(".msg.me");m[m.length-1].scrollIntoView({behavior:"smooth",block:"start"});},30);
+  th.querySelectorAll(".ask-more").forEach(b=>b.remove());
+  th.insertAdjacentHTML("beforeend",(more?"":`<div class="msg me">${esc(text)}</div>`)+(LOADING&&!EVENTS.length?`<div class="msg bot">Les événements sont encore en chargement, je cherche dans ce qui est déjà là.</div>`:"")+askReply(text,more));
+  if(!more){S.asks=(S.asks||[]).concat([{t:text,at:Date.now()}]).slice(-30);save();}
+  const tmq=th.querySelector(".ask-tm:not([data-done])");if(tmq){tmq.dataset.done=1;askTicketing(tmq.dataset.q,tmq);}
+  setTimeout(()=>{const m=th.querySelectorAll(more?".ask-list":".msg.me");if(m.length)m[m.length-1].scrollIntoView({behavior:"smooth",block:"start"});},30);
 }
-$("ask-form").onsubmit=ev=>{ev.preventDefault();ask($("ask-in").value);$("ask-in").value="";};
-$("ask-thread").addEventListener("click",ev=>{const b=ev.target.closest("[data-ask]");if(b)ask(b.dataset.ask);});
+$("ask-form").onsubmit=ev=>{ev.preventDefault();const v=$("ask-in").value;$("ask-in").value="";if(/^(d.autres?|autre chose|encore|la suite|plus d.idees)\s*\??$/i.test(v.trim())&&ASKQ){ask(v,true);return;}ask(v);};
+$("ask-thread").addEventListener("click",ev=>{
+  const l=ev.target.closest("[data-askl]");
+  if(l){ev.stopPropagation();const id=l.dataset.askl;const e=byId(id)||PROJ[id];if(!e)return;
+    // ♥ dans Demande-moi : « ça m'intéresse » et directement dans l'agenda (avec les alertes billetterie)
+    const on=toggleCal(id);l.setAttribute("aria-pressed",on);l.textContent=on?"✓ Dans ton agenda":"♥ J'aime, ajoute à mon agenda";PROF_V++;
+    document.querySelectorAll(`[data-like="${CSS.escape(id)}"]`).forEach(b=>b.setAttribute("aria-pressed",isLiked(id)));return;}
+  const n=ev.target.closest("[data-askn]");
+  if(n){ev.stopPropagation();const id=n.dataset.askn,e=byId(id);if(e){learn(e,"no","ask");S.disliked[id]=1;delete S.liked[id];save();PROF_V++;}
+    const c=n.closest(".ask-card");c.style.transition="opacity .2s";c.style.opacity="0";setTimeout(()=>c.remove(),200);return;}
+  const m=ev.target.closest("[data-askmore]");if(m){ask("",true);return;}
+  const b=ev.target.closest("[data-ask]");if(b)ask(b.dataset.ask);});
 
 /* ================= Marchés : carte des marchés autour de toi ================= */
 // Les marchés sont fixes et récurrents : on les prend dans OpenStreetMap (toute la France, avec jours et horaires
