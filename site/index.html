@@ -24,7 +24,7 @@
   --paper:#F4F5F8; --card:#FFFFFF; --sunk:#ECEEF4; --ink:#15162B; --ink2:#5C5F76; --ink3:#8C8FA6; --line:#E1E3EC;
   --hot:#FF2E63; --hot-soft:#FFE3EA; --ok:#0E8F6C; --ok-soft:#DCF3EB; --warn:#B26A00; --warn-soft:#FFF0D6;
   --v-soiree:#6A3BFF; --v-concert:#FF5A36; --v-festival:#F2A100; --v-sport:#0FA37F; --v-competition:#1F6FFF;
-  --v-expo:#D9479A; --v-conference:#2F6DB5; --v-experience:#E26D2E; --v-theatre:#9B2C4E; --v-local:#6B7488; --v-marche:#2E9E5B;
+  --v-expo:#D9479A; --v-conference:#2F6DB5; --v-experience:#E26D2E; --v-spectacle:#B0177B; --v-theatre:#9B2C4E; --v-local:#6B7488; --v-marche:#2E9E5B;
   --r-lg:22px; --r-md:14px; --r-sm:10px;
   --f:"Bricolage Grotesque",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
   --nav-h:64px; color-scheme:light;
@@ -44,7 +44,7 @@ a{color:inherit}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 
 .v-soiree{--vc:var(--v-soiree)}.v-concert{--vc:var(--v-concert)}.v-festival{--vc:var(--v-festival)}.v-sport{--vc:var(--v-sport)}
-.v-competition{--vc:var(--v-competition)}.v-expo{--vc:var(--v-expo)}.v-conference{--vc:var(--v-conference)}.v-experience{--vc:var(--v-experience)}.v-theatre{--vc:var(--v-theatre)}.v-local{--vc:var(--v-local)}.v-marche{--vc:var(--v-marche)}
+.v-competition{--vc:var(--v-competition)}.v-expo{--vc:var(--v-expo)}.v-conference{--vc:var(--v-conference)}.v-experience{--vc:var(--v-experience)}.v-spectacle{--vc:var(--v-spectacle)}.v-theatre{--vc:var(--v-theatre)}.v-local{--vc:var(--v-local)}.v-marche{--vc:var(--v-marche)}
 .bubble{background:var(--vc)}
 
 /* ---------- squelette ---------- */
@@ -383,6 +383,9 @@ html,body{overscroll-behavior-y:contain}
 .explore.loved{background:var(--hot);color:#fff;top:44px;bottom:auto}
 .fcard .img .dchip{position:absolute;left:14px;bottom:12px;right:90px;color:#fff;font-weight:800;font-size:24px;line-height:1.05;letter-spacing:-.02em;font-variation-settings:"wdth" 75;text-shadow:0 1px 8px rgba(0,0,0,.45)}
 .fcard .img .dchip span{all:unset}
+.sheet-x{position:sticky;top:8px;float:right;margin:-14px 12px 0 0;z-index:3;width:38px;height:38px;border-radius:50%;border:0;background:rgba(20,20,40,.55);color:#fff;font-size:17px;cursor:pointer;backdrop-filter:blur(6px)}
+.sheet .about{font-size:15px;line-height:1.45;color:var(--ink2);margin:0}
+.venue-link{border:0;background:none;padding:0;font:inherit;color:inherit;text-align:left;text-decoration:underline;text-decoration-color:var(--vc);text-underline-offset:3px;cursor:pointer}
 </style>
 </head>
 <body>
@@ -473,7 +476,7 @@ html,body{overscroll-behavior-y:contain}
 </div></nav>
 
 <div class="scrim" id="scrim" hidden></div>
-<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Détails" hidden><div class="grab"></div><div id="sheet-in"></div></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Détails" hidden><div class="grab"></div><button class="sheet-x" id="sheet-x" aria-label="Fermer">✕</button><div id="sheet-in"></div></div>
 
 <div class="ob" id="ob" hidden><div class="wrap" id="ob-wrap"></div></div>
 
@@ -675,6 +678,10 @@ const CLUB_CITY=[["paris saint-germain|paris fc|paris basketball|paris volley|st
 function clubCity(text){const t=norm(text||"");for(const [rx,c,la,lo] of CLUB_CITY)if(rx.test(t))return{city:c,lat:la,lon:lo};return null;}
 
 // grandes salles et stades : concerts « les plus attendus » et « dernières places »
+// grandes salles de Paris et alentour (plus de 2 000 places)
+const PARIS_BIG_RX=/accor arena|bercy|la defense arena|stade de france|parc des princes|zenith paris|zenith de paris|zenith paris la villette|dome de paris|palais des sports|palais des congres|adidas arena|seine musicale|grand rex|olympia|opera bastille|philharmonie|chatelet|stade jean.bouin|roland.garros|paris expo|dock pullman|grande halle de la villette/;
+// salles de comédies musicales et de grands spectacles : ce qu'on y joue va dans Spectacles
+const SHOW_VENUE_RX=/mogador|chatelet|folies bergere|palais des congres|dome de paris|grand rex|casino de paris|bobino|lido|paradis latin|crazy horse|moulin rouge|cirque d.hiver|theatre de paris|zenith/;
 const BIG_VENUE_RX=/accor arena|bercy|paris la defense arena|la defense arena|u arena|stade de france|parc des princes|zenith|groupama stadium|ldlc arena|halle tony garnier|orange velodrome|stade velodrome|le dome|matmut atlantique|arkea arena|decathlon arena|stade pierre.mauroy|allianz riviera|palais nikaia|stade de la beaujoire|sud de france arena|stadium de toulouse|stade ernest.wallon|roazhon park|le liberte|rennes arena|brest arena|kindarena|antares|galaxie|axone|arena du pays d.aix|adidas arena|la seine musicale|paris expo|hippodrome de longchamp|stade de la meinau|rhenus|chaudron|stade bollaert/;
 const isBigVenue=e=>BIG_VENUE_RX.test(norm((e.venue||"")+" "+(e.addr||"")));
 // clubs professionnels : leurs matchs n'ont rien à faire dans « Local »
@@ -717,6 +724,7 @@ function stypesOf(text){const t=norm(text),o=[];for(const k in SPEC_T)if(SPEC_T[
 // une pièce de théâtre ou un « spectacle » (humour, comédie musicale, cirque, danse, magie, cabaret…) ?
 const SPEC_RX=/humour|humoriste|stand.?up|one (wo)?man|comedy|comique|comedie musicale|musical|cirque|circus|acrobat|danse|ballet|magie|magicien|mentalis|hypno|cabaret|revue|burlesque|opera|lyrique|hommage|tribute|show\b|spectacle|candlelight|immersi|jeune public|marionnette/;
 function isSpecTxt(t){return SPEC_RX.test(norm(t));}
+const isBigParis=e=>PARIS_BIG_RX.test(norm((e.venue||"")+" "));
 function ctypesOf(text){const t=norm(text),o=[];for(const k in CONF_T)if(CONF_T[k].kw.some(w=>kwTest(t,w)))o.push(k);return o;}
 // conférences, rencontres, débats (pas les visites ni les lectures pour enfants)
 const CONF_RX=/conference|colloque|table.?ronde|\bdebat|masterclass|master class|cours public|seminaire|rencontre avec|rencontre.?debat|cycle de conferences|\btalk\b|keynote|\bted\b|tedx/;
@@ -849,7 +857,7 @@ function finalize(e){
   if(e.cat==="festival"){const f=festSize(e);e.size=e.size||f.size;e.sizeGuess=f.guess;if(!e.genres.length)e.genres=f.genres;}
   if(e.cat==="expo"&&!(e.etypes&&e.etypes.length)){e.etypes=typesOf(txt);const m=MUSEUMS.find(x=>norm(e.venue).includes(norm(x[0])));if(m)e.etypes=[...new Set(e.etypes.concat(m[1]))];}
   if(e.cat==="sport"&&!e.sport)e.sport=sportOf(txt);
-  if(e.cat==="spectacle"&&!(e.stypes&&e.stypes.length)){e.stypes=stypesOf(txt+" "+(e.tmg||""));if(e.kind==="humour"&&!e.stypes.includes("humour"))e.stypes.unshift("humour");if(e.src==="fever"&&!e.stypes.includes("immersif"))e.stypes.push("immersif");}
+  if(e.cat==="spectacle"&&!(e.stypes&&e.stypes.length)){e.stypes=stypesOf(txt+" "+(e.tmg||"")+" "+(e.venue||""));if(e.kind==="humour"&&!e.stypes.includes("humour"))e.stypes.unshift("humour");if(e.src==="fever"&&!e.stypes.includes("immersif"))e.stypes.push("immersif");}
   if(e.cat==="experience"&&!(e.xtypes&&e.xtypes.length))e.xtypes=xtypesOf(txt);
   if(!e.country)e.country="FR";
   return e;
@@ -951,7 +959,10 @@ function nextMarket(x){
     if(new Date(ymd+"T"+h1)>NOW)return{d:ymd+"T"+h0,end:ymd+"T"+h1};}
   return null;
 }
+// textes mal encodés par certaines billetteries (« SÃ©ville » → « Séville »)
+function fixEnc(t){t=String(t||"");if(!/Ã.|Â./.test(t))return t;try{return decodeURIComponent(escape(t));}catch(e){return t.replace(/Ã©/g,"é").replace(/Ã¨/g,"è").replace(/Ã /g,"à").replace(/Ã§/g,"ç").replace(/Ãª/g,"ê");}}
 function collNorm(x,file){
+  if(x.t&&/Ã.|Â./.test(x.t))x=Object.assign({},x,{t:fixEnc(x.t),v:fixEnc(x.v)});
   if(x.market&&(x.days||[]).length){const nm=nextMarket(x);if(!nm)return null;x=Object.assign({},x,nm);}
   const nt=norm(x.t||"");
   if(ADDON_RX.test(nt))return null;
@@ -977,7 +988,7 @@ function collNorm(x,file){
   // Ticketmaster « Arts et spectacles » : les pièces vont au Théâtre, tout le reste aux Spectacles
   // musique classique vendue en « Arts et spectacles » : c'est un concert
   else if(x.src==="tm"&&x.kind==="theatre"&&/classique|classical/.test(norm(x.tmg||""))||x.src==="tm"&&x.kind==="theatre"&&/\b(vivaldi|mozart|requiem|recital|orchestre|symphon|quatuor|pachelbel|bach|beethoven|chopin|schubert|piano|violon|concerto|philharmon|gospel)\b/.test(nt)&&!/ballet|opera|danse/.test(nt))cat="concert";
-  else if(x.src==="tm")cat=x.kind==="humour"?"spectacle":x.kind==="theatre"?(/theatre|piece|comedie(?! musicale)/.test(norm(x.tmg||""))&&!isSpecTxt(x.t+" "+(x.tmg||""))?"theatre":x.tmg?"spectacle":isSpecTxt(x.t)||!/theatre|comedie|studio|atelier|scene/.test(norm(x.v||""))?"spectacle":"theatre"):"concert";
+  else if(x.src==="tm")cat=x.kind==="humour"?"spectacle":x.kind==="theatre"?(/theatre|piece|comedie(?! musicale)/.test(norm(x.tmg||""))&&!isSpecTxt(x.t+" "+(x.tmg||""))?"theatre":x.tmg?"spectacle":isSpecTxt(x.t)||SHOW_VENUE_RX.test(norm(x.v||""))||!/theatre|comedie|studio|atelier|scene/.test(norm(x.v||""))?"spectacle":"theatre"):"concert";
   else if(x.src==="dice"||x.src==="bit"||x.src==="fnac")cat=x.kind==="soiree"?"soiree":"concert";
   else cat=(x.src==="sg"||x.src==="ra")?(catOf(x.t+" "+(x.desc||""))==="concert"&&!/dj|club|techno|house|rave/i.test(x.t)?"concert":"soiree"):"concert";
   // RA et Shotgun : des soirées ; un week-end de club n'est un festival que s'il en porte le nom
@@ -1589,10 +1600,26 @@ function openSheet(html,cls,onClose){const sh=$("sheet");$("sheet-in").innerHTML
   requestAnimationFrame(()=>{sh.classList.add("on");$("scrim").classList.add("on");});SHEET_CB=onClose||null;sh.scrollTop=0;}
 function closeSheet(){const sh=$("sheet");sh.classList.remove("on");$("scrim").classList.remove("on");setTimeout(()=>{sh.hidden=true;$("scrim").hidden=true;},220);const cb=SHEET_CB;SHEET_CB=null;if(cb)cb();}
 $("scrim").onclick=closeSheet;
+// glisser la fiche vers le bas pour la fermer
+(()=>{const sh=$("sheet");let y0=null,dy=0;
+  sh.addEventListener("touchstart",ev=>{if(sh.scrollTop>2||ev.touches.length!==1){y0=null;return;}y0=ev.touches[0].clientY;dy=0;},{passive:true});
+  sh.addEventListener("touchmove",ev=>{if(y0==null)return;dy=ev.touches[0].clientY-y0;if(dy>0&&sh.scrollTop<=0){sh.style.transition="none";sh.style.transform=`translateY(${dy}px)`;}},{passive:true});
+  sh.addEventListener("touchend",()=>{if(y0==null)return;sh.style.transition="";sh.style.transform="";if(dy>90)closeSheet();y0=null;dy=0;},{passive:true});})();
 document.addEventListener("keydown",ev=>{if(ev.key==="Escape"&&!$("sheet").hidden)closeSheet();});
+// en deux phrases : ce que c'est (texte de la billetterie quand il existe, sinon déduit du genre et du lieu)
+function aboutText(e){
+  if(!["theatre","spectacle","expo","experience"].includes(e.cat))return"";
+  const d=String(e.desc||e.w||"").replace(/\s+/g," ").trim();
+  if(d.length>=40&&!/^\d|€/.test(d)){const s=d.match(/^(.{40,200}?[.!?])(\s|$)/);return s?s[1]:d.slice(0,180).replace(/\s\S*$/,"")+"…";}
+  const gen=e.cat==="theatre"?(tgenresOf(e).map(g=>THEATRE_G[g].n.toLowerCase())[0]||"pièce de théâtre"):e.cat==="spectacle"?((e.stypes||[]).map(t=>SPEC_T[t].n.toLowerCase())[0]||"spectacle"):e.cat==="expo"?("exposition"+((e.etypes||[])[0]?" ("+EXPO_TYPES[e.etypes[0]].n.toLowerCase()+")":"")):((e.xtypes||[])[0]?XP_T[e.xtypes[0]].n:"expérience");
+  const lieu=e.venue?" à "+e.venue.replace(/\s+-\s+.*$/,""):"";
+  const quand=e.until?", jusqu'au "+dlong(D(e.until)):e._n>1?", "+e._n+" dates":"";
+  return capital(gen.replace(/^(\w)/,m=>m))+lieu+quand+"."+(e.rating>=8?" Noté "+String(e.rating).replace(".",",")+"/10 par le public.":"");
+}
 function openInfo(id){
   const e=byId(id);if(!e)return;const x=score(e);
   const facts=[["Quand",e._n>1||e.until||e.market?rangeText(e):whenText(e)],["Où",placeOf(e)||e.addr||"Lieu à confirmer"]];
+  const about=aboutText(e);
   if(e._n>1)facts.push(["Dates",e._dates.slice(0,12).map(x=>{const d=D(x);return WD[d.getDay()]+" "+d.getDate()+" "+MO[d.getMonth()]+" "+hm(d);}).join(" · ")+(e._n>12?"…":"")]);
   if(e.cat==="sport"&&SPORTS[e.sport])facts.unshift(["Sport",SPORTS[e.sport].e+" "+SPORTS[e.sport].n+(e.comp?", "+e.comp:"")]);
   if(e.cat==="competition"&&(e.races||[]).length)facts.push(["Épreuves",e.races.slice(0,6).map(r=>[r.name,r.km?r.km+" km":"",r.dplus?r.dplus+" m D+":""].filter(Boolean).join(" ")).join(" / ")]);
@@ -1608,7 +1635,8 @@ function openInfo(id){
   openSheet(`<div class="hero v-${e.cat}" style="${imgStyle(e)}"></div><div class="in v-${e.cat}">
     <div class="row"><span class="pill" style="background:var(--vc);color:${e.cat==="festival"?"#2A1A00":"#fff"}">${esc(VERTS[e.cat].n)}</span>${x.ok?`<span class="pill hot">${x.pct} % pour toi</span>`:""}${pills.map(p=>`<span class="pill ${p.c}">${esc(p.t)}</span>`).join("")}</div>
     <h2>${esc(e.t)}</h2>
-    <dl class="facts">${facts.map(([a,b])=>`<dt>${esc(a)}</dt><dd>${esc(b)}</dd>`).join("")}</dl>
+    ${about?`<p class="about">${esc(about)}</p>`:""}
+    <dl class="facts">${facts.map(([a,b])=>`<dt>${esc(a)}</dt><dd>${a==="Où"&&e.venue&&!e.proj?`<button class="venue-link" data-venue="${esc(e.venue)}" data-vcat="${esc(e.cat)}" title="Voir tout ce qui se passe ici">${esc(b)} <span aria-hidden="true">›</span></button>`:esc(b)}</dd>`).join("")}</dl>
     ${(e.lineup||[]).length>1?`<div class="lineup"><b>Line-up :</b> ${esc(e.lineup.slice(0,24).join(", "))}${e.lineup.length>24?"…":""}</div>`:""}
     ${x.r.length?`<ul class="why">${x.r.map(r=>`<li>${esc(r)}</li>`).join("")}</ul>`:""}
     ${al.length&&!inCal(e.id)?`<p class="note">Avec 📅, FOMO te prévient avant l'ouverture : ${esc(al[0].tx)}</p>`:""}
@@ -1637,6 +1665,8 @@ document.addEventListener("click",async ev=>{
   const np=ev.target.closest("[data-nope]");if(np){const id=np.dataset.nope,e=byId(id);if(e){learn(e,"no","foryou");S.disliked[id]=1;S.seen[id]=1;delete S.liked[id];save();renderBadges();}
     const it=np.closest(".item");if(it&&!np.closest(".fcard")){it.style.transition="opacity .2s";it.style.opacity="0";setTimeout(()=>it.remove(),200);}
     const card=np.closest(".fcard");if(card){card.style.transition="opacity .2s, transform .2s";card.style.opacity="0";card.style.transform="translateX(-30px)";setTimeout(()=>{card.remove();if(!$("feed").children.length)renderForYou();},200);}return;}
+  const vl=ev.target.closest("[data-venue]");if(vl){const cat=vl.dataset.vcat;closeSheet();VENUE_NEXT=vl.dataset.venue;openVert(cat);return;}
+  const sx=ev.target.closest("#sheet-x");if(sx){closeSheet();return;}
   const inf=ev.target.closest("[data-info]");if(inf){openInfo(inf.dataset.info);return;}
   const g=ev.target.closest("[data-go]");if(g){if(!$("sheet").hidden)closeSheet();show(g.dataset.go);return;}
   const v=ev.target.closest("[data-vert]");if(v){if(v.dataset.vert==="marche"){show("markets");return;}openVert(v.dataset.vert);return;}
@@ -1646,14 +1676,14 @@ document.addEventListener("keydown",ev=>{if(ev.key==="Enter"&&ev.target.matches&
 /* ================= Découverte : les bulles, puis l'écran de chaque univers ================= */
 // segments en haut, filtres (appliqués à chaque toucher), menu de lieu identique partout
 const VCONF={
-  concert:{segs:[["soon","⏳ Bientôt en vente"],["last","🔥 Dernières places"],["now","🎟️ Billetterie ouverte"]],filters:["loc","date","genre","hype"],radius:60},
+  concert:{segs:[["soon","⏳ Bientôt en vente"],["last","🔥 Dernières places"],["now","🎟️ Billetterie ouverte"],["hype","⭐ Les plus attendus"]],filters:["loc","date","genre"],radius:60},
   soiree:{segs:[["tonight","Ce soir"],["we","Ce week-end"],["later","Plus tard"]],filters:["loc","date","genre","vtype"],radius:35},
   festival:{segs:[["soon","⏳ À venir"],["now","🎟️ Billetterie ouverte"]],filters:["loc","date","genre","size"],radius:0},
   sport:{segs:[["soon","⏳ À venir"],["now","🎟️ Billetterie ouverte"]],filters:["loc","date","sport"],radius:120},
   competition:{segs:[["soon","⏳ À venir"],["now","📝 Inscriptions ouvertes"]],filters:["loc","date","disc","dist","dplus"],radius:100},
   theatre:{segs:[["soon","⏳ À venir"],["now","🎟️ Billetterie ouverte"]],filters:["loc","date","tgenre","fav"],radius:30},
   expo:{segs:null,filters:["loc","last","date","etype","free"],radius:30,near:true},
-  spectacle:{segs:[["soon","⏳ À venir"],["now","🎟️ Billetterie ouverte"]],filters:["loc","date","stype","buzz"],radius:30},
+  spectacle:{segs:[["soon","⏳ À venir"],["now","🎟️ Billetterie ouverte"],["hype","⭐ Les plus attendus"]],filters:["loc","date","stype"],radius:30},
   experience:{segs:null,filters:["loc","date","xtype","free"],radius:20},
   local:{segs:null,filters:["date","ltype","free"],radius:5,near:true,fixedR:5}
 };
@@ -1696,6 +1726,10 @@ const isBigSport=e=>e.big||e.level==="international"||BIG_RX.test(e.t+" "+(e.com
 function nightEnd(){const t=new Date(NOW);t.setHours(0,0,0,0);return new Date(+t+(24+7)*36e5);}
 function weekend(){const t0=new Date(NOW);t0.setHours(0,0,0,0);const dow=t0.getDay(),back=dow===0?2:dow===6?1:dow===5?0:-(5-dow);
   const fri=new Date(+t0-back*864e5+17*36e5);return[fri,new Date(+fri+(3*24-10)*36e5)];}
+// « les plus attendus » : grandes salles (plus de 2 000 places), cités par la presse et les newsletters, artistes que tu suis
+function hypeOf(e){if(e.cat==="spectacle")return !!(e.buzz||isBigParis(e)||isBigVenue(e));return !!(isBigVenue(e)||isBigParis(e)||e.tracked||e.buzz||(e.pop||0)>=500);}
+function hypeRank(e){return(isBigParis(e)?0:isBigVenue(e)?1:2)*100-(e.buzz||0)*10;}
+function hypeLab(e){return isBigParis(e)?"Dans les grandes salles de Paris":isBigVenue(e)?"Dans les grandes salles":e.buzz?"Cités par la presse et les newsletters":"Très suivis";}
 function segOf(e){
   const c=e.cat,future=x=>x&&D(x)>NOW;
   if(c==="concert"){if(e.ann||future(e.saleAt)||future(e.presaleAt))return"soon";return isBigVenue(e)?"last":"now";}
@@ -1801,7 +1835,11 @@ function vItems(cat,seg){
   if(f.date&&f.date.k==="month")delete f.date;
   let L=EVENTS.filter(e=>e.cat===cat&&(e.approx||e.until||(e.end&&cat==="local")?(D(e.until||e.end||e.d)>NOW||e.approx):D(e.d)>NOW));
   if(cat==="festival")L=L.concat(festProjected(L));
-  if(seg&&conf.segs)L=L.filter(e=>segOf(e)===seg);
+  // un lieu choisi (en touchant son nom dans une fiche) : tous ses événements, sans autre filtre
+  if(f.venue){const vn=norm(f.venue).replace(/[^a-z0-9]+/g," ").trim(),vk=vn.slice(0,16);
+    return groupMulti(EVENTS.filter(e=>e.cat===cat&&!e.proj&&D(e.until||e.end||e.d)>NOW&&norm(e.venue||"").replace(/[^a-z0-9]+/g," ").trim().startsWith(vk))).sort((a,b)=>D(a.d)-D(b.d));}
+  if(seg==="hype")L=L.filter(hypeOf);
+  else if(seg&&conf.segs)L=L.filter(e=>segOf(e)===seg);
   L=L.filter(e=>inDate(e,f));
   const near=conf.near;
   L.forEach(e=>{const p=near?precisePos(e):eventPos(e);e._k=p?km(c0,p):null;});
@@ -1817,8 +1855,7 @@ function vItems(cat,seg){
   else if(R)L=L.filter(e=>e._k==null||e._k<=R);
   if(q)L=L.filter(e=>norm([e.t,e.w,e.venue,e.city,(e.lineup||[]).join(" "),e.home,e.away,e.comp].join(" ")).includes(q));
   if((f.g||[]).length)L=L.filter(e=>(e.genres||[]).some(g=>f.g.includes(g)));
-  // « Les plus attendus » : un sous-ensemble de « Bientôt en vente » (grandes salles, grosses affiches)
-  if(cat==="concert"&&f.hype&&seg==="soon")L=L.filter(e=>isBigVenue(e)||e.tracked||e.buzz||(e.pop||0)>=500);
+
   if(cat==="soiree"){if(f.vt==="open")L=L.filter(isOpenAir);else if(f.vt==="club")L=L.filter(e=>!isOpenAir(e));}
   if(cat==="festival"&&(f.size||[]).length)L=L.filter(e=>f.size.includes(e.size));
   if(cat==="sport"){L=L.filter(e=>SPORTS[e.sport]);if(f.sp)L=L.filter(e=>e.sport===f.sp);
@@ -1831,7 +1868,7 @@ function vItems(cat,seg){
   if(cat==="expo"&&f.last)L=L.filter(e=>{const end=e.until||e.end;return end&&D(end)-NOW<=14*864e5;});
   if(cat==="experience"&&(f.xt||[]).length)L=L.filter(e=>(e.xtypes||[]).some(t=>f.xt.includes(t)));
   if(cat==="spectacle"&&(f.st||[]).length)L=L.filter(e=>(e.stypes||[]).some(t=>f.st.includes(t)));
-  if(cat==="spectacle"&&f.buzz)L=L.filter(e=>e.buzz);
+
   if(cat==="expo"&&(f.et||[]).length)L=L.filter(e=>(e.etypes||[]).some(t=>f.et.includes(t)));
   if(cat==="local"&&(f.lt||[]).length)L=L.filter(e=>f.lt.includes(ltypeOf(e)));
   if(f.free)L=L.filter(e=>e.free||e.p===0);
@@ -1842,6 +1879,7 @@ function vItems(cat,seg){
   L.forEach(e=>{e._open=nextOpen(e);});
   const when=e=>e.approx?+new Date(D(e.d).getFullYear(),D(e.d).getMonth(),1)+1:ongoing(e)?(cat==="expo"?+D(e.until||e.end)-1e13:+NOW-1):+D(e.d);
   L.sort((a,b)=>(!!b._open)-(!!a._open)||(a._open&&b._open?a._open-b._open:0)||when(a)-when(b)||(a._k==null?999:a._k)-(b._k==null?999:b._k));
+  if(seg==="hype"){L.forEach(e=>{e._open=null;e._hyLab=hypeLab(e);});L.sort((a,b)=>hypeRank(a)-hypeRank(b)||when(a)-when(b));}
   return L;
 }
 /* --- festivals de la base RA pas encore annoncés : éditions probables --- */
@@ -1890,7 +1928,8 @@ function renderBubbles(){
 addEventListener("resize",()=>{if(!$("v-discover").hidden)renderBubbles();});
 
 /* --- écran d'un univers --- */
-function openVert(cat){CUR=cat;VPAGE=40;VPANEL=null;S.dv=cat;save();$("vt-q").value=VF().q||"";show("vert");}
+let VENUE_NEXT=null;
+function openVert(cat){CUR=cat;VPAGE=40;VPANEL=null;{const f=VF();if(VENUE_NEXT){f.venue=VENUE_NEXT;VENUE_NEXT=null;}else delete f.venue;}S.dv=cat;save();$("vt-q").value=VF().q||"";show("vert");}
 function curSeg(){const conf=VCONF[CUR];if(!conf.segs)return null;S.vtab=S.vtab||{};const s=S.vtab[CUR];if(conf.segs.some(x=>x[0]===s))return s;
   // pas encore choisi : la première partie qui a des événements
   const c=CUR;const hit=conf.segs.find(([k])=>vItems(c,k).length);CUR=c;return(hit||conf.segs[0])[0];}
@@ -1937,11 +1976,11 @@ function chipLabel(k){
   return[k,0];
 }
 function renderVert(){
-  const conf=VCONF[CUR],seg=curSeg();
+  const conf=VCONF[CUR],seg=curSeg(),fv=VF().venue;
   $("vt-title").textContent=VERTS[CUR].n;$("vt-bar").className="vbar v-"+CUR;$("vt-bar").style.background="var(--vc)";
-  $("vt-seg").hidden=!conf.segs;
+  $("vt-seg").hidden=!conf.segs||!!fv;
   if(conf.segs){$("vt-seg").innerHTML=conf.segs.map(([k,n])=>`<button role="tab" data-seg="${k}" aria-selected="${seg===k}">${esc(n)}<span class="n num">${vItems(CUR,k).length}</span></button>`).join("");}
-  $("vt-filters").innerHTML=conf.filters.filter(k=>k!=="hype"||seg==="soon").map(k=>{
+  $("vt-filters").innerHTML=(fv?`<button class="chip has" data-venue-off="1">📍 ${esc(fv)} <span aria-hidden="true">✕</span></button>`:"")+conf.filters.filter(k=>!fv).map(k=>{
     const [l,on]=chipLabel(k);const toggle=["fav","free","hype","last","buzz"].includes(k);
     return`<button class="chip${on?" has":""}${VPANEL===k?" open":""}" data-filt="${k}" aria-pressed="${toggle?!!on:VPANEL===k}">${esc(l)}${toggle?"":`<span class="caret">▾</span>`}</button>`;}).join("");
   renderPanel();renderVList();
@@ -2025,7 +2064,8 @@ function renderVList(){
     if(dd<1)return"🔔 "+what+" aujourd'hui";if(dd<2)return"🔔 "+what+" demain";if(dd<7)return"🔔 "+what+" cette semaine";
     return"🔔 "+what+" en "+MOL[o.getMonth()]+(o.getFullYear()!==NOW.getFullYear()?" "+o.getFullYear():"");};
   let openDone=false;
-  L.slice(0,VPAGE).forEach(e=>{let lab=lastMode?(()=>{const n=Math.ceil((D(e.until||e.end)-NOW)/864e5);return n<=1?"Dernier jour":n<=7?"Se termine cette semaine":"Se termine dans moins de 15 jours";})():e._open?openLab(e._open):CUR==="expo"?monthBucket(e)[1]:dayBucket(e)[1];
+  const hyMode=seg==="hype"&&!f.venue;
+  L.slice(0,VPAGE).forEach(e=>{let lab=hyMode?e._hyLab:lastMode?(()=>{const n=Math.ceil((D(e.until||e.end)-NOW)/864e5);return n<=1?"Dernier jour":n<=7?"Se termine cette semaine":"Se termine dans moins de 15 jours";})():e._open?openLab(e._open):CUR==="expo"?monthBucket(e)[1]:dayBucket(e)[1];
     if(!e._open&&!lastMode&&L[0]&&L[0]._open&&!openDone){openDone=true;h+=`<div class="mhead sep">Date d'ouverture pas encore connue</div>`;last="";}
     if(lab!==last){h+=`<div class="mhead">${esc(lab)}</div>`;last=lab;}
     h+=itemHTML(e,{pills:2,dist:e._k});});
@@ -2035,7 +2075,7 @@ $("vt-more").onclick=()=>{VPAGE+=40;renderVList();};
 $("vt-seg").addEventListener("click",ev=>{const b=ev.target.closest("[data-seg]");if(!b)return;S.vtab=S.vtab||{};S.vtab[CUR]=b.dataset.seg;VPAGE=40;save();renderVert();});
 let QT=null;$("vt-q").addEventListener("input",ev=>{clearTimeout(QT);QT=setTimeout(()=>{VF().q=ev.target.value.trim();VPAGE=40;save();renderVert();},180);});
 $("vt-locate").onclick=async()=>{try{await locate();notify("Position précise activée","Les événements de ton quartier passent en premier.");afterCity();}catch(e){notify("Position",e.message);}};
-$("vt-filters").addEventListener("click",ev=>{const b=ev.target.closest("[data-filt]");if(!b)return;const k=b.dataset.filt,f=VF();
+$("vt-filters").addEventListener("click",ev=>{if(ev.target.closest("[data-venue-off]")){delete VF().venue;VPAGE=40;save();renderVert();return;}const b=ev.target.closest("[data-filt]");if(!b)return;const k=b.dataset.filt,f=VF();
   if(k==="fav"){f.fav=!f.fav;save();renderVert();return;}
   if(k==="last"){f.last=!f.last;if(!f.last)delete f.last;VPAGE=40;save();renderVert();return;}
   if(k==="buzz"){f.buzz=!f.buzz;if(!f.buzz)delete f.buzz;VPAGE=40;save();renderVert();return;}
@@ -2734,8 +2774,8 @@ const FY_PICK={
   // théâtre : d'abord les pièces les mieux notées par le public ; avec tes ♥, on affine sur les genres que tu aimes
   theatre(B,n,used){const lk=likedIn("theatre"),gw={};lk.forEach(e=>tgenresOf(e).forEach(g=>gw[g]=(gw[g]||0)+1));Object.keys(S.tgw||{}).forEach(g=>gw[g]=(gw[g]||0)+.5);
     const refine=lk.length>=2;
-    const L=B.filter(x=>x.e.cat==="theatre"&&x.k!=null&&x.k<=FY_R&&(x.e.rating>=8.5&&(x.e.ratingCount||0)>=15||refine&&tgenresOf(x.e).some(g=>gw[g]>=1)))
-      .map(x=>{const g=tgenresOf(x.e).reduce((a,z)=>a+(gw[z]||0),0);x.fs=(x.e.rating||7)*2+Math.log10(1+(x.e.ratingCount||0))*2+(refine?g*3:g);
+    const L=B.filter(x=>x.e.cat==="theatre"&&x.k!=null&&x.k<=FY_R&&(x.e.buzz||x.e.rating>=8.5&&(x.e.ratingCount||0)>=15||refine&&tgenresOf(x.e).some(g=>gw[g]>=1)))
+      .map(x=>{const g=tgenresOf(x.e).reduce((a,z)=>a+(gw[z]||0),0);x.fs=(x.e.buzz?8+x.e.buzz*2:0)+(x.e.rating||7)*2+Math.log10(1+(x.e.ratingCount||0))*2+(refine?g*3:g);
         fyPct(x,refine&&g?85:x.e.rating>=9?82:72);if(x.e.rating)x.r=["Noté "+String(x.e.rating).replace(".",",")+"/10 par "+fmtN(x.e.ratingCount||0)+" spectateurs"].concat(x.r||[]).slice(0,3);return x;});
     return fyTake(L.sort((a,b)=>b.fs-a.fs),n,used);},
   // festivals : ceux qui ressemblent à ton festival de référence, et ceux où jouent tes artistes
@@ -2795,8 +2835,8 @@ const FY_PICK={
   spectacle(B,n,used){const sw=Object.assign({},S.specw||{});likedIn("spectacle").forEach(e=>(e.stypes||[]).forEach(t=>sw[t]=(sw[t]||0)+1));
     const nc=nearestCity(homePos()),c=cityPos(nc.city)||homePos(),y1=new Date(NOW.getFullYear()+1,11,31,23,59);
     const L=B.filter(x=>x.e.cat==="spectacle"&&D(x.e.d)<=y1&&(()=>{const p=eventPos(x.e);return p&&km(c,p)<=10;})()).map(x=>{const v=(x.e.stypes||[]).reduce((a,t)=>a+(sw[t]||0),0);
-      x.fs=(x.e.buzz||0)*4+v*2.5+(x.e.big?1:0)+x.s*.2;if(x.e.buzz&&v)fyPct(x,92);else if(x.e.buzz)fyPct(x,84);else if(v)fyPct(x,76);return x;})
-      .filter(x=>!Object.keys(sw).length||(x.e.stypes||[]).some(t=>sw[t])||x.e.buzz);
+      x.fs=(isBigParis(x.e)?10:0)+(x.e.buzz?20+x.e.buzz*2:0)+v*2.5+(x.e.big?1:0)+x.s*.2;if(isBigParis(x.e))x.r=["Grande salle : "+x.e.venue].concat(x.r||[]).slice(0,3);if(x.e.buzz&&v)fyPct(x,92);else if(x.e.buzz)fyPct(x,84);else if(v)fyPct(x,76);return x;})
+      .filter(x=>!Object.keys(sw).length||(x.e.stypes||[]).some(t=>sw[t])||x.e.buzz||isBigParis(x.e));
     return fyTake(L.sort((a,b)=>b.fs-a.fs),n,used);},
   conference_(B,n,used){const cw=S.confw||{};
     const L=B.filter(x=>x.e.cat==="conference"&&x.k!=null&&x.k<=20).map(x=>{x.fs=(x.e.src==="tm"?4:0)+Math.log10(1+(x.e.pop||0))+(x.e.ctypes||[]).reduce((a,t)=>a+(cw[t]?2:0),0)-x.k*.25;fyPct(x,(x.e.ctypes||[]).some(t=>cw[t])?80:65);return x;});
