@@ -85,11 +85,15 @@ h1,h2,h3{margin:0;line-height:1.1}
 .btn.hot{background:var(--hot);color:#fff}
 .btn.wide{width:100%}
 .btn:disabled{opacity:.45;cursor:default}
+.fy-hint{margin:-4px 0 0;font-size:12px;color:var(--ink3);text-align:center}
+#v-foryou{overflow-x:clip}
+#feed{will-change:transform;touch-action:pan-y}
 .chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding:2px 0}
 .chips::-webkit-scrollbar{display:none}
 .chips.wrap{flex-wrap:wrap;overflow:visible}
 .chip{flex:none;border:1px solid var(--line);background:var(--card);border-radius:999px;padding:8px 14px;font-size:14px;cursor:pointer;white-space:nowrap;min-height:38px}
 .chip[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.chip.clr{background:var(--hot);border-color:var(--hot);color:#fff;font-weight:650}
 .chip.has{border-color:var(--ink);font-weight:650}
 .chip .caret{opacity:.6;margin-left:4px}
 .pill{display:inline-flex;align-items:center;gap:4px;font-size:12.5px;padding:3px 9px;border-radius:999px;background:var(--sunk);color:var(--ink2);white-space:nowrap}
@@ -466,6 +470,7 @@ html,body{overscroll-behavior-y:contain}
     <div class="ptr" id="ptr" aria-hidden="true"><span class="ptr-i">↓</span><span class="ptr-t">Tire pour rafraîchir</span></div>
     <div><h1 class="h-page" id="fy-title">Pour toi</h1><p class="sub" id="fy-sub">Classé par correspondance avec tes goûts. Chaque ♥ affine la suite.</p></div>
     <div class="chips" id="fy-filter"></div>
+    <p class="fy-hint" id="fy-hint" hidden>← Glisse à gauche ou à droite pour changer d'univers →</p>
     <div class="feed" id="feed"></div>
     <button class="btn ghost sm more" id="fy-more" hidden>Voir plus</button>
   </section>
@@ -1479,7 +1484,7 @@ function feedItems(cat,when){
   const cand0=EVENTS.filter(e=>!(VERTS[e.cat]||{}).noDeck&&vertOn(e.cat)&&!S.disliked[e.id]&&(!cat||cat==="all"||e.cat===cat)&&!e.noDate&&(e.approx||D(e.d)>NOW)&&(!when||whenOf(e)===when)
     &&!(S.liked[e.id]&&S.liked[e.id].likedAt<FEED_T0)).map(e=>{const x=Object.assign({e},score(e));
     // ce que tu as aimé (♥ Pourquoi pas, dans Découverte ou ailleurs) reste dans Pour toi, en tête
-    const it=(S.interest||{})[e.id];if(it&&!it.auto)x.loved=it.likedAt||1;const im=(S.impr||{})[e.id]||0;if(im>3&&!(S.interest||{})[e.id])x.s-=Math.min(2,(im-3)*.25);return x;});
+    const it=(S.interest||{})[e.id];if(it&&!it.auto)x.loved=it.likedAt||1;const im=((S.impr||{})[e.id]||0)-((S.fyShown||[]).includes(e.id)?1:0);if(im>3&&!(S.interest||{})[e.id])x.s-=Math.min(2,(im-3)*.25);return x;});
   // une série de dates (même artiste, même salle) = une seule proposition, avec sa période
   const runs=groupRuns(cand0,x=>x.e.cat==="sport"||x.e.cat==="competition"||x.e.approx||x.e.market?null:groupKey(x.e),x=>x.e.d);
   const cand=runs.map(r=>{if(r.length===1)return r[0];const best=r.reduce((a,b)=>b.s>a.s?b:a);return Object.assign({},best,{e:mergeRun(r.map(x=>x.e)),loved:r.map(x=>x.loved||0).reduce((a,b)=>Math.max(a,b),0)||undefined});});
@@ -1754,6 +1759,9 @@ const ltypeOf=e=>{if(e.market)return /brocante|puces/i.test((e.tags||[]).join(" 
   for(const k of LT_ORDER)if(LOCAL_T[k].rx.test(t))return k;return"exp";};
 const tgenresOf=e=>{const t=norm(e.t+" "+(e.tags||[]).join(" ")+" "+(e.desc||"")+" "+(e.kind||""));const o=Object.keys(THEATRE_G).filter(k=>THEATRE_G[k].rx.test(t));if(e.kind==="humour"&&!o.includes("humour"))o.unshift("humour");return o;};
 let CUR="concert",VPAGE=40,VPANEL=null;
+// des filtres sont-ils actifs ? (recherche, lieu cliqué, dates, genres…)
+const fActive=f=>Object.keys(f||{}).some(k=>{const v=f[k];return Array.isArray(v)?v.length>0:v!=null&&v!==""&&v!==false;});
+function clearVFilters(){if(S.vf&&CUR)S.vf[CUR]={};VPANEL=null;VPAGE=40;const q=$("vt-q");if(q)q.value="";save();}
 const VF=()=>{S.vf=S.vf||{};S.vf[CUR]=S.vf[CUR]||{};return S.vf[CUR];};
 const OPEN_AIR=/open ?air|openair|plein air|rooftop|roof top|terrasse|jardin|garden|\bparc\b|park|beach|plage|peniche|bateau|boat|outdoor|day ?party|daytime|en exterieur|guinguette/;
 const isOpenAir=e=>OPEN_AIR.test(norm(e.t+" "+(e.venue||"")+" "+(e.desc||"")));
@@ -1962,14 +1970,14 @@ function renderBubbles(){
   const P=packCircles(items,W),H=Math.max(...P.map(p=>p.y+p.r))+4;
   box.style.height=H+"px";
   box.innerHTML=P.map(p=>`<button class="bubble v-${p.k}" role="listitem" data-vert="${p.k}" style="width:${p.r*2}px;height:${p.r*2}px;left:${p.x-p.r}px;top:${p.y-p.r}px">
-    <b style="font-size:${Math.max(11,Math.min(Math.round(p.r/3.6),Math.floor(p.r*2.5/VERTS[p.k].n.length)))}px">${esc(VERTS[p.k].n)}</b><span>${p.k==="marche"?(p.n?p.n+" autour":"Carte"):LOADING&&!p.n?"…":p.mine?p.mine+" pour toi":fmtN(p.n)}</span></button>`).join("");
+    <b style="font-size:${Math.max(11,Math.min(Math.round(p.r/3.6),Math.floor(p.r*2.5/VERTS[p.k].n.length)))}px">${esc(VERTS[p.k].n)}</b></button>`).join("");
   $("hello").textContent=S.name?"Salut "+S.name+", on sort ?":"Qu'est-ce qu'on fait ?";
 }
 addEventListener("resize",()=>{if(!$("v-discover").hidden)renderBubbles();});
 
 /* --- écran d'un univers --- */
 let VENUE_NEXT=null;
-function openVert(cat){CUR=cat;VPAGE=40;VPANEL=null;{const f=VF();if(VENUE_NEXT){f.venue=VENUE_NEXT;VENUE_NEXT=null;}else delete f.venue;}S.dv=cat;save();$("vt-q").value=VF().q||"";show("vert");}
+function openVert(cat){CUR=cat;VPAGE=40;VPANEL=null;{S.vf=S.vf||{};S.vf[cat]={};const f=VF();if(VENUE_NEXT){f.venue=VENUE_NEXT;VENUE_NEXT=null;}}S.dv=cat;save();$("vt-q").value=VF().q||"";show("vert");}
 function curSeg(){const conf=VCONF[CUR];if(!conf.segs)return null;S.vtab=S.vtab||{};const s=S.vtab[CUR];if(conf.segs.some(x=>x[0]===s))return s;
   // pas encore choisi : la première partie qui a des événements
   const c=CUR;const hit=conf.segs.find(([k])=>vItems(c,k).length);CUR=c;return(hit||conf.segs[0])[0];}
@@ -2023,7 +2031,7 @@ function renderVert(){
   if(conf.segs){$("vt-seg").innerHTML=conf.segs.map(([k,n])=>{const [ic,lab]=n.includes("|")?n.split("|"):["",n],c=vItems(CUR,k).length;
     return`<button role="tab" data-seg="${k}" aria-selected="${seg===k}"${c||seg===k?"":" data-empty"}><span class="ti" aria-hidden="true">${ic}</span><span class="tl">${esc(lab)}</span><span class="tc num">${c>999?Math.round(c/100)/10+"k":c}</span></button>`;}).join("");
     const on=$("vt-seg").querySelector('[aria-selected="true"]');if(on)on.scrollIntoView({block:"nearest",inline:"center"});}
-  $("vt-filters").innerHTML=(fv?`<button class="chip has" data-venue-off="1">📍 ${esc(fv)} <span aria-hidden="true">✕</span></button>`:"")+conf.filters.filter(k=>!fv).map(k=>{
+  $("vt-filters").innerHTML=(fActive(VF())?`<button class="chip clr" data-fclear="1">✕ Supprimer les filtres</button>`:"")+(fv?`<button class="chip has" data-venue-off="1">📍 ${esc(fv)} <span aria-hidden="true">✕</span></button>`:"")+conf.filters.filter(k=>!fv).map(k=>{
     const [l,on]=chipLabel(k);const toggle=["fav","free","hype","last","buzz"].includes(k);
     return`<button class="chip${on?" has":""}${VPANEL===k?" open":""}" data-filt="${k}" aria-pressed="${toggle?!!on:VPANEL===k}">${esc(l)}${toggle?"":`<span class="caret">▾</span>`}</button>`;}).join("");
   renderPanel();renderVList();
@@ -2098,7 +2106,7 @@ function renderVList(){
       :(()=>{const R=curRad(VCONF[CUR],f),nx=RSTEPS.find(x=>x>=(R||0)*2);return R&&nx&&!LOC_CODES(f.loc)?`<h3>Rien à moins de ${R} km</h3><p>Élargis le rayon pour voir plus loin.</p><button class="btn sm" data-rad="${nx}" id="vt-wider">Passer à ${nx} km</button>`:"";})()||`<h3>Rien pour ces filtres</h3><p>Change de lieu ou de dates.</p>${act?`<button class="btn sm" id="vt-reset">Retirer tous les filtres</button>`:""}`
 }</div>`;
     const w=$("vt-wider");if(w)w.onclick=()=>{VF().rad=+w.dataset.rad;VPAGE=40;save();renderVert();};
-    const r=$("vt-reset");if(r)r.onclick=()=>{S.vf[CUR]={};save();renderVert(CUR);};
+    const r=$("vt-reset");if(r)r.onclick=()=>{clearVFilters();renderVert();};
     const rt=$("vt-retry");if(rt)rt.onclick=()=>loadEvents();
     $("vt-more").hidden=true;return;}
   let h="",last="";
@@ -2118,7 +2126,7 @@ $("vt-more").onclick=()=>{VPAGE+=40;renderVList();};
 $("vt-seg").addEventListener("click",ev=>{const b=ev.target.closest("[data-seg]");if(!b)return;S.vtab=S.vtab||{};S.vtab[CUR]=b.dataset.seg;VPAGE=40;save();renderVert();});
 let QT=null;$("vt-q").addEventListener("input",ev=>{clearTimeout(QT);QT=setTimeout(()=>{VF().q=ev.target.value.trim();VPAGE=40;save();renderVert();},180);});
 $("vt-locate").onclick=async()=>{try{await locate();notify("Position précise activée","Les événements de ton quartier passent en premier.");afterCity();}catch(e){notify("Position",e.message);}};
-$("vt-filters").addEventListener("click",ev=>{if(ev.target.closest("[data-venue-off]")){delete VF().venue;VPAGE=40;save();renderVert();return;}const b=ev.target.closest("[data-filt]");if(!b)return;const k=b.dataset.filt,f=VF();
+$("vt-filters").addEventListener("click",ev=>{if(ev.target.closest("[data-fclear]")){clearVFilters();renderVert();return;}if(ev.target.closest("[data-venue-off]")){delete VF().venue;VPAGE=40;save();renderVert();return;}const b=ev.target.closest("[data-filt]");if(!b)return;const k=b.dataset.filt,f=VF();
   if(k==="fav"){f.fav=!f.fav;save();renderVert();return;}
   if(k==="last"){f.last=!f.last;if(!f.last)delete f.last;VPAGE=40;save();renderVert();return;}
   if(k==="buzz"){f.buzz=!f.buzz;if(!f.buzz)delete f.buzz;VPAGE=40;save();renderVert();return;}
@@ -2785,6 +2793,11 @@ async function finishStrava(code,state){savedState("fomo-st",state);
 // - peu d'événements par univers, choisis sur ce que tu as dit au calibrage, tes écoutes et tes ♥ ;
 // - « tirer pour rafraîchir » fait tourner les propositions.
 const FY_R=50;
+// niveau d'une affiche sportive : compétition mondiale, internationale (Europe, sélections) ou nationale (championnats, coupes)
+const WORLD_RX=/coupe du monde|world cup|championnats? du monde|\bmondial\b|jeux olympiques|\bJO 20|roland.?garros|wimbledon|us open|open d.australie|tour de france|paris.roubaix|grand prix de f|formule ?1|\bf1\b|ryder cup|fiba|rolex paris masters|masters 1000|diamond league|ligue de diamant|marathon de paris/i;
+function sportTier(e){const t=(e.comp||"")+" "+(e.t||"");if(WORLD_RX.test(t))return"world";
+  if(/coupe de france|coupe de la ligue|ligue 1|ligue 2|top 14|pro d2|starligue|betclic|spikeligue|championnat de france/i.test(t))return"national";
+  return e.level==="international"||e.level==="europe"?"inter":"national";}
 const FY_N_OF={soiree:3,concert:3,festival:3,theatre:2,competition:3,sport:3,expo:2,spectacle:3,experience:2,local:1};
 function fyCount(k){const f=(S.freq||{})[k];const n=FY_N_OF[k]||2;return Math.max(1,f>=4?n+1:f===1?n-1:n);}
 function kmHome(e){const p=eventPos(e);return p?km(homePos(),p):null;}
@@ -2844,23 +2857,23 @@ const FY_PICK={
       const pick=fyTake(W.filter(x=>size(x)===sz).sort(ord),1,used)[0]||fyTake(W.sort(ord),1,used)[0];
       if(pick){fyPct(pick,80);pick.r=[{small:"Petit format",medium:"Taille moyenne",big:"Grosse course"}[size(pick)]+(pick.e.pop?" · "+fmtN(pick.e.pop)+" coureurs l'an dernier":"")].concat(pick.r||[]).slice(0,3);out.push(pick);}});
     return out.slice(0,n);},
-  // affiches sportives : ton club, puis les compétitions nationales de tes sports ; sinon les grandes affiches internationales
+  // affiches sportives, dans cet ordre : une affiche nationale (Ligue 1, Top 14…), une affiche internationale
+  // (Ligue des champions, Six Nations, Bleus…), puis une compétition mondiale (Coupe du monde, Roland-Garros, Tour de France…)
   sport(B,n,used){const sw=Object.keys(S.sportw||{}).filter(k=>S.sportw[k]>=1),teams=Object.keys(S.teamw||{}).filter(t=>S.teamw[t]>=.5);
-    let L=B.filter(x=>x.e.cat==="sport"&&x.k!=null&&x.k<=FY_R);const out=[];
-    const soon=x=>(D(x.e.d)-NOW)/864e5<=15,byDate=(a,b)=>D(a.e.d)-D(b.e.d);
-    const add=x=>{if(x&&!used.has(x.e.id)){used.add(x.e.id);out.push(x);}};
+    const all=B.filter(x=>x.e.cat==="sport"&&!used.has(x.e.id)),near=all.filter(x=>x.k!=null&&x.k<=FY_R);
+    const soon=x=>(D(x.e.d)-NOW)/864e5<=15,byDate=(a,b)=>D(a.e.d)-D(b.e.d),PRIO=["foot","rugby","tennis","basket","hand","velo"];
     const isTeam=(x,t)=>t==="Équipe de France"?/(^|– )france( –|$| \()/i.test(x.e.t):teamsIn(x.e.t+" "+(x.e.home||"")+" "+(x.e.away||"")).some(y=>y.n===t);
-    if(teams.length){const club=L.filter(x=>teams.some(t=>isTeam(x,t))).sort(byDate);
-      const c=club.find(soon)||club[0];if(c){fyPct(c,95);add(c);}}
-    if(sw.length){let i=0;for(let k=0;k<12&&out.length<n;k++){const sp=sw[i++%sw.length];
-        const C=L.filter(x=>!used.has(x.e.id)&&x.e.sport===sp&&(x.e.level==="national"||x.e.big||x.e.level==="europe"||x.e.level==="international")).sort((a,b)=>(b.e.big?1:0)-(a.e.big?1:0)||byDate(a,b));
-        const pick=(out.length===0?C.find(soon):null)||C.find(x=>!soon(x))||C[0];if(pick){fyPct(pick,85);add(pick);}}}
-    if(out.length<n){const PRIO=["foot","rugby","tennis","basket","hand","velo"];
-      const C=L.filter(x=>x.e.big||x.e.level==="international"||x.e.level==="europe").sort((a,b)=>PRIO.indexOf(a.e.sport)-PRIO.indexOf(b.e.sport)||byDate(a,b));
-      const first=out.some(soon)?null:C.find(x=>soon(x)&&!used.has(x.e.id));if(first){fyPct(first,75);add(first);}C.filter(x=>!soon(x)).forEach(x=>{if(out.length<n&&!out.some(y=>y.e.sport===x.e.sport&&out.length<2)){fyPct(x,75);add(x);}});
-      C.forEach(x=>{if(out.length<n){fyPct(x,72);add(x);}});}
-    // une affiche dans les 15 jours d'abord, puis les plus lointaines
-    return out.slice(0,n).sort((a,b)=>(soon(b)?1:0)-(soon(a)?1:0)||byDate(a,b));},
+    const mine=x=>teams.some(t=>isTeam(x,t))?2:sw.includes(x.e.sport)?1:0;
+    // tri : ton club, puis tes sports, puis les plus gros sports ; à goût égal, une affiche dans les 15 jours d'abord, puis la plus proche
+    const rank=(a,b)=>mine(b)-mine(a)||(soon(b)?1:0)-(soon(a)?1:0)||(b.e.big?1:0)-(a.e.big?1:0)||((PRIO.indexOf(a.e.sport)+7)%7)-((PRIO.indexOf(b.e.sport)+7)%7)||byDate(a,b);
+    const T=[["national",near,"Affiche nationale"],["inter",near,"Affiche internationale"],["world",all.slice().sort((a,b)=>((a.k??999)<=FY_R?0:1)-((b.k??999)<=FY_R?0:1)),"Compétition mondiale"]];
+    const out=[];
+    T.forEach(([tier,L,lab])=>{const C=L.filter(x=>sportTier(x.e)===tier&&!used.has(x.e.id)).sort(rank),pick=fyTake(C,1,used)[0];
+      if(pick){used.add(pick.e.id);fyPct(pick,mine(pick)===2?95:mine(pick)?85:75);pick.r=[lab+(pick.e.comp?" · "+pick.e.comp:"")].concat((pick.r||[]).filter(r=>!/^Affiche|^Compétition mondiale/.test(r))).slice(0,3);out.push(pick);}});
+    // un niveau sans rien près de toi : on complète avec le meilleur des autres, sans casser l'ordre national → international → mondial
+    if(out.length<n){const R=near.filter(x=>!used.has(x.e.id)).sort(rank);for(const x of R){if(out.length>=n)break;used.add(x.e.id);fyPct(x,70);out.push(x);}
+      const ord={national:0,inter:1,world:2};out.sort((a,b)=>ord[sportTier(a.e)]-ord[sportTier(b.e)]);}
+    return out.slice(0,n);},
   // vie de quartier : à moins de 5 km, une ou deux
   local(B,n,used){const lw=S.ltw||{};
     // un vrai rendez-vous de quartier (pas une boutique ou une offre permanente)
@@ -2909,11 +2922,29 @@ function curatedFeed(cat){
 
 /* ================= Pour toi ================= */
 let FY_N=12,FY_PREV=null;
+/* --- Pour toi se renouvelle chaque matin (la journée commence à 5 h) --- */
+function fyDayKey(){const d=new Date(Date.now()-5*3600e3);return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate();}
+// nouveau jour : ce qui a été montré hier laisse la place, les nouveautés de la nuit passent devant
+function fyMorning(){
+  if(S.fyDay===fyDayKey()){if(!FY_PREV&&S.fyPrev&&S.fyPrev.length)FY_PREV=new Set(S.fyPrev);return false;}
+  const first=!S.fyDay;S.fyPrev=(S.fyShown||[]).slice(-300);S.fyShown=[];S.fyDay=fyDayKey();
+  FY_PREV=S.fyPrev.length?new Set(S.fyPrev):null;S.fyF="all";FEED_T0=Date.now();PROF_V++;save();return!first;}
+async function fyMorningCheck(){if(!fyMorning())return;
+  // tout de suite avec ce qu'on a, puis avec les nouveautés collectées cette nuit
+  if(VIEW==="foryou"){FY_N=12;renderForYou();window.scrollTo(0,0);}
+  notify("Ton Pour toi du jour est prêt","De nouvelles idées sélectionnées pour toi ce matin.");
+  try{await loadEvents(true);}catch(e){}
+  PROF_V++;if(VIEW==="foryou")renderForYou();}
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")fyMorningCheck();});
+setInterval(()=>{if(document.visibilityState==="visible")fyMorningCheck();},10*60e3);
 function renderForYou(){
   $("fy-title").textContent=S.name?"Pour toi, "+S.name:"Pour toi";
   // pas de « Tout » : sans univers choisi, on mélange tout ; un univers se décoche en le retouchant
-  const cats=VKEYS.filter(k=>!VERTS[k].noDeck&&vertOn(k));
+  // seuls les univers qui ont des propositions apparaissent (et se parcourent en glissant)
+  if(!(LOADING&&!EVENTS.length)&&S.fyF&&S.fyF!=="all"&&!fyCats().includes(S.fyF))S.fyF="all";
+  const cats=LOADING&&!EVENTS.length?[]:fyCats();
   $("fy-filter").innerHTML=cats.map(k=>`<button class="chip" data-fy="${k}" aria-pressed="${S.fyF===k}">${esc(VERTS[k].n)}</button>`).join("");
+  $("fy-hint").hidden=(S.fySwiped||0)>=3;
   const feed=$("feed");
   if(LOADING&&!EVENTS.length){feed.innerHTML=`<div class="empty"><div class="spin"></div>Je cherche ce qui va te plaire…</div>`;$("fy-more").hidden=true;return;}
   $("fy-sub").textContent="Une sélection courte, autour de "+homeCity()+", choisie d'après tes réponses, tes écoutes et tes ♥.";
@@ -2922,12 +2953,39 @@ function renderForYou(){
   feed.innerHTML=q.map(fcardHTML).join("");
   $("fy-more").hidden=true;
   // ce qui est montré sans jamais être aimé descend doucement
-  S.impr=S.impr||{};q.forEach(x=>{S.impr[x.e.id]=(S.impr[x.e.id]||0)+1;});
+  // une « vue » par jour et par événement (le classement reste stable dans la journée)
+  S.impr=S.impr||{};S.fyShown=S.fyShown||[];const seen=new Set(S.fyShown);q.forEach(x=>{if(!seen.has(x.e.id)){seen.add(x.e.id);S.fyShown.push(x.e.id);S.impr[x.e.id]=(S.impr[x.e.id]||0)+1;}});
   const ks=Object.keys(S.impr);if(ks.length>3000)ks.slice(0,1000).forEach(k=>delete S.impr[k]);
   save();
 }
 $("fy-filter").addEventListener("click",ev=>{const b=ev.target.closest("[data-fy]");if(!b)return;S.fyF=S.fyF===b.dataset.fy?"all":b.dataset.fy;FY_N=12;save();renderForYou();});
 $("fy-more").onclick=()=>{FY_N+=12;renderForYou();};
+/* --- glisser à gauche / à droite dans Pour toi pour changer d'univers --- */
+function fyCats(){const all=curatedFeed("all");return VKEYS.filter(k=>!VERTS[k].noDeck&&vertOn(k)&&all.some(x=>x.e.cat===k));}
+function fyOrder(){return["all"].concat(fyCats());}
+function fyGo(dir){
+  const L=fyOrder(),i=Math.max(0,L.indexOf(S.fyF||"all")),j=i+dir;
+  const feed=$("feed");
+  if(j<0||j>=L.length){feed.style.transition="transform .25s cubic-bezier(.2,.8,.2,1)";feed.style.transform="";return false;}
+  S.fyF=L[j];FY_N=12;save();
+  feed.style.transition="transform .16s ease-in,opacity .16s ease-in";feed.style.transform=`translateX(${-dir*45}%)`;feed.style.opacity="0";
+  setTimeout(()=>{renderForYou();window.scrollTo({top:0});feed.style.transition="none";feed.style.transform=`translateX(${dir*45}%)`;
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{feed.style.transition="transform .28s cubic-bezier(.2,.8,.2,1),opacity .2s ease-out";feed.style.transform="";feed.style.opacity="";}));
+    const c=document.querySelector(`#fy-filter [data-fy="${S.fyF}"]`)||$("fy-filter").firstElementChild;if(c)c.scrollIntoView({inline:"center",block:"nearest",behavior:"smooth"});
+    S.fySwiped=(S.fySwiped||0)+1;save();},160);
+  return true;
+}
+let FYS=null;
+addEventListener("touchstart",ev=>{if(VIEW!=="foryou"||ev.touches.length!==1||ev.target.closest(".sheet,#sheet,#fy-filter,input,.ob"))return;
+  FYS={x0:ev.touches[0].clientX,y0:ev.touches[0].clientY,dx:0,on:null};},{passive:true});
+addEventListener("touchmove",ev=>{if(!FYS)return;const dx=ev.touches[0].clientX-FYS.x0,dy=ev.touches[0].clientY-FYS.y0;
+  if(FYS.on===null&&(Math.abs(dx)>12||Math.abs(dy)>12))FYS.on=Math.abs(dx)>Math.abs(dy)*1.4;
+  if(!FYS.on){if(FYS.on===false)FYS=null;return;}
+  if(PTR){PTR=null;$("ptr").style.height="0px";}
+  FYS.dx=dx;const L=fyOrder(),i=L.indexOf(S.fyF||"all"),edge=(dx>0&&i<=0)||(dx<0&&i>=L.length-1);
+  const f=$("feed");f.style.transition="none";f.style.transform=`translateX(${dx*(edge?.18:.6)}px)`;},{passive:true});
+addEventListener("touchend",()=>{if(!FYS)return;const s=FYS;FYS=null;if(!s.on)return;
+  if(Math.abs(s.dx)>70)fyGo(s.dx<0?1:-1);else{const f=$("feed");f.style.transition="transform .25s cubic-bezier(.2,.8,.2,1)";f.style.transform="";}},{passive:true});
 /* --- tirer vers le bas pour rafraîchir Pour toi --- */
 let PTR=null,PTR_BUSY=false;
 async function refreshForYou(){
@@ -3431,7 +3489,7 @@ function mkState(m,at){
 }
 const mkOpenOn=(m,day)=>!!(m.rules&&m.rules.days[day].length);
 async function loadMarkets(force){
-  const c=locMk(),rad=Math.max(MKF.r,5)*1000+500,key=c.lat.toFixed(2)+","+c.lon.toFixed(2)+","+rad,ck=c.lat.toFixed(2)+","+c.lon.toFixed(2)+",";
+  const c=locMk(),rad=Math.max(mkR(),5)*1000+500,key=c.lat.toFixed(2)+","+c.lon.toFixed(2)+","+rad,ck=c.lat.toFixed(2)+","+c.lon.toFixed(2)+",";
   // un rayon plus petit autour du même endroit : on a déjà tout
   if(!force&&MK.items.length&&MK.key.startsWith(ck)&&+MK.key.slice(ck.length)>=rad)return MK.items;
   try{const c0=JSON.parse(localStorage.getItem("fomo2-mk")||"null");if(!force&&c0&&c0.key===key&&Date.now()-c0.at<7*864e5){MK={key,items:c0.items,busy:false,err:""};return MK.items;}}catch(e){}
@@ -3450,10 +3508,11 @@ async function loadMarkets(force){
   try{localStorage.setItem("fomo2-mk",JSON.stringify({key,at:Date.now(),items}));}catch(e){}
   return items;
 }
+function mkR(){const r=S.browseR;return typeof r==="number"&&r>0?Math.min(r,50):5;}
 function locMk(){const h=S.browse||homePos();return{lat:h.lat,lon:h.lon};}
 function mkFiltered(){
   const c=locMk(),today=wd(NOW);
-  return MK.items.map(m=>Object.assign(m,{_k:km(c,m),_s:mkState(m)})).filter(m=>m._k<=MKF.r+.05)
+  return MK.items.map(m=>Object.assign(m,{_k:km(c,m),_s:mkState(m)})).filter(m=>m._k<=mkR()+.05)
     .filter(m=>MKF.day==="all"||(MKF.day==="today"?mkOpenOn(m,today):MKF.day==="tomorrow"?mkOpenOn(m,(today+1)%7):MKF.day==="we"?mkOpenOn(m,5)||mkOpenOn(m,6):mkOpenOn(m,+MKF.day)))
     .sort((a,b)=>{const o={open:0,today:1,soon:2,unk:3};return o[a._s.k]-o[b._s.k]||(a._s.n||0)-(b._s.n||0)||a._k-b._k;});
 }
@@ -3532,9 +3591,8 @@ function mkPop(m){return`<b>${esc(m.name)}</b><small>${esc(m._s.t)}</small>${m.s
 async function renderMarkets(skipLoad){
   const t=wd(NOW),dayOpts=[["all","Tous"],["today","Aujourd'hui"],["tomorrow","Demain"],["we","Ce week-end"]].concat(DAYS_FR.map((d,i)=>[String(i),d]).filter(x=>+x[0]!==t&&+x[0]!==(t+1)%7));
   $("mk-days").innerHTML=dayOpts.map(([k,n])=>`<button class="chip" data-mkd="${k}" aria-pressed="${MKF.day===k}">${n}</button>`).join("");
-  if(!$("mk-q")){$("mk-rad").innerHTML=`<div class="mkwhere">${sliderHTML("mk-r",MKF.r,false,50)}</div>`;
-    let rt=null;bindSlider("mk-r",r=>{clearTimeout(rt);rt=setTimeout(()=>{MKF.r=r;MKF.sel=null;drawMk(true);},120);},async r=>{MKF.r=r;MKF.sel=null;if(r>5){await loadMarkets();}drawMk(true);});}
-  $("mk-locate").hidden=!!(S.home&&S.home.src==="gps");
+  $("mk-rad").hidden=true;
+  $("mk-locate").hidden=true;
   if(!MKMAP){MKMAP=SlippyMap($("mk-map"),id=>{MKF.sel=id&&MKF.sel!==id?id:null;drawMk(false);});
     const card=document.createElement("div");card.className="mkcard";card.id="mk-card";card.hidden=true;$("mk-map").appendChild(card);
     card.addEventListener("click",ev=>{if(ev.target.closest("[data-mkx]")){MKF.sel=null;drawMk(false);}});}
@@ -3622,12 +3680,8 @@ function connSummary(k){
   return "";
 }
 function userSettingsHTML(){
-  const loc=CONNS.find(c=>c.k==="loc"),st=STATUS.loc||{};
   const on=k=>!S.verts||!S.verts.length||S.verts.includes(k);
   return`<div class="set-card"><h3>Tes univers</h3><div class="ds">Ceux qui apparaissent dans Pour toi et Découverte.</div><div class="opts">${OB_ORDER.map(k=>`<button class="chip" data-sv="${k}" aria-pressed="${on(k)}">${esc(VERTS[k].n)}</button>`).join("")}</div></div>
-    <div class="set-card"><h3>Ta ville</h3><div class="ds">${S.home?esc(connSummary("loc")):"Choisis ta ville ou active ta position."}</div>
-      ${loc.top()}<div class="row"><button class="btn sm" data-conn="loc"${st.busy?" disabled":""}>${st.busy?"Localisation…":"Utiliser ma position précise"}</button></div>
-      ${st.msg?`<div class="${st.err?"er":"res"}">${esc(st.msg)}</div>`:""}</div>
     <div class="set-card"><h3>Ta musique</h3><div class="ds">Connecte tes profils pour que FOMO connaisse tes goûts.</div>
       ${musicLinksHTML("set-ml")}</div>
     <div class="set-card"><h3>Ton sport</h3>${sportPickerHTML("set-ps")}</div>`;
@@ -3639,7 +3693,7 @@ function renderConns(){
   $("file-warn").hidden=!isFile;
   const user=userSettingsHTML();
   // les réglages techniques (collecteur, Ticketmaster, Google, alertes) ne sont plus affichés : tout passe par le site et les robots
-  $("conns").innerHTML=user;bindMusicLinks("set-ml",renderConns);bindSportPicker("set-ps");bindHomePlace();
+  $("conns").innerHTML=user;bindMusicLinks("set-ml",renderConns);bindSportPicker("set-ps");
 }
 document.addEventListener("input",ev=>{const f=ev.target.dataset&&ev.target.dataset.cfg;if(f){CFG[f]=ev.target.value;save();}});
 document.addEventListener("click",async ev=>{
@@ -3673,6 +3727,8 @@ let VIEW="discover",PREV="discover";
 const TAB_OF={discover:"discover",vert:"discover",markets:"discover",foryou:"foryou",agenda:"agenda",ask:"ask",settings:null};
 function show(v){
   if(v==="back")v=PREV==="settings"?"discover":PREV;
+  // quitter une page remet ses filtres à zéro
+  if(v!==VIEW){if(VIEW==="vert"&&typeof clearVFilters==="function")clearVFilters();if(VIEW==="markets"&&typeof MKF!=="undefined"){MKF.day="all";MKF.sel=null;}}
   if(v!==VIEW&&VIEW!=="settings")PREV=VIEW;VIEW=v;
   document.querySelectorAll(".view[id^=v-]").forEach(s=>s.hidden=s.id!=="v-"+v);
   document.querySelectorAll("nav.tabs button").forEach(b=>b.setAttribute("aria-selected",b.dataset.v===TAB_OF[v]));
@@ -3735,7 +3791,7 @@ function renderAll(quiet){
 /* ================= démarrage ================= */
 window.__fomo={get S(){return S},set S(v){S=v},get CFG(){return CFG},get EVENTS(){return EVENTS},set EVENTS(v){EVENTS=v;PROF_V++;},get COLL(){return COLL},set COLL(v){COLL=v},
   score,feedItems,vItems,segOf,taste,collNorm,tmNorm,qfapNorm,dedupe,keepRules,analyzeCal,allAlerts,openings,loadEvents,renderAll,bump(){PROF_V++;},recogNight,recogFest,recogMatch,recogRace,
-  parseAsk,runAsk,ask,openVert,openInfo,toggleLike,show,infoPills,annDate,annArtist,scanAnnouncements,veilleEvents,connectDeezer,runOnboarding,
+  fyMorningCheck,parseAsk,runAsk,ask,openVert,openInfo,toggleLike,show,infoPills,annDate,annArtist,scanAnnouncements,veilleEvents,connectDeezer,runOnboarding,
   setCal(items){S.cal=analyzeCal(items);S.conn.gcal=1;PROF_V++;save();},setTok(k){TOK[k]={t:"test",exp:Date.now()+1e7};}};
 (async function boot(){
   const qs=new URLSearchParams(location.search),st=qs.get("state")||"";
@@ -3748,6 +3804,7 @@ window.__fomo={get S(){return S},set S(v){S=v},get CFG(){return CFG},get EVENTS(
         const m=await (k==="spotify"?finishSP:k==="soundcloud"?finishSC:finishStrava)(qs.get("code"),st);STATUS[k]={msg:""};back=m;notify("Connecté",m);}
       catch(e){STATUS[k]={err:true,msg:e.message};back=e.message;}}
   }
+  fyMorning();
   show(S.onboarded?"foryou":"discover");
   if(S.stravaK){startStravaWatch();checkStrava();}
   if(!S.onboarded){OB_FB=back?esc(back):"";runOnboarding(S.obStep||0);}
