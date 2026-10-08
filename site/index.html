@@ -87,6 +87,39 @@ h1,h2,h3{margin:0;line-height:1.1}
 .btn:disabled{opacity:.45;cursor:default}
 
 /* Pour toi · Ta semaine */
+.fy-mode{display:flex;gap:4px;background:var(--sunk);border-radius:999px;padding:4px;align-self:flex-start}
+.fy-mode button{border:0;background:none;border-radius:999px;padding:8px 14px;font:inherit;font-size:14px;font-weight:650;color:var(--ink2);cursor:pointer;min-height:38px}
+.fy-mode button[aria-selected="true"]{background:var(--card);color:var(--ink);box-shadow:0 1px 4px rgba(0,0,0,.12)}
+.alr{display:flex;gap:12px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:10px 12px;cursor:pointer}
+.alr.past{opacity:.6}.alr.k-billet{border-left:4px solid var(--hot)}.alr.k-rappel{border-left:4px solid var(--ok)}.alr.k-attente{border-left:4px solid var(--warn)}
+.alr-ic{flex:none;width:40px;height:40px;border-radius:12px;background:var(--sunk);display:grid;place-items:center;font-size:19px}
+.alr-tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}.alr-tx small{font-size:11.5px;font-weight:650;color:var(--ink3)}.alr-tx b{font-size:14.5px}.alr-tx span{font-size:13px;color:var(--ink2);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.agcal{background:var(--card);border:1px solid var(--line);border-radius:24px;padding:14px 12px 12px;box-shadow:0 6px 24px rgba(0,0,0,.05)}
+.agc-h{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;padding:0 4px 10px}
+.agc-h b{font-size:24px;font-weight:800;letter-spacing:-.03em}.agc-h span{font-size:24px;font-weight:500;color:var(--ink3)}.agc-h small{display:block;font-size:12.5px;color:var(--ink3);margin-top:2px}
+.agc-nav{display:flex;gap:6px;align-items:center}.agc-nav .chip{min-height:34px;padding:6px 12px;font-size:13px}
+.agc-b{width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:var(--card);font-size:22px;line-height:1;color:var(--ink);cursor:pointer;display:grid;place-items:center;padding:0 0 3px}
+.agc-g{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.agc-wd{text-align:center;font-size:11.5px;font-weight:700;color:var(--ink3);padding:2px 0 6px}.agc-wd.we{color:var(--hot)}
+.agc{position:relative;aspect-ratio:1/1.05;border:0;border-radius:14px;background:transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font:inherit;color:var(--ink);cursor:pointer;padding:0;transition:transform .12s,background .15s}
+.agc:active{transform:scale(.94)}
+.agc .n{font-size:15px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1}
+.agc.we .n{color:color-mix(in srgb,var(--hot) 75%,var(--ink))}
+.agc.out{opacity:.28}.agc.past:not(.has){opacity:.45}
+.agc.has{background:color-mix(in srgb,var(--vc) 15%,var(--card))}.agc.has .n{font-weight:800}
+.agc.today{box-shadow:inset 0 0 0 2px var(--hot)}.agc.today .n{color:var(--hot);font-weight:800}
+.agc.sel{background:var(--ink)!important}.agc.sel .n{color:var(--paper)!important}
+.agc .dots{display:flex;gap:3px;align-items:center;height:7px}.agc .dots i{width:6px;height:6px;border-radius:50%}.agc .dots small{font-size:9px;font-weight:700;color:var(--ink2)}
+.agc.sel .dots small{color:var(--paper)}.agc.sel .dots i{box-shadow:0 0 0 1.5px var(--ink)}
+.agc-leg{display:flex;flex-wrap:wrap;gap:6px 12px;padding:10px 4px 0;border-top:1px solid var(--line);margin-top:10px}
+.agc-leg span{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink2)}.agc-leg i{width:8px;height:8px;border-radius:50%}
+.ag-dh{display:flex;justify-content:space-between;align-items:baseline;margin-top:4px}.ag-dh b{font-size:17px;font-weight:800}
+.ag-none{background:var(--card);border:1px dashed var(--line);border-radius:16px;padding:14px;display:flex;justify-content:space-between;align-items:center;gap:10px}.ag-none p{margin:0;color:var(--ink2);font-size:14px}
+.pc-bar{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:10px 12px}.pc-bar div:first-child{display:flex;flex-direction:column;min-width:0}.pc-bar small{font-size:12px;color:var(--ink3)}
+.pcsheet{display:flex;flex-direction:column;gap:10px}.pcsheet h3{margin:0;font-size:19px}
+.pc-opt{display:flex;gap:12px;align-items:center;text-align:left;border:1px solid var(--line);background:var(--card);border-radius:16px;padding:12px;font:inherit;color:var(--ink);cursor:pointer}
+.pc-opt.rec{border-color:var(--hot);box-shadow:0 0 0 1px var(--hot)}.pc-opt .ic{font-size:24px}.pc-opt span:last-child{display:flex;flex-direction:column}.pc-opt small{font-size:12.5px;color:var(--ink3)}
+.pc-rem{display:flex;gap:8px;align-items:center;font-size:14px;color:var(--ink2)}
 .fy-pick{position:relative;align-self:flex-start;z-index:5}
 .fy-pbtn{display:flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--card);border-radius:999px;padding:10px 14px 10px 16px;font:inherit;font-size:15.5px;font-weight:750;color:var(--ink);cursor:pointer;min-height:44px;box-shadow:0 2px 10px rgba(0,0,0,.06)}
 .fy-pbtn[aria-expanded="true"] svg{transform:rotate(180deg)}.fy-pbtn svg{transition:transform .2s}
@@ -521,7 +554,8 @@ html,body{overscroll-behavior-y:contain}
 
   <!-- AGENDA -->
   <section class="view" id="v-agenda" hidden>
-    <div><h1 class="h-page">Agenda</h1><p class="sub" id="ag-sub"></p></div>
+    <div><h1 class="h-page">Alertes</h1><p class="sub" id="ag-sub"></p></div>
+    <div class="fy-mode" id="al-mode" role="tablist"><button role="tab" data-alv="al">🔔 Mes alertes</button><button role="tab" data-alv="ag">📅 Mon agenda</button></div>
     <div class="chips" id="ag-filter"></div>
     <div id="ag-alerts"></div>
     <div class="cal" id="ag-cal"></div>
@@ -550,7 +584,7 @@ html,body{overscroll-behavior-y:contain}
 <nav class="tabs"><div class="in" role="tablist">
   <button role="tab" data-v="foryou" aria-selected="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 5.6-7 10-7 10z"/></svg>Pour toi</button>
   <button role="tab" data-v="discover" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="9" r="5"/><circle cx="17" cy="15" r="4"/><circle cx="16" cy="5" r="2"/></svg>Découverte</button>
-  <button role="tab" data-v="agenda" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Agenda<span class="badge" id="bd-ag" hidden></span></button>
+  <button role="tab" data-v="agenda" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>Alertes<span class="badge" id="bd-ag" hidden></span></button>
   <button role="tab" data-v="ask" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/><path d="M9 11h.01M12 11h.01M15 11h.01"/></svg>Demande-moi</button>
 </div></nav>
 
@@ -1760,7 +1794,7 @@ document.addEventListener("click",async ev=>{
     document.querySelectorAll(`[data-like="${CSS.escape(id)}"]`).forEach(b=>{b.setAttribute("aria-pressed",on);if(b.classList.contains("like-btn"))b.innerHTML=(on?HEART:HEART_O)+`<span>${on?"Ça m'intéresse":"Pourquoi pas !"}</span>`;else if(b.classList.contains("heart"))b.innerHTML=on?HEART:HEART_O;});
     return;}
   const cb=ev.target.closest("[data-cal]");
-  if(cb){ev.stopPropagation();const id=cb.dataset.cal,on=toggleCal(id);document.querySelectorAll(`[data-cal="${CSS.escape(id)}"]`).forEach(b=>b.setAttribute("aria-pressed",on));
+  if(cb){ev.stopPropagation();const id=cb.dataset.cal,on=toggleCal(id);if(on&&typeof phoneCalAdd==="function")phoneCalAdd(byId(id)||S.liked[id]);document.querySelectorAll(`[data-cal="${CSS.escape(id)}"]`).forEach(b=>b.setAttribute("aria-pressed",on));
     document.querySelectorAll(`[data-like="${CSS.escape(id)}"]`).forEach(b=>b.setAttribute("aria-pressed",isLiked(id)));
     if(!$("v-agenda").hidden)renderAgenda();return;}
   const np=ev.target.closest("[data-nope]");if(np){const id=np.dataset.nope,e=byId(id);if(e){learn(e,"no","foryou");S.disliked[id]=1;S.seen[id]=1;delete S.liked[id];save();renderBadges();}
@@ -3199,7 +3233,7 @@ function openings(){
     if(!e.presaleAt&&!e.saleAt&&(e.ann||e.tba||e.status==="announced"))out.push({at:null,what:e.cat==="competition"?"Inscriptions":"Billetterie",e});});
   return out.sort((a,b)=>(a.at?+a.at:9e15)-(b.at?+b.at:9e15));
 }
-function renderAgenda(){
+function renderAgendaOld(){
   const L=likedList(),all=Object.values(S.liked);
   const cats=[...new Set(all.map(e=>e.cat))];
   $("ag-filter").innerHTML=cats.length>1?["all",...cats].map(k=>`<button class="chip" data-agf="${k}" aria-pressed="${(S.agF||"all")===k}">${k==="all"?"Tout":esc(VERTS[k].n)}</button>`).join(""):"";
@@ -3241,6 +3275,142 @@ function renderAgenda(){
 $("ag-filter").addEventListener("click",ev=>{const b=ev.target.closest("[data-agf]");if(!b)return;S.agF=b.dataset.agf;save();renderAgenda();});
 $("ag-cal").addEventListener("click",ev=>{const mn=ev.target.closest("[data-mn]");if(mn){AG_M=new Date(AG_M.getFullYear(),AG_M.getMonth()+ +mn.dataset.mn,1);AG_DAY=null;renderAgenda();return;}
   const d=ev.target.closest("[data-day]");if(d){AG_DAY=AG_DAY===d.dataset.day?null:d.dataset.day;renderAgenda();}});
+
+/* ================= Agenda du téléphone ================= */
+// un événement enregistré dans FOMO part aussi dans le calendrier du téléphone (Apple, Google, Outlook, Samsung…)
+const IS_ANDROID=/android/i.test(navigator.userAgent),IS_IOS=/iphone|ipad|ipod/i.test(navigator.userAgent)||navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1;
+function calSpan(e){const s=D(e.d);let en=e.end?D(e.end):null;if(!en||en<=s||en-s>20*36e5)en=new Date(+s+(DUR[e.cat]||2)*36e5);return[s,en];}
+function calItem(e){const[s,en]=calSpan(e);return{i:e.id,t:e.t,s:s.toISOString(),e:en.toISOString(),l:[e.venue,e.addr||e.city].filter(Boolean).join(", "),u:e.link||e.more||"",d:VERTS[e.cat]?VERTS[e.cat].n:""};}
+const b64u=s=>btoa(unescape(encodeURIComponent(s))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+function icsUrl(list){return"/.netlify/functions/ics?j="+b64u(JSON.stringify(list.map(calItem)));}
+function gcalUrl(e){const[s,en]=calSpan(e),f=d=>d.toISOString().replace(/[-:]/g,"").replace(/\.\d{3}/,"");
+  return"https://calendar.google.com/calendar/render?action=TEMPLATE&text="+encodeURIComponent(e.t)+"&dates="+f(s)+"/"+f(en)+"&location="+encodeURIComponent([e.venue,e.addr||e.city].filter(Boolean).join(", "))+"&details="+encodeURIComponent((e.link?"Billets : "+e.link+"\n":"")+"Ajouté depuis FOMO");}
+function icsLocal(list){// ouvert depuis un fichier sur l'ordinateur : pas de serveur, on fabrique le fichier ici
+  const st=d=>d.toISOString().replace(/[-:]/g,"").replace(/\.\d{3}/,""),es=x=>String(x||"").replace(/([,;\\])/g,"\\$1").replace(/\n/g,"\\n");
+  const L=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//FOMO//FR"];list.forEach(e=>{const[s,en]=calSpan(e);L.push("BEGIN:VEVENT","UID:"+e.id.replace(/\W+/g,"-")+"@fomo","DTSTAMP:"+st(new Date()),"DTSTART:"+st(s),"DTEND:"+st(en),"SUMMARY:"+es(e.t),"LOCATION:"+es(e.venue||e.city),"END:VEVENT");});
+  L.push("END:VCALENDAR");const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([L.join("\r\n")],{type:"text/calendar"}));a.download="fomo.ics";document.body.appendChild(a);a.click();setTimeout(()=>a.remove(),500);}
+function phoneCalOpen(list,mode){
+  list=list.filter(e=>e&&e.d&&!e.approx&&!e.noDate);if(!list.length){notify("Agenda du téléphone","Cet événement n'a pas encore de date précise : il partira dans ton agenda dès qu'elle sera connue.");return;}
+  if(mode==="google"){list.slice(0,3).forEach(e=>window.open(gcalUrl(e),"_blank","noopener"));return;}
+  if(isFile){icsLocal(list);return;}
+  // iPhone : le calendrier s'ouvre par-dessus l'app (« Ajouter ») ; ailleurs, le fichier se télécharge et s'ouvre dans l'agenda
+  const a=document.createElement("a");a.href=icsUrl(list);a.rel="noopener";if(IS_IOS)a.target="_blank";else a.download=(list.length>1?"fomo-agenda":"fomo")+".ics";
+  document.body.appendChild(a);a.click();setTimeout(()=>a.remove(),500);
+  (S.phoneSent=S.phoneSent||{});list.forEach(e=>S.phoneSent[e.id]=1);save();}
+function phoneCalAdd(e){
+  if(!e||S.phoneCal==="none")return;
+  if(S.phoneCal==="ics"||S.phoneCal==="google"){phoneCalOpen([e],S.phoneCal);return;}
+  const first=IS_ANDROID?"google":"ics";$("toast").classList.remove("show");
+  const opt=(k,ic,ti,sub)=>`<button class="pc-opt${k===first?" rec":""}" data-pc="${k}"><span class="ic">${ic}</span><span><b>${ti}</b><small>${sub}</small></span></button>`;
+  openSheet(`<div class="in pcsheet"><h3>Ajouter aussi à l'agenda de ton téléphone ?</h3><p class="small">${esc(e.t)}</p>
+    ${[first==="ics"?opt("ics","📱",IS_IOS?"Calendrier de l'iPhone":"Calendrier du téléphone","Apple, Outlook, Samsung… avec un rappel 3 h avant"):"",opt("google","🗓️","Google Agenda","Ouvre Google Agenda, déjà rempli"),first==="google"?opt("ics","📱","Autre calendrier","Samsung, Outlook… (fichier .ics)"):""].join("")}
+    <label class="pc-rem"><input type="checkbox" id="pc-rem" checked> Faire pareil à chaque fois</label>
+    <button class="lnk" data-pc="none" style="align-self:center">Non merci</button></div>`,"phonecal");
+  document.querySelectorAll("[data-pc]").forEach(b=>b.onclick=()=>{const k=b.dataset.pc,rem=$("pc-rem")&&$("pc-rem").checked;
+    if(rem)S.phoneCal=k;save();closeSheet();if(k!=="none")phoneCalOpen([e],k);
+    else if(rem)notify("C'est noté","Tes sorties restent dans FOMO. Tu peux changer ça dans Alertes → Mon agenda.");});
+}
+
+/* ================= Alertes (remplace l'ancien Agenda) ================= */
+// tout ce qui doit te faire réagir, dans l'ordre chronologique : ouvertures de billetterie, préventes,
+// rappels la veille de tes sorties, tirages au sort et listes d'attente à surveiller
+function eventReminders(){return Object.values(S.liked).filter(e=>!e.approx&&!e.noDate&&e.d&&D(e.d)>NOW).flatMap(e=>{const d=D(e.d),out=[];
+  const veille=new Date(d.getFullYear(),d.getMonth(),d.getDate()-1,18,0);if(veille>new Date(+NOW-12*36e5))out.push({w:veille,ti:"Rappel : c'est demain",tx:`${e.t} · ${hm(d)}${e.venue?" · "+e.venue:""}`,e,kind:"rappel"});
+  const jour=new Date(+d-3*36e5);if(jour>new Date(+NOW-3*36e5))out.push({w:jour,ti:d.getHours()>=18?"C'est ce soir":"C'est aujourd'hui",tx:`${e.t} à ${hm(d)}${e.venue?", "+e.venue:""}. Bonne sortie !`,e,kind:"rappel"});
+  return out;});}
+function alertFeed(){
+  const A=allAlerts().filter(a=>a.w>new Date(+NOW-12*36e5)).map(a=>Object.assign({kind:"billet"},a)).concat(eventReminders());
+  // les billetteries pas encore datées, et ce qui est à surveiller (tirage au sort, liste d'attente, complet)
+  const wait=openings().filter(o=>!o.at).map(o=>({w:null,ti:o.what==="Inscriptions"?"Inscriptions pas encore ouvertes":"Billetterie pas encore ouverte",tx:o.e.t+" : on te prévient dès l'ouverture.",e:o.e,kind:"attente"}));
+  const watch=(typeof watchItems==="function"?watchItems():[]).map(e=>({w:null,ti:e.lottery?"Tirage au sort":e.waitlist?"Liste d'attente":"Complet, on surveille",tx:e.t+(e.lottery?" : on te rappelle de t'inscrire au tirage.":" : on te prévient si des places se libèrent."),e,kind:"attente"}));
+  const seen=new Set();return A.sort((a,b)=>a.w-b.w).concat(wait,watch).filter(a=>{const k=a.e.id+a.ti+(a.w?+a.w:"");if(seen.has(k))return false;seen.add(k);return true;});}
+const AL_IC={billet:"🎟️",rappel:"⏰",attente:"👀"};
+function dayLab(d){const t=new Date(NOW.getFullYear(),NOW.getMonth(),NOW.getDate()),x=new Date(d.getFullYear(),d.getMonth(),d.getDate()),n=Math.round((x-t)/864e5);
+  return n===0?"Aujourd'hui":n===1?"Demain":n===-1?"Hier":capital(WDL[d.getDay()].toLowerCase())+" "+d.getDate()+" "+MOL[d.getMonth()]+(d.getFullYear()!==NOW.getFullYear()?" "+d.getFullYear():"");}
+function renderAgenda(){
+  const view=S.alV==="ag"?"ag":"al";
+  document.querySelectorAll("#al-mode [data-alv]").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.alv===view)));
+  const perm=("Notification" in window)?Notification.permission:"unsupported";
+  $("ag-cal").hidden=view!=="ag";if(view!=="ag")$("ag-cal").innerHTML="";
+  if(view==="al"){
+    $("ag-filter").innerHTML="";const F=alertFeed();
+    $("ag-sub").textContent=F.length?F.length+" alerte"+(F.length>1?"s":"")+" à venir":"Rien à surveiller pour l'instant.";
+    let h=perm==="unsupported"?"":`<div class="row" style="justify-content:space-between;align-items:center"><span class="small">${S.notif&&perm==="granted"?"Tu reçois ces alertes en notification.":"Active les notifications pour les recevoir sur ton téléphone."}</span><button class="chip" id="sw-notif" aria-pressed="${!!(S.notif&&perm==="granted")}">${S.notif&&perm==="granted"?"🔔 Activées":"🔔 Activer"}</button></div>`;
+    if(!F.length)h+=`<div class="empty"><h3>Aucune alerte</h3><p>Touche 📅 sur un événement : FOMO te prévient de l'ouverture de la billetterie, des préventes, et la veille de ta sortie.</p><button class="btn sm" data-go="foryou">Voir Pour toi</button></div>`;
+    else{let last="";F.forEach(a=>{const g=a.w?dayLab(a.w):"En attente d'une date";if(g!==last){h+=`<div class="dayhead">${esc(g)}</div>`;last=g;}
+      const past=a.w&&a.w<NOW;
+      h+=`<div class="alr k-${a.kind}${past?" past":""} v-${a.e.cat}" data-info="${esc(a.e.id)}" role="button" tabindex="0"><div class="alr-ic" aria-hidden="true">${AL_IC[a.kind]||"🔔"}</div>
+        <div class="alr-tx"><small>${a.w?esc(hm(a.w)):"Bientôt"} · ${esc(VERTS[a.e.cat]?VERTS[a.e.cat].n:"")}</small><b>${esc(a.ti)}</b><span>${esc(a.tx)}</span></div>
+        ${a.go&&a.e.link&&a.w-NOW<2*36e5?`<a class="btn sm hot" href="${esc(a.e.link)}" target="_blank" rel="noopener">Y aller</a>`:""}</div>`;});}
+    $("ag-alerts").innerHTML=h;$("ag-day").innerHTML="";
+  }else{
+    const all=Object.values(S.liked),cats=[...new Set(all.map(e=>e.cat))];
+    $("ag-filter").innerHTML=cats.length>1?["all",...cats].map(k=>`<button class="chip" data-agf="${k}" aria-pressed="${(S.agF||"all")===k}">${k==="all"?"Tout":esc(VERTS[k].n)}</button>`).join(""):"";
+    const L=likedList(),t0=new Date(NOW.getFullYear(),NOW.getMonth(),NOW.getDate()),up=L.filter(e=>e.approx||D(e.until||e.end||e.d)>=t0);
+    $("ag-sub").textContent=up.length?up.length+" sortie"+(up.length>1?"s":"")+" à venir":"Les événements que tu enregistres arrivent ici.";
+    const pc=S.phoneCal==="ics"?"Calendrier du téléphone":S.phoneCal==="google"?"Google Agenda":S.phoneCal==="none"?"Désactivé":"À choisir au prochain 📅";
+    const pcBar=`<div class="pc-bar"><div><b>📱 Agenda du téléphone</b><small>${esc(pc)}</small></div><div class="row" style="gap:6px;flex-wrap:nowrap">
+      ${up.filter(e=>!e.approx).length?`<button class="btn sm" id="pc-all">Tout ajouter</button>`:""}<button class="btn ghost sm" id="pc-chg">Changer</button></div></div>`;
+    $("ag-alerts").innerHTML="";
+    const nx=up.filter(e=>!e.approx),ap=up.filter(e=>e.approx);
+    agCalHTML(L);
+    let h="",last="";
+    if(AG_DAY){const d=new Date(AG_DAY),evs=agByDay(L)[AG_DAY]||[];
+      h=`<div class="ag-dh"><b>${esc(dayLab(d))}</b><button class="lnk" id="ag-clear">Voir toutes mes sorties</button></div>`+(evs.length?evs.map(e=>itemHTML(e,{when:true,pills:2,agenda:true})).join(""):`<div class="ag-none"><p>Rien de prévu ce jour-là.</p><button class="btn sm" data-go="foryou">Trouver une idée</button></div>`);
+      const busy=S.cal?S.cal.busy.filter(b=>new Date(b.s).toDateString()===AG_DAY):[];
+      if(busy.length)h+=`<p class="small">Dans ton Google Agenda : ${esc(busy.map(b=>hm(new Date(b.s))+" "+b.t).join(", "))}</p>`;}
+    else{nx.forEach(e=>{const g=dayLab(D(e.d));if(g!==last){h+=`<div class="dayhead">${esc(g)}</div>`;last=g;}h+=itemHTML(e,{when:true,pills:2,agenda:true});});
+      if(ap.length)h+=`<div class="dayhead">Dates à confirmer</div>`+ap.map(e=>itemHTML(e,{when:true,pills:2,agenda:true})).join("");
+      if(!up.length)h=`<div class="empty"><h3>Ton agenda est vide</h3><p>Touche 📅 sur un événement : il arrive ici et dans l'agenda de ton téléphone.</p><button class="btn sm" data-go="foryou">Voir Pour toi</button></div>`;}
+    $("ag-day").innerHTML=h+pcBar;const cl=$("ag-clear");if(cl)cl.onclick=()=>{AG_DAY=null;renderAgenda();};
+    const pa=$("pc-all");if(pa)pa.onclick=()=>phoneCalOpen(nx,S.phoneCal==="google"?"google":"ics");
+    $("pc-chg").onclick=()=>{const cur=S.phoneCal;delete S.phoneCal;save();const e=nx[0]||{t:"Tes prochaines sorties",id:"x"};
+      phoneCalChoose(cur);};
+  }
+  const sw=$("sw-notif");if(sw)sw.onclick=async ev=>{ev.stopPropagation();if(S.notif&&Notification.permission==="granted"){S.notif=false;save();renderAgenda();return;}
+    let p=Notification.permission;if(p==="default")p=await Notification.requestPermission();S.notif=p==="granted";save();renderAgenda();scheduleNotifs();
+    if(S.notif)notify("Notifications activées","Garde FOMO installé sur ton téléphone pour les recevoir.");};
+}
+function phoneCalChoose(cur){
+  const opt=(k,ic,ti,sub)=>`<button class="pc-opt${k===cur?" rec":""}" data-pcs="${k}"><span class="ic">${ic}</span><span><b>${ti}</b><small>${sub}</small></span></button>`;
+  openSheet(`<div class="in pcsheet"><h3>Quand tu enregistres une sortie…</h3>
+    ${opt("ics","📱",IS_IOS?"Calendrier de l'iPhone":"Calendrier du téléphone","Apple, Outlook, Samsung… (fichier .ics)")}${opt("google","🗓️","Google Agenda","Ouvre Google Agenda, déjà rempli")}${opt("ask","❓","Me demander à chaque fois","")}${opt("none","🚫","Ne rien ajouter","La sortie reste seulement dans FOMO")}</div>`,"phonecal");
+  document.querySelectorAll("[data-pcs]").forEach(b=>b.onclick=()=>{const k=b.dataset.pcs;if(k==="ask")delete S.phoneCal;else S.phoneCal=k;save();closeSheet();renderAgenda();});
+}
+$("al-mode").addEventListener("click",ev=>{const b=ev.target.closest("[data-alv]");if(!b)return;S.alV=b.dataset.alv;save();renderAgenda();window.scrollTo(0,0);});
+// les rappels de sortie partent aussi en notification
+const _allAlerts=allAlerts;allAlerts=function(){return _allAlerts().concat(eventReminders()).sort((a,b)=>a.w-b.w);};
+
+/* --- le calendrier du mois, dans Mon agenda --- */
+function agByDay(L){const by={};L.forEach(e=>{if(e.approx||!e.d)return;const a=D(e.d),b=e.end&&D(e.end)-a<20*864e5&&D(e.end)>a?D(e.end):a;
+  for(let d=new Date(a.getFullYear(),a.getMonth(),a.getDate());d<=b;d=new Date(d.getFullYear(),d.getMonth(),d.getDate()+1)){const k=d.toDateString();(by[k]=by[k]||[]).push(e);}});return by;}
+function agCalHTML(L){
+  const t0=new Date(NOW.getFullYear(),NOW.getMonth(),1);if(!AG_M)AG_M=t0;
+  const y=AG_M.getFullYear(),m=AG_M.getMonth(),first=new Date(y,m,1),start=new Date(first);start.setDate(1-((first.getDay()+6)%7));
+  const by=agByDay(L),today=new Date(NOW.getFullYear(),NOW.getMonth(),NOW.getDate());
+  let nMonth=0;const catsM=new Set();Object.keys(by).forEach(k=>{const d=new Date(k);if(d.getMonth()===m&&d.getFullYear()===y){by[k].forEach(e=>catsM.add(e.cat));}});
+  L.forEach(e=>{if(!e.approx&&e.d&&D(e.d).getMonth()===m&&D(e.d).getFullYear()===y)nMonth++;});
+  let cells="";for(let i=0;i<42;i++){const d=new Date(start.getFullYear(),start.getMonth(),start.getDate()+i);if(i>=35&&d.getMonth()!==m)break;
+    const k=d.toDateString(),evs=by[k]||[],sel=AG_DAY===k,out=d.getMonth()!==m,past=d<today,we=d.getDay()===0||d.getDay()===6;
+    const c=evs[0]?`style="--vc:var(--v-${evs[0].cat})"`:"";
+    cells+=`<button class="agc${out?" out":""}${past?" past":""}${we?" we":""}${evs.length?" has":""}${k===today.toDateString()?" today":""}${sel?" sel":""}" ${c} data-day="${k}" aria-pressed="${sel}" aria-label="${d.getDate()} ${MOL[d.getMonth()]}${evs.length?", "+evs.length+" sortie"+(evs.length>1?"s":""):""}">
+      <span class="n">${d.getDate()}</span>${evs.length?`<span class="dots">${evs.slice(0,3).map(e=>`<i style="background:var(--v-${e.cat})"></i>`).join("")}${evs.length>3?`<small>+${evs.length-3}</small>`:""}</span>`:""}</button>`;}
+  const cur=y===NOW.getFullYear()&&m===NOW.getMonth();
+  $("ag-cal").className="agcal";
+  $("ag-cal").innerHTML=`<div class="agc-h"><div><b>${capital(MOL[m])}</b> <span>${y}</span><small>${nMonth?nMonth+" sortie"+(nMonth>1?"s":"")+" ce mois-ci":"Aucune sortie ce mois-ci"}</small></div>
+    <div class="agc-nav">${cur?"":`<button class="chip" data-mn="0">Aujourd'hui</button>`}<button class="agc-b" data-mn="-1" aria-label="Mois précédent">‹</button><button class="agc-b" data-mn="1" aria-label="Mois suivant">›</button></div></div>
+    <div class="agc-g">${["L","M","M","J","V","S","D"].map((w,i)=>`<div class="agc-wd${i>4?" we":""}">${w}</div>`).join("")}${cells}</div>
+    ${catsM.size?`<div class="agc-leg">${[...catsM].map(c=>`<span><i style="background:var(--v-${c})"></i>${esc(VERTS[c]?VERTS[c].n:c)}</span>`).join("")}</div>`:""}`;
+}
+$("ag-cal").addEventListener("click",ev=>{if(S.alV!=="ag")return;const mn=ev.target.closest("[data-mn]");
+  if(mn){ev.stopImmediatePropagation();const v=+mn.dataset.mn;AG_M=v===0?new Date(NOW.getFullYear(),NOW.getMonth(),1):new Date(AG_M.getFullYear(),AG_M.getMonth()+v,1);AG_DAY=null;renderAgenda();return;}
+  const d=ev.target.closest("[data-day]");if(d){ev.stopImmediatePropagation();AG_DAY=AG_DAY===d.dataset.day?null:d.dataset.day;renderAgenda();
+    const t=$("ag-day");if(t&&AG_DAY)setTimeout(()=>t.scrollIntoView({behavior:"smooth",block:"start"}),50);}},true);
+// glisser sur le calendrier pour changer de mois
+{let x0=null,y0=null;const c=$("ag-cal");
+  c.addEventListener("touchstart",ev=>{x0=ev.touches[0].clientX;y0=ev.touches[0].clientY;},{passive:true});
+  c.addEventListener("touchend",ev=>{if(x0==null)return;const dx=ev.changedTouches[0].clientX-x0,dy=ev.changedTouches[0].clientY-y0;x0=null;
+    if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.5){AG_M=new Date(AG_M.getFullYear(),AG_M.getMonth()+(dx<0?1:-1),1);AG_DAY=null;renderAgenda();}},{passive:true});}
 
 /* ================= Demande-moi : compréhension fine de la demande, 3 propositions fiables au maximum ================= */
 const ASK_EX=["Une soirée techno ce samedi à Paris","Un concert de rap pas cher la semaine prochaine","Un festival house à taille humaine en août 2027",
@@ -3622,7 +3792,7 @@ $("ask-thread").addEventListener("click",ev=>{
   const l=ev.target.closest("[data-askl]");
   if(l){ev.stopPropagation();const id=l.dataset.askl;const e=byId(id)||PROJ[id];if(!e)return;
     // ♥ dans Demande-moi : « ça m'intéresse » et directement dans l'agenda (avec les alertes billetterie)
-    const on=toggleCal(id);l.setAttribute("aria-pressed",on);l.textContent=on?"✓ Dans ton agenda":"♥ J'aime, ajoute à mon agenda";PROF_V++;
+    const on=toggleCal(id);if(on&&typeof phoneCalAdd==="function")phoneCalAdd(byId(id)||S.liked[id]);l.setAttribute("aria-pressed",on);l.textContent=on?"✓ Dans ton agenda":"♥ J'aime, ajoute à mon agenda";PROF_V++;
     document.querySelectorAll(`[data-like="${CSS.escape(id)}"]`).forEach(b=>b.setAttribute("aria-pressed",isLiked(id)));return;}
   const n=ev.target.closest("[data-askn]");
   if(n){ev.stopPropagation();const id=n.dataset.askn,e=byId(id);if(e){learn(e,"no","ask");S.disliked[id]=1;delete S.liked[id];save();PROF_V++;}

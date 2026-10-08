@@ -1,6 +1,6 @@
 /* FOMO · fonctionne hors connexion et s'installe sur l'écran d'accueil.
    L'app (index.html) est toujours rechargée depuis le réseau quand il y en a un : chaque mise à jour sur Netlify arrive tout de suite. */
-const CACHE = "fomo-v38";
+const CACHE = "fomo-v40";
 const SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())); });
 self.addEventListener("activate", e => {
