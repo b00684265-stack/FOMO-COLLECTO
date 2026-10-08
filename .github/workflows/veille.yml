@@ -84,7 +84,7 @@ jobs:
                                 r"pre-sale|billetterie|mise en vente|tickets?|announce|annonc|show|zenith|zénith|arena|olympia", re.I)
           JUNK = re.compile(r"confirm(e|ez|ation) (ton|votre|your) (inscription|adresse|email|subscription)|verify|v[ée]rifi|bienvenue|welcome|"
                             r"password|mot de passe|unsubscribe confirmation|d[ée]sinscri|receipt|re[çc]u de paiement|facture|invoice", re.I)
-          TICKET_DOMAINS = ("ticketmaster", "fnacspectacles", "dice.fm", "seetickets", "livenation", "shotgun", "eventim", "digitick",
+          TICKET_DOMAINS = ("ticketmaster", "fnacspectacles", "dice.fm", "seetickets", "livenation", "eventim", "digitick",
                             "weezevent", "billetweb", "axs", "ra.co", "festicket", "songkick", "bandsintown", "lnfr", "gdp.fr", "corida")
 
 
