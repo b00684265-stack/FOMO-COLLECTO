@@ -35,7 +35,7 @@ jobs:
           mkdir -p collector config data
           [ -f config/cities.json ] || echo '{"home": "Paris", "cities": ["Paris"]}' > config/cities.json
           cat > collector/collect.py <<'PYEOF'
-          """FOMO · collecteur gratuit d'événements (Shotgun, Resident Advisor, DICE, BilletReduc, Ticketac,
+          """FOMO · collecteur gratuit d'événements (Resident Advisor, DICE, BilletReduc, Ticketac,
           L'Officiel des spectacles, Fnac Spectacles, sport, courses Finishers, festivals et artistes RA).
 
           Tourne chaque nuit sur GitHub Actions (ou à la demande depuis l'app FOMO).
@@ -60,7 +60,7 @@ jobs:
                 "(KHTML, like Gecko) Chrome/128.0 Safari/537.36")
           PAUSE = 1.0  # secondes entre deux pages, pour rester discret
 
-          LIMITS = {"sg": 40, "ra": 200, "br": 120, "tac": 30, "fest": 50, "dice_venues": 25, "offi_detail": 120, "bit": 60, "ra_art": 40, "race_pages": 700, "geocode": 120}
+          LIMITS = {"ra": 200, "br": 120, "tac": 30, "fest": 50, "dice_venues": 25, "offi_detail": 120, "bit": 60, "ra_art": 40, "race_pages": 700, "geocode": 120}
           HORIZON_DAYS = 365  # court terme et long terme (festivals, grosses dates)
 
           # FOMO couvre uniquement la France pour l'instant
@@ -70,7 +70,7 @@ jobs:
                        "metz", "nancy", "clermont-ferrand", "le-havre", "montpellier", "toulon", "orleans", "le-mans", "limoges",
                        "poitiers", "perpignan", "nimes", "besancon", "saint-etienne", "amiens", "lorient", "vannes", "la-baule"}
 
-          # noms de villes tels que Shotgun les écrit dans ses adresses
+          # noms de villes tels que les billetteries les écrivent dans leurs adresses
           RA_AREA = {"paris": 44, "lyon": 337}
 
 
@@ -205,53 +205,6 @@ jobs:
                   "rating": num(rating.get("ratingValue")) if isinstance(rating, dict) else None,
                   "ratingCount": rating.get("ratingCount") if isinstance(rating, dict) else None,
               }
-
-
-          # ---------------- Shotgun ----------------
-          SG_PAUSE = 4.0  # Shotgun limite les visites : on ralentit
-
-
-          def sg_pages(slugs, city, kind=None, prefix="events"):
-              out, fails = [], 0
-              for sl in slugs:
-                  time.sleep(SG_PAUSE)
-                  try:
-                      evs = ld_events(get(f"https://shotgun.live/fr/{prefix}/{sl}"))
-                      fails = 0
-                  except Exception as e:  # noqa: BLE001
-                      log("   ! ", sl, e)
-                      fails += 1
-                      if fails >= 3:
-                          log("   Shotgun refuse pour l'instant : on garde ce qui a été récupéré")
-                          break
-                      continue
-                  if evs:
-                      out.append(from_ld(evs[0], "sg", "s-" + sl, city, kind))
-              return out
-
-
-          def shotgun(city):
-              s = slug(city)
-              page = get(f"https://shotgun.live/fr/cities/{s}?page=8")  # les pages sont cumulatives
-              slugs = uniq(re.findall(r'/events/([a-z0-9][a-z0-9-]+)', page))
-              try:
-                  time.sleep(SG_PAUSE)
-                  conc = get(f"https://shotgun.live/fr/concerts/{s}?page=4")
-                  slugs += [x for x in uniq(re.findall(r'/events/([a-z0-9][a-z0-9-]+)', conc)) if x not in slugs]
-              except Exception as e:  # noqa: BLE001
-                  log(f"  Shotgun concerts {city}: {e}")
-              slugs = slugs[:LIMITS["sg"]]
-              log(f"  Shotgun {city}: {len(slugs)} événements listés")
-              return sg_pages(slugs, city)
-
-
-          def shotgun_festivals():
-              """Festivals de toute la France : ils valent souvent le déplacement, et se préparent des mois à l'avance."""
-              page = get("https://shotgun.live/fr/festivals/-/europe/france?page=10")
-              slugs = uniq(re.findall(r'/festivals/([a-z0-9][a-z0-9-]+)"', page))
-              slugs = [x for x in slugs if x not in ("-",)][:LIMITS["fest"]]
-              log(f"  Shotgun festivals France: {len(slugs)} listés")
-              return sg_pages(slugs, None, "festival", "festivals")
 
 
           # ---------------- Resident Advisor ----------------
@@ -2201,16 +2154,8 @@ jobs:
                           pass
                   s = slug(city)
                   prev_path = os.path.join(DATA, s + ".json")
-                  if report.get("sg", {}).get("err") and os.path.exists(prev_path):
-                      try:
-                          old = json.load(open(prev_path, encoding="utf-8"))
-                          kept = [e for e in old.get("events", []) if e.get("src") == "sg"]
-                          if kept:
-                              events_sg = [e for e in kept if e.get("d") and e["d"] > now.isoformat()[:10]]
-                              keep += events_sg
-                              report["sg"]["kept"] = len(events_sg)
-                      except Exception:  # noqa: BLE001
-                          pass
+                  # Shotgun abandonné : on retire leurs anciennes soirées des fichiers
+                  keep = [e for e in keep if e.get("src") != "sg"]
                   json.dump({"city": city, "updated": now.isoformat(), "sources": report, "events": keep},
                             open(os.path.join(DATA, s + ".json"), "w", encoding="utf-8"), ensure_ascii=False)
                   index["cities"][s] = {"name": city, "updated": now.isoformat(), "n": len(keep), "sources": report}
@@ -2235,7 +2180,7 @@ jobs:
                   index["cities"]["france"] = {"name": "Festivals", "updated": now.isoformat(), "n": len(fest), "sources": {"festivals": {"n": len(fest)}}}
               except Exception as e:  # noqa: BLE001
                   log(f"  festivals : échec ({e})")
-                  index["cities"].setdefault("france", {"name": "France (festivals)", "n": 0})["sources"] = {"sg": {"n": 0, "err": str(e)[:200]}}
+                  index["cities"].setdefault("france", {"name": "France (festivals)", "n": 0})["sources"] = {"festivals": {"n": 0, "err": str(e)[:200]}}
               def save_national(name, label, fn):
                   try:
                       seen_ids = set()
