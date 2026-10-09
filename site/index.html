@@ -910,12 +910,17 @@ function kwTest(text,kw){
     kwRx[kw]=new RegExp("(^|[^a-z0-9])"+k+(pre?"":"([^a-z0-9]|$)"));}
   return kwRx[kw].test(text);
 }
-function genresOf(text){const t=norm(text),o=[];for(const g in GENRES)if(GENRES[g].kw.some(k=>kwTest(t,k)))o.push(g);
+// une seule expression par genre (au lieu d'une par mot-clé) : la lecture de 15 000 événements passe de ~1 s à ~0,1 s
+const KWG=new Map();
+function kwGroup(map,key){let m=KWG.get(map);if(!m)KWG.set(map,m={});if(!m[key]){const alts=map[key].kw.map(kw=>{const pre=kw.endsWith("*"),k=norm(pre?kw.slice(0,-1):kw).replace(/[.*+?^${}()|[\]\\]/g,"\\$&");return k+(pre?"":"(?=[^a-z0-9]|$)");});
+  m[key]=new RegExp("(?:^|[^a-z0-9])(?:"+alts.join("|")+")");}return m[key];}
+const kwAny=(map,key,t)=>kwGroup(map,key).test(t);
+function genresOf(text){const t=norm(text),o=[];for(const g in GENRES)if(kwAny(GENRES,g,t))o.push(g);
   if(o.includes("dubstep"))return o.filter(x=>x!=="reggae"||/reggae|dancehall|ska|roots/.test(t));return o;}
-function xtypesOf(text){const t=norm(text),o=[];for(const k in XP_T)if(XP_T[k].kw.some(w=>kwTest(t,w)))o.push(k);return o;}
+function xtypesOf(text){const t=norm(text),o=[];for(const k in XP_T)if(kwAny(XP_T,k,t))o.push(k);return o;}
 const XP_RX=/escape game|escape room|atelier|immersi|realite virtuelle|\bvr\b|visite guidee|visite insolite|degustation|cours de cuisine|initiation|candlelight|aux chandelles|jeu de piste|murder party|croisiere|spa\b|hammam|karting|accrobranche|parachut|montgolfiere|tyrolienne|laser game|simulateur|masterclass (cuisine|cocktail|vin)|experience (immersive|unique|insolite)/;
 const isXpTxt=t=>XP_RX.test(norm(t));
-function stypesOf(text){const t=norm(text),o=[];for(const k in SPEC_T)if(SPEC_T[k].kw.some(w=>kwTest(t,w)))o.push(k);return o;}
+function stypesOf(text){const t=norm(text),o=[];for(const k in SPEC_T)if(kwAny(SPEC_T,k,t))o.push(k);return o;}
 // une pièce de théâtre ou un « spectacle » (humour, comédie musicale, cirque, danse, magie, cabaret…) ?
 const SPEC_RX=/humour|humoriste|stand.?up|one (wo)?man|comedy|comique|comedie musicale|musical|cirque|circus|acrobat|danse|ballet|magie|magicien|mentalis|hypno|cabaret|revue|burlesque|opera|lyrique|hommage|tribute|show\b|spectacle|candlelight|immersi|jeune public|marionnette/;
 function isSpecTxt(t){return SPEC_RX.test(norm(t));}
@@ -932,7 +937,7 @@ const COMEDY_RX=/comedy club|stand.?up|\bhumour\b|one (wo)?man show|\bimpro\b/;
 // un festival se nomme comme tel (« Palais des Festivals » est une salle, pas un festival)
 const FEST_RX=/festival|\bfest\b|fest$|\bfest |weekender|open air|\bpass \d+ jours|\bpass (week.?end|weekend)|\bpass \d jours/;
 function isFestName(t){const n=norm(t);if(FEST_RX.test(n))return true;return FESTS.some(f=>{const k=norm(f[0]);return k.length>5&&n.includes(k);});}
-function typesOf(text){const t=norm(text),o=[];for(const k in EXPO_TYPES)if(EXPO_TYPES[k].kw.some(w=>kwTest(t,w)))o.push(k);return o;}
+function typesOf(text){const t=norm(text),o=[];for(const k in EXPO_TYPES)if(kwAny(EXPO_TYPES,k,t))o.push(k);return o;}
 function sportOf(text){const t=norm(text);for(const k in SPORTS)if(SPORTS[k].kw.some(w=>kwTest(t,w)))return k;return null;}
 function catOf(text){const t=norm(text);
   if(/festival/.test(t))return"festival";
@@ -976,8 +981,16 @@ const ADMIN=()=>!!(CFG.admin||CFG.ghToken);
 // reprise de la configuration de la version précédente (clés, dépôt GitHub)
 try{const old=JSON.parse(localStorage.getItem("fomo-web-cfg")||"null");if(old)for(const k in old)if(k in CFG&&!CFG[k]&&old[k])CFG[k]=old[k];}catch(e){}
 function save(){try{localStorage.setItem(ST_KEY,JSON.stringify(S));localStorage.setItem(CFG_KEY,JSON.stringify(CFG));}catch(e){}}
-let COLL={index:null,files:{}};try{COLL=Object.assign(COLL,JSON.parse(localStorage.getItem(COLL_KEY)||"{}"));}catch(e){}
-const saveColl=()=>{try{localStorage.setItem(COLL_KEY,JSON.stringify(COLL));}catch(e){}};
+// la collecte (≈ 15 Mo) est gardée dans le téléphone (IndexedDB) : à l'ouverture, l'app s'affiche tout de suite avec,
+// et ne retélécharge que les fichiers qui ont changé depuis la dernière collecte
+let COLL={index:null,files:{}};try{localStorage.removeItem(COLL_KEY);}catch(e){}
+const IDB=(()=>{let dbp=null;const open=()=>dbp||(dbp=new Promise((res,rej)=>{try{const r=indexedDB.open("fomo",1);r.onupgradeneeded=()=>r.result.createObjectStore("kv");r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);}catch(e){rej(e);}}));
+  const tx=(mode,fn)=>open().then(db=>new Promise((res,rej)=>{const t=db.transaction("kv",mode),st=t.objectStore("kv"),q=fn(st);t.oncomplete=()=>res(q&&q.result);t.onerror=()=>rej(t.error);}));
+  return{get:k=>tx("readonly",st=>st.get(k)).catch(()=>null),set:(k,v)=>tx("readwrite",st=>st.put(v,k)).catch(()=>null)};})();
+let COLL_BOOT=null;
+function collBoot(){return COLL_BOOT||(COLL_BOOT=IDB.get("coll").then(c=>{if(c&&c.files&&!Object.keys(COLL.files||{}).length)COLL=c;}).catch(()=>{}));}
+let COLL_SAVE_T=null;
+const saveColl=()=>{clearTimeout(COLL_SAVE_T);COLL_SAVE_T=setTimeout(()=>IDB.set("coll",COLL),1500);};
 let EVENTS=[],LOADING=true,LOAD_ERR="",PROF_V=0,LAST_LOAD=0,EU_FEST=[];
 const TOK={cal:null,mail:null,yt:null,ann:null};
 const STATUS={};
@@ -1045,11 +1058,23 @@ function lotteryIn(t){return /tirage au sort|lottery|ballot|loterie/i.test(t||""
 function waitIn(t){return /liste d.attente|waiting ?list|waitlist/i.test(t||"");}
 // un musée, une visite ou un parcours lumineux vendu en « arts et spectacles » n'est pas du théâtre
 const MUSEUM_RX=/\bmusee|museum|galerie|fondation |grand palais|parc floral|jardin d.acclimatation|aquarium|\bzoo\b|chateau de versailles|catacombes|exposition|\bexpo\b|collections? permanentes|entree simple|visite guidee|visite en famille|odyssee lumineuse|illumination/;
+// jamais de lien vers un site de paris sportifs ; les noms de sponsors de ligue (Betclic Élite, Parions Sport…) sont retirés des recherches
+const BET_RX=/polyfill\.io|polyfill\.com|winamax|betclic|unibet|parionssport|parions ?sport|enligne\.fdj|pmu\.fr|zebet|bwin|pokerstars|netbet|vbet|feelingbet|genybet|betsson|1xbet|stake\.com|bet365|pronosoft|pronostic/i;
+const NO_BET=" -\"paris sportifs\" -parier -cote -cotes -pronostic -pronostics -betclic -winamax -unibet -parionssport -bwin -zebet";
+function officialSearch(q){return"https://www.google.com/search?q="+encodeURIComponent("billetterie officielle "+q+NO_BET);}
+function cleanLinks(e){
+  ["link","more","reg"].forEach(k=>{const v=e[k];if(!v)return;
+    if(/google\.[a-z.]+\/search/.test(v)){if(e.cat==="sport"&&e.home){e[k]=officialSearch(e.home+(e.sport&&SPORTS[e.sport]?" "+SPORTS[e.sport].n.toLowerCase():""));}
+      else if(BET_RX.test(decodeURIComponent(v))){const q=decodeURIComponent((v.match(/[?&]q=([^&]+)/)||[])[1]||"").replace(BET_RX,"").replace(/\b(Betclic|Parions Sport|Winamax|Unibet)\b/gi,"");e[k]=officialSearch(q.replace(/^billetterie\s+/i,""));}}
+    else if(BET_RX.test(v))e[k]="";});
+  if(!e.link&&e.more)e.link=e.more;
+  if(!e.link&&e.cat==="competition")e.link="https://www.google.com/search?q="+encodeURIComponent("inscription "+e.t+NO_BET);}
 function finalize(e){
+  cleanLinks(e);
   if((e.cat==="theatre"||e.cat==="spectacle")&&e.src!=="fever"&&MUSEUM_RX.test(norm(e.t+" "+(e.venue||"")))){e.cat=/visite|lumin|illumin|immersi|aquarium|zoo|catacombes|parc floral/.test(norm(e.t+" "+(e.venue||"")))?"experience":"expo";}
   // enrichissements communs : genres, tailles de festival, types d'expo, sport
   const txt=e.t+" "+(e.w||"")+" "+(e.tags||[]).join(" ")+" "+(e.desc||"");
-  if(!e.genres||!e.genres.length)e.genres=genresOf(txt+" "+(e.lineup||[]).join(" "));
+  if(!e.genres||!e.genres.length)e.genres=["concert","soiree","festival"].includes(e.cat)?genresOf(txt+" "+(e.lineup||[]).join(" ")):[]; // styles de musique : seulement pour la musique (plus rapide, et pas de « rock » trouvé dans le résumé d'une pièce)
   if(e.cat==="festival"){const f=festSize(e);e.size=e.size||f.size;e.sizeGuess=f.guess;if(!e.genres.length)e.genres=f.genres;}
   if(e.cat==="expo"&&!(e.etypes&&e.etypes.length)){e.etypes=typesOf(txt);const m=MUSEUMS.find(x=>norm(e.venue).includes(norm(x[0])));if(m)e.etypes=[...new Set(e.etypes.concat(m[1]))];}
   if(e.cat==="sport"&&!e.sport)e.sport=sportOf(txt);
@@ -1136,9 +1161,8 @@ async function loadParis(){
   const lim=new Date(NOW.getTime()+90*864e5),d2=x=>x.toISOString().slice(0,10);
   const where=`date_end >= date'${d2(NOW)}' AND date_start <= date'${d2(lim)}'`;
   const out=[];
-  for(let page=0;page<6;page++){
-    const j=await getJSON(QFAP+"?limit=100&offset="+(page*100)+"&order_by=date_start&where="+encodeURIComponent(where));const rs=j.results||[];
-    rs.forEach(r=>{const e=qfapNorm(r);if(e)out.push(e)});if(rs.length<100)break;
+  {const pages=await Promise.all([0,1,2,3,4,5].map(page=>getJSON(QFAP+"?limit=100&offset="+(page*100)+"&order_by=date_start&where="+encodeURIComponent(where)).catch(()=>({results:[]}))));
+   pages.forEach(j=>(j.results||[]).forEach(r=>{const e=qfapNorm(r);if(e)out.push(e)}));
   }
   // en plus : ce qui est fait pour les enfants, et les conférences (souvent noyées dans le reste)
   const seen=new Set(out.map(e=>e.id));
@@ -1292,8 +1316,13 @@ async function loadCollector(){
     Object.entries(idx.cities||{}).forEach(([k,v])=>{const p=cityPos(v.name||k);if(!p)return;const d=km(hp,p);if(d<bd){bd=d;best=k;}});if(best)hs=best;}
   COLL_HOME=hs;
   const want=[...new Set([hs,S.nightCity&&citySlug(S.nightCity.city),...((S.cal&&S.cal.trips)||[]).map(t=>citySlug(t.city))].filter(Boolean).concat(["buzz","france","sports","races","artists","festivals-kb","announcements"]))];
-  const files={};
-  for(const s of want){if((!idx.cities||!idx.cities[s])&&s!=="announcements")continue;try{const f=await ghRead("data/"+s+".json");if(f)files[s]=f;}catch(e){}}
+  await collBoot();
+  const files={},old=COLL.files||{},oldIdx=(COLL.index&&COLL.index.cities)||{};
+  // en parallèle, et seulement ce qui a changé depuis la dernière ouverture
+  await Promise.all(want.map(async s=>{if((!idx.cities||!idx.cities[s])&&s!=="announcements")return;
+    const same=s!=="announcements"&&old[s]&&idx.cities[s]&&oldIdx[s]&&idx.cities[s].updated&&idx.cities[s].updated===oldIdx[s].updated;
+    if(same){files[s]=old[s];return;}
+    try{const f=await ghRead("data/"+s+".json");if(f)files[s]=f;else if(old[s])files[s]=old[s];}catch(e){if(old[s])files[s]=old[s];}}));
   COLL={index:idx,files,at:Date.now(),home:hs};saveColl();
   return Object.values(files).reduce((n,f)=>n+(f.events||[]).length,0);
 }
@@ -1321,7 +1350,9 @@ function FKB(){
 // annonces de la boîte de veille FOMO (newsletters, Songkick…) : « Bientôt en vente »
 function veilleEvents(){
   const A=((COLL.files.announcements||{}).announcements)||[];
-  return A.map(a=>{let d=a.d?new Date(a.d):null,approx=false;
+  // une « annonce » dont l'artiste est en fait la salle (newsletter du Bataclan…) n'est pas un concert : on l'ignore
+  const isVenueName=a=>{const n=norm(a.artist||"");return !n||n===norm(a.venue||"")||n===norm(a.from||"")||/^(le |la |l')?(bataclan|olympia|cigale|trabendo|zenith|accor arena|maroquinerie|trianon|elysee montmartre|salle pleyel|philharmonie)$/.test(n);};
+  return A.filter(a=>!isVenueName(a)).map(a=>{let d=a.d?new Date(a.d):null,approx=false;
     if(!d){d=new Date(D(a.at).getTime()+120*864e5);d.setDate(1);approx=true;}
     if(isNaN(d)||(!approx&&d<NOW))return null;const pos=cityPos(a.city)||{};
     if(a.kind==="race"){const dg=discOf(a.artist);return finalize({id:"v"+a.id,src:"veille",cat:"competition",t:a.artist,w:"Ouverture des inscriptions annoncée",venue:a.venue||"",addr:a.city,city:a.city,lat:pos.lat,lon:pos.lon,
@@ -1376,10 +1407,11 @@ async function loadEvents(quiet){
     ["Corrections",loadCuration().then(()=>[])],
     ["Collecteur",loadCollector().then(()=>[]).catch(e=>{STATUS.gh={err:true,msg:e.message};return[];})]
   ];
-  // affichage rapide avec le collecteur et Paris, puis complété quand Ticketmaster a fini (12 mois découpés par mois)
-  if(!quiet&&!EVENTS.length)Promise.allSettled([jobs[0][1],jobs[jobs.length-1][1]]).then(rs=>{if(!LOADING)return;const part=[];rs.forEach(r=>{if(r.status==="fulfilled")part.push(...r.value);});
-    const evs=keepRules(dedupe(part.concat(collectorEvents(),sgEvents(),TRACKED,annEvents())));
-    if(evs.length){EVENTS=evs;LOADING=false;PROF_V++;$("src-txt").textContent="Chargement des 12 prochains mois…";renderAll(true);}});
+  // affichage immédiat avec la collecte gardée dans le téléphone, puis avec la nouvelle collecte, puis complété par le reste
+  const quick=()=>{const evs=keepRules(dedupe(collectorEvents().concat(TRACKED,annEvents())));
+    if(evs.length&&(LOADING||!EVENTS.length)){EVENTS=evs;LOADING=false;PROF_V++;$("src-txt").textContent="Mise à jour…";renderAll(true);}};
+  if(!quiet&&!EVENTS.length){await collBoot();if(Object.keys(COLL.files||{}).length)quick();
+    jobs[jobs.length-1][1].then(()=>{if(LOADING||EVENTS.length<50)quick();});}
   const res=await Promise.allSettled(jobs.map(j=>j[1]));
   const errs=[];let list=[];
   res.forEach((r,i)=>{if(r.status==="fulfilled")list=list.concat(r.value);else errs.push(jobs[i][0]+" : "+r.reason.message);});
@@ -1428,11 +1460,18 @@ const ONLY={soiree:["ra","dice","sg"],festival:["ra","dice","sg","tm","fnac","ve
 let BUZZ_C={n:-1,T:[]};
 function applyBuzz(L){
   const B=(((COLL.files.announcements||{}).buzz)||[]).concat(((COLL.files.buzz||{}).buzz)||[]);
-  if(BUZZ_C.n!==B.length)BUZZ_C={n:B.length,T:B.map(b=>({t:" "+norm(b.subject+" "+b.text).replace(/[^a-z0-9]+/g," ")+" ",from:b.from}))};
+  // index des mots : on ne compare un titre qu'aux newsletters qui contiennent tous ses mots (rapide même avec 15 000 événements)
+  if(BUZZ_C.n!==B.length||!BUZZ_C.W){const T=B.map(b=>({t:" "+norm(b.subject+" "+b.text).replace(/[^a-z0-9]+/g," ")+" ",from:b.from})),W=new Map();
+    T.forEach((b,i)=>{new Set(b.t.split(" ")).forEach(w=>{if(w.length<2)return;let s=W.get(w);if(!s)W.set(w,s=[]);s.push(i);});});
+    BUZZ_C={n:B.length,T,W,memo:new Map()};}
   if(!BUZZ_C.T.length)return L;
   L.forEach(e=>{if(!["spectacle","theatre","concert","expo"].includes(e.cat))return;
     const k=norm(e.t.split(/ [-–|:] | \(/)[0]).replace(/[^a-z0-9]+/g," ").trim();if(k.length<6||GENERIC.has(k))return;
-    const hit=BUZZ_C.T.filter(b=>b.t.includes(" "+k+" "));if(hit.length){e.buzz=hit.length;e.buzzBy=[...new Set(hit.map(b=>b.from))].slice(0,3).join(", ");}});
+    let hit=BUZZ_C.memo.get(k);
+    if(!hit){const ws=k.split(" ").filter(w=>w.length>=2);let cand=null;
+      for(const w of ws){const s=BUZZ_C.W.get(w);if(!s){cand=[];break;}cand=cand?cand.filter(i=>s.includes(i)):s.slice();if(!cand.length)break;}
+      hit=(cand||[]).map(i=>BUZZ_C.T[i]).filter(b=>b.t.includes(" "+k+" "));BUZZ_C.memo.set(k,hit);}
+    if(hit.length){e.buzz=hit.length;e.buzzBy=[...new Set(hit.map(b=>b.from))].slice(0,3).join(", ");}});
   return L;
 }
 function keepRules(L){
@@ -3012,8 +3051,10 @@ function topGenres(n){const g=taste().gen;return Object.entries(g).filter(([k,v]
 function likedIn(cat){return Object.values(S.interest||{}).concat(Object.values(S.liked||{})).filter(x=>x&&x.cat===cat);}
 // candidats : à venir, pas refusés, regroupés par série de dates, notés une fois
 function fyBase(){
+  // plus rapide : on écarte d'abord ce qui est trop loin (sauf festivals et grandes affiches sportives), avant de noter
+  const hp=homePos(),farOk=e=>e.cat==="festival"||e.cat==="sport";
   const L=EVENTS.filter(e=>vertOn(e.cat)&&!(VERTS[e.cat]||{}).noDeck&&!S.disliked[e.id]&&!e.noDate&&(e.approx||D(e.until||e.end||e.d)>NOW)&&!e.soldout
-    &&!(S.liked[e.id]&&S.liked[e.id].likedAt<FEED_T0));
+    &&!(S.liked[e.id]&&S.liked[e.id].likedAt<FEED_T0)&&(farOk(e)||(()=>{const p=eventPos(e);return !p||km(hp,p)<=FY_R;})()));
   const runs=groupRuns(L,e=>e.cat==="sport"||e.cat==="competition"||e.approx||e.market?null:groupKey(e),e=>e.d);
   return runs.map(r=>{const e=r.length>1?mergeRun(r):r[0];const x=Object.assign({e},score(e));
     const it=r.map(y=>(S.interest||{})[y.id]).find(Boolean);if(it&&!it.auto)x.loved=it.likedAt||1;x.k=kmHome(e);return x;});
@@ -3165,9 +3206,11 @@ function wkPlan(){
     if(i==null||i<0)return;put(i,{e,why:"♥ Tu l'as aimé"},wkSlotOf(e,i),true);days[i].items[days[i].items.length-1].liked=1;});
   // 2. les candidats : chaque date de la semaine, notée d'après tes goûts
   const fy=new Set(curatedFeed("all").map(x=>groupKey(x.e)));
-  const C=[];
+  const C=[],wkEnd=new Date(+t0+7*864e5);
   EVENTS.forEach(e=>{
     if(!vertOn(e.cat)||(VERTS[e.cat]||{}).noDeck||S.disliked[e.id]||e.soldout||e.noDate||e.approx||e.tba||e.proj||e.market||S.liked[e.id])return;
+    // d'abord le moins coûteux : la date (cette semaine) — la note de goût ne se calcule que pour ce qui reste
+    {const s0=D(e.d),long0=e.until||(e.end&&D(e.end)-s0>20*36e5),e0=long0?D(e.until||e.end):s0;if(e0<t0||s0>=wkEnd)return;}
     if(typeof isMarketOnly==="function"&&isMarketOnly(e))return;
     const k=kmHome(e);if(k!=null&&k>(e.cat==="festival"||e.cat==="sport"&&e.big?FY_R:30))return;
     const x=score(e);if(x.block||(typeof clash==="function"&&clash(e)))return;
@@ -3206,9 +3249,13 @@ function wkItemHTML(it,day){
     <div class="wk-tx"><small><i class="dot"></i>${esc(VERTS[e.cat].n)} · ${esc(time)}</small><b>${esc(e.t)}</b>
       <span>${esc(e.venue||e.city||"")}${k!=null?" · "+(k<1?Math.round(k*1000)+" m":k.toFixed(k<10?1:0).replace(".",",")+" km"):""}</span>
       ${it.liked?`<em class="wk-pin lk">♥ Tu l'as aimé</em>`:it.pinned?`<em class="wk-pin">🔔 Alerte mise</em>`:it.why?`<em>${esc(it.why)}</em>`:""}</div>
-    <div class="wk-ac">${calBtn(e,"wk-cal")}${it.pinned?"":`<button class="wk-sw" data-wkswap="${esc(e.id)}" aria-label="Retirer de ma semaine">✕</button>`}</div></div>`;}
+    <div class="wk-ac">${calBtn(e,"wk-cal")}<button class="wk-sw" data-wkswap="${esc(e.id)}" aria-label="Retirer de ma semaine">✕</button></div></div>`;}
 function renderWeek(){
-  const feed=$("feed");if(LOADING&&!EVENTS.length){feed.innerHTML=`<div class="empty"><div class="spin"></div>Je prépare ta semaine…</div>`;return;}
+  const feed=$("feed");
+  if(!EVENTS.length&&(LOADING||!LAST_LOAD)){// pendant le chargement : la semaine affichée à la dernière ouverture du jour, tout de suite
+    let c=null;try{c=JSON.parse(localStorage.getItem("fomo2-wk")||"null");}catch(e){}
+    if(c&&c.day===fyDayKey()&&c.html){feed.innerHTML=c.html;if(c.sub)$("fy-sub").textContent=c.sub;requestAnimationFrame(wkDrawPath);return;}
+    feed.innerHTML=`<div class="empty"><div class="spin"></div>Je prépare ta semaine…</div>`;return;}
   const P=wkPlan(),today=wkStart();
   $("fy-sub").textContent=P.n?`${P.n} sortie${P.n>1?"s":""} choisie${P.n>1?"s":""} pour toi cette semaine, à ton rythme. Touche ✕ pour en retirer une, 🔔 pour mettre une alerte.`:"Pas encore assez d'infos pour te composer une semaine.";
   // « Ton week-end » en haut : vendredi soir, samedi, dimanche
@@ -3228,6 +3275,7 @@ function renderWeek(){
     .filter(e=>e&&e.d&&(e.approx||D(e.d)>=end)&&!S.disliked[e.id]).sort((a,b)=>D(a.d)-D(b.d));
   if(later.length)feed.insertAdjacentHTML("beforeend",`<h2 class="wk-h">Tes envies à venir</h2><p class="small" style="margin:-4px 0 4px">Ce que tu as aimé, plus tard dans l'année. Mets une alerte pour ne pas rater la billetterie.</p><div class="wk-later">${later.map(e=>wkItemHTML({e,slot:wkSlotOf(e,0),pinned:true,liked:1,later:1})).join("")}</div>`);
   requestAnimationFrame(wkDrawPath);
+  try{localStorage.setItem("fomo2-wk",JSON.stringify({day:fyDayKey(),html:feed.innerHTML,sub:$("fy-sub").textContent}));}catch(e){}
   S.impr=S.impr||{};S.fyShown=S.fyShown||[];const seen=new Set(S.fyShown);P.days.forEach(d=>d.items.forEach(it=>{if(!it.pinned&&!seen.has(it.e.id)){seen.add(it.e.id);S.fyShown.push(it.e.id);}}));save();
 }
 // le « serpent » : une courbe qui passe d'un jour à l'autre, de gauche à droite
@@ -3239,6 +3287,10 @@ function wkDrawPath(){
   svg.innerHTML=`<defs><linearGradient id="wkg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--hot)"/><stop offset="1" stop-color="var(--v-soiree)"/></linearGradient></defs><path d="${d}" fill="none" stroke="url(#wkg)" stroke-width="5" stroke-linecap="round" stroke-dasharray="1 11" opacity=".55"/>`;}
 addEventListener("resize",()=>{if(VIEW==="foryou"&&S.fyMode!=="sel")wkDrawPath();});
 document.addEventListener("click",ev=>{const b=ev.target.closest("[data-wkswap]");if(!b)return;ev.stopPropagation();
+  // une sortie aimée ou en alerte : la croix retire le ♥ ou l'alerte
+  {const id=b.dataset.wkswap,e=byId(id)||S.liked[id]||(S.interest||{})[id];
+   if(S.liked[id]){toggleCal(id);}
+   if((S.interest||{})[id]&&!S.interest[id].auto){delete S.interest[id];save();PROF_V++;if(e)notify("Retiré de ta semaine",e.t);}}
   if(!S.wk||S.wk.day!==S.fyDay)S.wk={day:S.fyDay,skip:{}};S.wk.skip[b.dataset.wkswap]=1;save();renderForYou();},true);
 
 /* ================= Pour toi ================= */
@@ -4260,7 +4312,7 @@ function renderAll(quiet){
 /* ================= démarrage ================= */
 window.__fomo={get S(){return S},set S(v){S=v},get CFG(){return CFG},get EVENTS(){return EVENTS},set EVENTS(v){EVENTS=v;PROF_V++;},get COLL(){return COLL},set COLL(v){COLL=v},
   score,feedItems,vItems,segOf,taste,collNorm,tmNorm,qfapNorm,dedupe,keepRules,analyzeCal,allAlerts,openings,loadEvents,renderAll,bump(){PROF_V++;},recogNight,recogFest,recogMatch,recogRace,
-  scenSub,fyMorningCheck,parseAsk,runAsk,ask,openVert,openInfo,toggleLike,show,infoPills,annDate,annArtist,scanAnnouncements,veilleEvents,connectDeezer,runOnboarding,
+  scenSub,fyMorningCheck,wkPlan,curatedFeed,collectorEvents,annEvents,IDB,get COLLF(){return COLL},finalize,parseAsk,runAsk,ask,openVert,openInfo,toggleLike,show,infoPills,annDate,annArtist,scanAnnouncements,veilleEvents,connectDeezer,runOnboarding,
   setCal(items){S.cal=analyzeCal(items);S.conn.gcal=1;PROF_V++;save();},setTok(k){TOK[k]={t:"test",exp:Date.now()+1e7};}};
 (async function boot(){
   const qs=new URLSearchParams(location.search),st=qs.get("state")||"";
