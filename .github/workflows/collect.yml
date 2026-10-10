@@ -783,6 +783,9 @@ jobs:
               ("Le Bonbon", "https://www.lebonbon.fr/paris/culture/"),
               ("Télérama", "https://www.telerama.fr/scenes"),
               ("Télérama", "https://www.telerama.fr/sortir"),
+              ("L'Officiel des spectacles", "https://www.offi.fr/theatre/choix-redaction.html"),
+              ("Sortir à Paris", "https://www.sortiraparis.com/scenes/theatre/guides/310444-pieces-theatre-paris"),
+              ("Sortir à Paris", "https://www.sortiraparis.com/scenes/theatre/guides/320306-comedies-theatre-paris"),
               ("L'Officiel des spectacles", "https://www.offi.fr/theatre/programme.html"),
               ("L'Officiel des spectacles", "https://www.offi.fr/humour/programme.html"),
           ]
@@ -834,13 +837,18 @@ jobs:
                       continue
                   per_site[src] = per_site.get(src, 0) + 1
                   title = html.unescape((re.search(r"(?is)<title>(.*?)</title>", page) or [None, ""])[1]).strip()
-                  out.append({"from": src, "at": now, "subject": title[:200], "text": _page_text(page)[:15000], "url": u})
+                  # les sélections de la critique (choix de la rédaction, guides « à voir ») sont gardées en entier : chaque titre compte
+                  cap = 60000 if re.search(r"choix-redaction|/guides/", u) else 15000
+                  out.append({"from": src, "at": now, "subject": title[:200], "text": _page_text(page)[:cap], "url": u})
                   # depuis une page de liste : quelques articles du même site (critiques, sélections)
                   if (src, u) in pages:
                       host = urllib.parse.urlsplit(u).netloc
                       links = []
                       for h in re.findall(r'href="([^"#]+)"', page):
                           v = urllib.parse.urljoin(u, html.unescape(h))
+                          # pas les traductions (Sortir à Paris en anglais, allemand, chinois…) : les mêmes pages, en double
+                          if re.search(r"sortiraparis\.com/(en|de|es|it|zh|ja|ar|pt|nl)/", v):
+                              continue
                           if urllib.parse.urlsplit(v).netloc == host and v not in seen and re.search(r"guide|article|critique|spectacle|theatre|scene|sortir|humour|a-voir|incontournable|selection|\d{4,}", v) and not re.search(r"\.(jpg|png|pdf)$|/tag/|/auteur|/author|login|abonn", v):
                               links.append(v)
                       for v in list(dict.fromkeys(links))[:8]:
