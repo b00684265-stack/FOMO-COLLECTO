@@ -640,6 +640,26 @@ html,body{overscroll-behavior-y:contain}
 .coach-b::before{content:"";position:absolute;left:var(--ax,50%);width:14px;height:14px;background:var(--card);transform:translateX(-50%) rotate(45deg);border-radius:3px}
 .coach-b.up::before{bottom:-6px}.coach-b.down::before{top:-6px}.coach-b.mid::before{display:none}
 .pill.rate{background:var(--warn-soft);color:color-mix(in srgb,var(--warn) 55%,var(--ink));font-weight:800}
+.pill.crit{background:var(--hot-soft);color:var(--hot);font-weight:800}
+
+/* guide d'installation (bêta) */
+.inst{position:fixed;inset:0;z-index:500;background:color-mix(in srgb,var(--paper) 96%,transparent);backdrop-filter:blur(6px);overflow-y:auto;opacity:0;transition:opacity .25s;padding:max(24px,env(safe-area-inset-top)) 18px 28px}
+.inst.on{opacity:1}
+.inst-c{max-width:440px;margin:0 auto;display:flex;flex-direction:column;gap:12px;text-align:center}
+.inst-logo img{border-radius:20px;box-shadow:0 12px 30px rgba(0,0,0,.18)}
+.inst-k{font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--hot)}
+.inst h2{margin:0;font-size:25px;line-height:1.15}
+.inst-p{margin:0;color:var(--ink2);font-size:15px;line-height:1.45}
+.in-steps{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-direction:column;gap:10px;text-align:left}
+.in-steps li{display:grid;grid-template-columns:26px 44px 1fr;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:12px 14px}
+.in-n{width:26px;height:26px;border-radius:50%;background:var(--hot);color:#fff;font-weight:800;font-size:14px;display:grid;place-items:center}
+.in-i{width:44px;height:44px;border-radius:12px;background:var(--sunk);display:grid;place-items:center;color:#0A84FF;font-size:20px;font-weight:800}
+.in-i svg{width:24px;height:24px}
+.in-steps b{display:block;font-size:15px}.in-steps small{display:block;color:var(--ink2);font-size:13px;margin-top:2px;line-height:1.35}
+.in-tip{margin:2px 0 0;font-size:13.5px;color:var(--ink2);background:var(--hot-soft);border-radius:14px;padding:10px 12px;text-align:left}
+.in-warn{margin:0;font-size:14px;color:var(--ink);background:var(--warn-soft);border-radius:14px;padding:10px 12px;text-align:left}
+.inst-go{border:0;border-radius:999px;background:var(--hot);color:#fff;font:inherit;font-weight:800;font-size:16px;padding:15px;cursor:pointer;box-shadow:0 10px 24px color-mix(in srgb,var(--hot) 35%,transparent)}
+.inst-later{border:0;background:none;color:var(--ink3);font:inherit;font-weight:700;font-size:14px;padding:12px;cursor:pointer}
 </style>
 </head>
 <body>
@@ -719,7 +739,7 @@ html,body{overscroll-behavior-y:contain}
     <div class="vhead"><button class="icon-btn back" data-go="back" aria-label="Retour"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button><h1>Réglages</h1></div>
     <p class="sub">Tout reste dans ce navigateur : FOMO n'a pas de serveur et ne stocke rien ailleurs.</p>
     <p class="note" id="file-warn" hidden>Tu as ouvert le fichier depuis ton ordinateur : les liens de musique et Strava ne marchent que depuis l'adresse web de FOMO.</p>
-    <div class="row"><button class="btn ghost sm" id="b-redo">Refaire l'accueil</button><button class="btn ghost sm" id="b-guide">Revoir le guide</button><button class="btn ghost sm" id="b-reload">Recharger les événements</button><button class="btn ghost sm" id="b-reset">Tout réinitialiser</button></div>
+    <div class="row"><button class="btn ghost sm" id="b-redo">Refaire l'accueil</button><button class="btn ghost sm" id="b-guide">Revoir le guide</button><button class="btn ghost sm" id="b-install">Installer sur mon téléphone</button><button class="btn ghost sm" id="b-reload">Recharger les événements</button><button class="btn ghost sm" id="b-reset">Tout réinitialiser</button></div>
     <div id="conns" class="view" style="gap:8px"></div>
   </section>
 </div>
@@ -1766,6 +1786,40 @@ function applyBuzz(L){
     if(hit.length){e.buzz=hit.length;e.buzzBy=[...new Set(hit.map(b=>b.from))].slice(0,3).join(", ");}});
   return L;
 }
+/* --- ❤️ Coups de cœur théâtre : les pièces recommandées par la critique ---
+   Sources : le « Choix de la rédaction » de L'Officiel des spectacles, les sélections et critiques de Sortir à Paris,
+   et les newsletters de critique reçues par la boîte de veille (Télérama Sortir…). La note du public (BilletRéduc) départage. */
+const CRIT_SRC=[
+  {rx:/offi\.fr\/.*choix-redaction/,n:"L'Officiel des spectacles",w:2},
+  {rx:/sortiraparis\.com\/(?!en\/|de\/|es\/|it\/|zh\/|ja\/|ar\/).*(critique|notre-avis)/,n:"Sortir à Paris",w:1.5},
+  {rx:/sortiraparis\.com\/(?!en\/|de\/|es\/|it\/|zh\/|ja\/|ar\/).*\/guides\//,n:"Sortir à Paris",w:1}];
+const CRIT_MAIL=[{rx:/telerama/i,n:"Télérama",w:2},{rx:/officiel des spectacles|offi\b/i,n:"L'Officiel des spectacles",w:2},{rx:/sortir ?a ?paris|sortiraparis/i,n:"Sortir à Paris",w:1},{rx:/figaro|parisien|inrocks|liberation|le monde|les echos|theatrorama|sceneweb/i,n:null,w:1.5}];
+let CRIT_C={n:-1,T:[]};
+function applyCrit(L){
+  const B=((COLL.files.buzz||{}).buzz)||[],A=(((COLL.files.announcements||{}).buzz)||[]);
+  if(CRIT_C.n!==B.length+A.length*1000){const T=[];
+    B.forEach(b=>{const c=CRIT_SRC.find(x=>x.rx.test(b.url||""));if(c)T.push({n:c.n,w:c.w,t:" "+norm(b.subject+" "+b.text).replace(/[^a-z0-9]+/g," ")+" "});});
+    A.forEach(b=>{const c=CRIT_MAIL.find(x=>x.rx.test((b.from||"")+" "+(b.subject||"")));if(c)T.push({n:c.n||b.from,w:c.w,t:" "+norm(b.subject+" "+b.text).replace(/[^a-z0-9]+/g," ")+" "});});
+    CRIT_C={n:B.length+A.length*1000,T,memo:new Map()};}
+  if(!CRIT_C.T.length)return;
+  L.forEach(e=>{if(e.cat!=="theatre")return;
+    // le titre, sans la salle ni le sous-titre ; « Artiste : Spectacle » se cherche aussi par le nom du spectacle
+    const main=e.t.split(/ [-–|] | \(/)[0],keys=[main].concat(main.includes(" : ")?[main.split(" : ").slice(1).join(" ")]:[])
+      .map(x=>norm(x).replace(/[^a-z0-9]+/g," ").trim()).filter(x=>x.length>=5&&!GENERIC.has(x));
+    if(!keys.length)return;
+    // un titre court (« Le Secret », « Le Père ») se confond facilement : il faut aussi que la salle soit citée
+    const vw=norm(e.venue||"").replace(/[^a-z0-9]+/g," ").split(" ").filter(w=>w.length>=4&&!/^(theatre|salle|scene|espace|comedie|petit|grand|studio|paris)$/.test(w));
+    // la salle doit être citée à côté du titre (dans le même paragraphe)
+    const ok=(b,x)=>{let i=b.t.indexOf(" "+x+" ");if(i<0)return false;if(x.length>=12||x.split(" ").length>=3)return true;
+      while(i>=0){const win=b.t.slice(Math.max(0,i-250),i+350);if(vw.some(w=>win.includes(" "+w+" ")))return true;i=b.t.indexOf(" "+x+" ",i+1);}return false;};
+    const k=keys.join("|")+"@"+vw.join(" ");
+    let hit=CRIT_C.memo.get(k);
+    if(!hit){const by={};CRIT_C.T.forEach(b=>{if(keys.some(x=>ok(b,x)))by[b.n]=Math.max(by[b.n]||0,b.w);});hit=by;CRIT_C.memo.set(k,hit);}
+    const ns=Object.keys(hit);if(!ns.length)return;
+    e.crit=ns;e.critW=ns.reduce((a,n)=>a+hit[n],0);});
+}
+// dans « Coups de cœur » : recommandée par la critique, et pas mal notée par le public
+const isCoupCoeur=e=>e.cat==="theatre"&&(e.critW||0)>=1&&!(e.rating&&e.rating<7.5)&&((e.critW||0)>=2||(e.rating||0)>=8.5||(e.crit||[]).length>=2);
 let MK_EVENTS=[];
 // un même match vu dans la collecte (calendrier) et chez Ticketmaster : une seule fiche, avec la date de mise en vente de Ticketmaster
 const TEAM_ALIAS={"psg":"paris saint germain","om":"marseille","ol":"lyon","losc":"lille","asse":"saint etienne","ogc":"nice"};
@@ -1799,7 +1853,7 @@ function concertLinks(L){
     if(vt){e.alt=(e.alt||[]).concat([{src:e.src,link:e.link}]);e.link=vt[1];e.tixVia="venue";}});
 }
 function keepRules(L){
-  applyBuzz(L);concertLinks(L);const mkOut=[];
+  applyBuzz(L);applyCrit(L);concertLinks(L);const mkOut=[];
   const R=L.filter(e=>{
     if(ONLY[e.cat]&&!ONLY[e.cat].includes(e.src))return false;
     const ck=curKey(e);if((CURL.hidden||{})[ck])return false;if((CURL.soldout||{})[ck])e.soldout=true;
@@ -2054,6 +2108,8 @@ function infoPills(e){
   if(e.pop>=30)p.push({c:"",t:fmtN(e.pop)+" intéressés"});
   if(e.runners>=500)p.push({c:"",t:"≈ "+fmtN(e.runners)+" coureurs"});
   if(e.p===0)p.push({c:"open",t:"Gratuit"});else if(e.p!=null)p.push({c:"",t:"dès "+e.p+" €"});
+  // recommandée par la critique (Coups de cœur)
+  if((e.crit||[]).length)p.unshift({c:"crit",t:"❤️ "+e.crit.slice(0,2).join(" · ")});
   // la note des spectateurs (BilletRéduc…) passe en premier pour le théâtre et les spectacles
   if(e.rating>=7){const rp={c:"rate",t:"★ "+String(e.rating).replace(".",",")+"/10"+(e.ratingCount>=5?" · "+fmtN(e.ratingCount)+" avis":"")};
     if(e.cat==="theatre"||e.cat==="spectacle")p.unshift(rp);else p.push(rp);}
@@ -2062,7 +2118,7 @@ function infoPills(e){
 }
 const GRP={};
 const byId=id=>GRP[id]||EVENTS.find(x=>x.id===id)||S.liked[id]||(S.interest||{})[id]||(typeof PROJ!=="undefined"?PROJ[id]:null);
-const SNAP=["id","src","cat","kind","t","w","d","end","until","venue","addr","city","country","lat","lon","p","free","img","link","more","lineup","genres","tags","soldout","waitlist","lottery","saleAt","presaleAt","presaleName","pop","cap","size","sizeGuess","sport","comp","level","home","away","disc","kms","dplus","etypes","ctypes","xtypes","anytime","approx","tracked","ann","tba","ltype","trip","rating","ratingCount","status","big","races","picked"];
+const SNAP=["id","src","cat","kind","t","w","d","end","until","venue","addr","city","country","lat","lon","p","free","img","link","more","lineup","genres","tags","soldout","waitlist","lottery","saleAt","presaleAt","presaleName","pop","cap","size","sizeGuess","sport","comp","level","home","away","disc","kms","dplus","etypes","ctypes","xtypes","anytime","approx","tracked","ann","tba","ltype","trip","rating","ratingCount","crit","critW","status","big","races","picked"];
 const snapOf=e=>{const o={};SNAP.forEach(k=>{if(e[k]!=null)o[k]=e[k];});o.likedAt=Date.now();return o;};
 // un seul geste dans toute l'app : ♥ (ajoute à l'agenda, alertes billetterie prévues) ou le retirer
 // « Pourquoi pas ! » : FOMO apprend tes goûts (ça ne va plus dans l'agenda)
@@ -2230,6 +2286,7 @@ function openInfo(id){
   if(e.cat==="competition"&&!(e.races||[]).length&&(e.kms||[]).length)facts.push(["Distances",e.kms.map(k=>String(k).replace(".",",")+" km").join(" · ")+((e.dplus||[])[0]?" · jusqu'à "+fmtN(e.dplus[0])+" m D+":"")]);
   if(e.runners)facts.push(["Participants","Environ "+fmtN(e.runners)]);
   if(e.cat==="competition"&&(e.races||[]).length)facts.push(["Épreuves",e.races.slice(0,6).map(r=>[r.name,r.km?r.km+" km":"",r.dplus?r.dplus+" m D+":""].filter(Boolean).join(" ")).join(" / ")]);
+  if((e.crit||[]).length)facts.push(["Critique","Recommandée par "+e.crit.join(", ")]);
   if(e.rating)facts.push(["Note du public","★ "+String(e.rating).replace(".",",")+"/10"+(e.ratingCount?" ("+fmtN(e.ratingCount)+" avis de spectateurs)":"")]);
   if(e.p===0)facts.push(["Prix","Gratuit"]);else if(e.p!=null)facts.push(["Prix","À partir de "+e.p+" €"]);
   if(e.presaleAt)facts.push(["Prévente",dlong(D(e.presaleAt))+" à "+hm(D(e.presaleAt))]);
@@ -2238,7 +2295,7 @@ function openInfo(id){
   if(e.pop)facts.push(["Intéressés",fmtN(e.pop)+(e.cap?", lieu de "+fmtN(e.cap)+" places":"")]);
   if((e.genres||[]).length)facts.push(["Style",e.genres.map(g=>GENRES[g]?GENRES[g].n:g).join(", ")]);
   facts.push(["Source",SRC_LABEL[e.src]||e.src]);
-  const pills=infoPills(e).filter(p=>p.c==="hot"||p.c==="soon"||p.c==="rate");
+  const pills=infoPills(e).filter(p=>p.c==="hot"||p.c==="soon"||p.c==="rate"||p.c==="crit");
   const al=alertsFor(snapOf(e));
   openSheet(`<div class="hero v-${e.cat}" style="${imgStyle(e)}"></div><div class="in v-${e.cat}">
     <div class="row"><span class="pill" style="background:var(--vc);color:${e.cat==="festival"?"#2A1A00":"#fff"}">${esc(VERTS[e.cat].n)}</span>${x.ok?`<span class="pill hot">${x.pct} % pour toi</span>`:""}${pills.map(p=>`<span class="pill ${p.c}">${esc(p.t)}</span>`).join("")}</div>
@@ -2295,7 +2352,7 @@ const VCONF={
   festival:{segs:[["soon","⏳|Bientôt en vente"],["now","🎟️|En vente"]],filters:["date","genre","size"],radius:0},
   sport:{segs:[["soon","⏳|Bientôt en vente"],["now","🏟️|Toutes les affiches"]],filters:["date","sport"],radius:120},
   competition:{segs:[["hype","⭐|Les plus attendus"],["soon","⏳|À venir"],["now","✅|Inscriptions ouvertes"],["all","📅|Toutes les courses"]],filters:["date","disc","dist","dplus"],radius:100},
-  theatre:{segs:[["soon","⏳|Bientôt en vente"],["now","🎟️|En vente"]],filters:["date","tgenre","fav"],radius:30},
+  theatre:{segs:[["now","🎟️|En vente"],["fav","❤️|Coups de cœur"],["soon","⏳|Bientôt en vente"]],filters:["date","tgenre"],radius:30},
   expo:{segs:null,filters:["last","date","etype","free"],radius:30,near:true},
   spectacle:{segs:[["hype","⭐|Les plus attendus"],["now","🎟️|En vente"],["soon","⏳|Bientôt en vente"]],filters:["date","stype"],radius:30},
   experience:{segs:null,filters:["date","xtype","free"],radius:20},
@@ -2306,7 +2363,8 @@ const SEG_HELP={concert:{soon:"Annoncés, billetterie pas encore ouverte. Avec �
   festival:{soon:"Billetterie pas encore ouverte, annonces reçues par FOMO et éditions probables. Avec « Mettre une alerte », FOMO te prévient."},
   competition:{soon:"Inscriptions pas encore ouvertes. Avec « Mettre une alerte », FOMO te prévient."},
   spectacle:{soon:"Billetterie pas encore ouverte. Avec « Mettre une alerte », FOMO te prévient."},
-  theatre:{soon:"Billetterie pas encore ouverte. Avec « Mettre une alerte », FOMO te prévient."}};
+  theatre:{soon:"Billetterie pas encore ouverte. Avec « Mettre une alerte », FOMO te prévient.",
+    fav:"Seulement les pièces recommandées par la critique (choix de la rédaction de L'Officiel des spectacles, critiques et sélections de Sortir à Paris, newsletters de Télérama…), et bien notées par le public."}};
 const RADII=[1,2,5,10];
 // grandes villes du menu de lieu (le même partout)
 const BIG_CITIES=["Paris","Lyon","Marseille","Toulouse","Bordeaux","Lille","Nantes","Nice","Montpellier","Strasbourg","Rennes","Grenoble","Rouen","Tours","Dijon","Angers","Reims","Metz","Nancy","Clermont-Ferrand","Saint-Étienne","Toulon","Le Havre","Brest","Caen","Orléans","Perpignan","Avignon","Annecy","Biarritz","La Rochelle"];
@@ -2445,6 +2503,7 @@ function mergeRun(A){
       soldout:A.every(a=>a.soldout),p:A.reduce((m,a)=>a.p!=null&&(m==null||a.p<m)?a.p:m,null)});
     // la note du public : celle qui a le plus d'avis parmi les dates
     const rt=A.filter(a=>a.rating).sort((a,b)=>(b.ratingCount||0)-(a.ratingCount||0))[0];if(rt){g.rating=rt.rating;g.ratingCount=rt.ratingCount;}
+    const cr=A.filter(a=>a.crit).sort((a,b)=>(b.critW||0)-(a.critW||0))[0];if(cr){g.crit=cr.crit;g.critW=cr.critW;}
     GRP[g.id]=g;return g;
 }
 function groupRuns(L,keyOf,dateOf){
@@ -2485,6 +2544,7 @@ function vItems(cat,seg){
   // ce que tu as aimé ou mis en alerte n'est plus proposé ici : il est dans Pour toi et Alertes
   L=L.filter(e=>!S.liked[e.id]&&!S.disliked[e.id]&&!((S.interest||{})[e.id]&&!(S.interest[e.id]).auto));
   if(seg==="hype")L=L.filter(hypeOf);
+  else if(seg==="fav")L=L.filter(isCoupCoeur);
   else if(seg==="all"){}
   else if(seg&&conf.segs)L=L.filter(e=>segOf(e)===seg);
   L=L.filter(e=>inDate(e,f));
@@ -2528,6 +2588,8 @@ function vItems(cat,seg){
   L.forEach(e=>{e._open=nextOpen(e);});
   const when=e=>e.approx?+new Date(D(e.d).getFullYear(),D(e.d).getMonth(),1)+1:ongoing(e)?(cat==="expo"?+D(e.until||e.end)-1e13:+NOW-1):+D(e.d);
   L.sort((a,b)=>(!!b._open)-(!!a._open)||(a._open&&b._open?a._open-b._open:0)||when(a)-when(b)||(a._k==null?999:a._k)-(b._k==null?999:b._k));
+  // coups de cœur : d'abord ce que la critique recommande le plus, puis la note du public
+  if(seg==="fav"){L.forEach(e=>{e._open=null;});L.sort((a,b)=>((b.critW||0)*2+(b.rating||7))-((a.critW||0)*2+(a.rating||7))||when(a)-when(b));return L;}
   if(seg==="hype"){L.forEach(e=>{e._open=null;e._hyLab=hypeLab(e);});L.sort((a,b)=>hypeRank(a)-hypeRank(b)||when(a)-when(b));}
   return L;
 }
@@ -2718,8 +2780,8 @@ function renderVList(){
     if(dd<1)return"🔔 "+what+" aujourd'hui";if(dd<2)return"🔔 "+what+" demain";if(dd<7)return"🔔 "+what+" cette semaine";
     return"🔔 "+what+" en "+MOL[o.getMonth()]+(o.getFullYear()!==NOW.getFullYear()?" "+o.getFullYear():"");};
   let openDone=false;
-  const hyMode=seg==="hype"&&!f.venue;
-  L.slice(0,VPAGE).forEach(e=>{let lab=hyMode?e._hyLab:lastMode?(()=>{const n=Math.ceil((D(e.until||e.end)-NOW)/864e5);return n<=1?"Dernier jour":n<=7?"Se termine cette semaine":"Se termine dans moins de 15 jours";})():e._open?openLab(e._open):CUR==="expo"?monthBucket(e)[1]:dayBucket(e)[1];
+  const hyMode=seg==="hype"&&!f.venue,favMode=seg==="fav"&&!f.venue;
+  L.slice(0,VPAGE).forEach(e=>{let lab=favMode?((e.crit||[]).length>=2||(e.critW||0)>=3?"Saluées par plusieurs critiques":"Recommandées par la critique"):hyMode?e._hyLab:lastMode?(()=>{const n=Math.ceil((D(e.until||e.end)-NOW)/864e5);return n<=1?"Dernier jour":n<=7?"Se termine cette semaine":"Se termine dans moins de 15 jours";})():e._open?openLab(e._open):CUR==="expo"?monthBucket(e)[1]:dayBucket(e)[1];
     if(!e._open&&!lastMode&&L[0]&&L[0]._open&&!openDone){openDone=true;h+=`<div class="mhead sep">Date d'ouverture pas encore connue</div>`;last="";}
     if(lab!==last){h+=`<div class="mhead">${esc(lab)}</div>`;last=lab;}
     h+=itemHTML(e,{pills:2,dist:e._k});});
@@ -4056,7 +4118,7 @@ const COACH={
     {a:"#ask-in",k:"Demande-moi",h:"Écris ou parle",p:"Tape ici, ou touche le micro pour dicter. Les pastilles Quoi, Quand, Budget et Où t'aident à préciser ta demande."}]};
 let COACH_ON=null;
 function coachMaybe(tab){if(!S.onboarded||!COACH[tab]||(S.coach||{})[tab]||COACH_ON)return;
-  if(!$("ob").hidden)return;setTimeout(()=>{if(VIEW===tab||(tab==="discover"&&VIEW==="discover"))coachRun(tab,0);},500);}
+  if(!$("ob").hidden)return;const ins=$("inst");if(ins&&!ins.hidden)return;setTimeout(()=>{if(VIEW===tab||(tab==="discover"&&VIEW==="discover"))coachRun(tab,0);},500);}
 let COACH_Y=0;
 function coachEnd(){const tab=COACH_ON&&COACH_ON.tab;COACH_ON=null;const c=$("coach");if(c)c.remove();window.scrollTo({top:COACH_Y});if(tab){S.coach=S.coach||{};S.coach[tab]=1;save();}}
 function coachRun(tab,i){
@@ -4081,6 +4143,49 @@ function coachRun(tab,i){
 }
 addEventListener("resize",()=>{if(COACH_ON)coachRun(COACH_ON.tab,COACH_ON.i);});
 document.addEventListener("keydown",ev=>{if(ev.key==="Escape"&&COACH_ON)coachEnd();});
+
+/* ================= guide d'installation : mettre FOMO sur l'écran d'accueil du téléphone ================= */
+let INSTALL_EVT=null;
+addEventListener("beforeinstallprompt",ev=>{ev.preventDefault();INSTALL_EVT=ev;const b=$("inst-go");if(b)b.hidden=false;});
+addEventListener("appinstalled",()=>{S.installed=1;save();instClose();notify("FOMO est installée","Retrouve-la sur ton écran d'accueil.");});
+const isStandalone=()=>!!(navigator.standalone||(window.matchMedia&&matchMedia("(display-mode: standalone)").matches));
+function instPlatform(){const ua=navigator.userAgent||"";
+  if(/Instagram|FBAN|FBAV|FB_IAB|Snapchat|LinkedInApp|Line\/|TikTok|musical_ly|Twitter/i.test(ua))return"inapp";
+  if(/iPhone|iPad|iPod/i.test(ua)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1))return/CriOS|FxiOS|EdgiOS/.test(ua)?"ios-other":"ios";
+  if(/Android/i.test(ua))return/SamsungBrowser/.test(ua)?"samsung":"android";
+  return"desktop";}
+function needsInstallGuide(){if(isStandalone()||S.installed)return false;const p=instPlatform();if(p==="desktop")return false;
+  // une fois par jour au plus, tant que l'app n'est pas installée
+  return!S.instSeen||Date.now()-S.instSeen>20*36e5;}
+const I_SHARE='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="M8 7l4-4 4 4"/><path d="M6 11H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2h-1"/></svg>';
+const I_PLUS='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M12 8v8M8 12h8"/></svg>';
+const I_DOTS='<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>';
+function instSteps(p){
+  const st=(n,ic,t,s)=>`<li><span class="in-n">${n}</span><span class="in-i">${ic}</span><span><b>${t}</b>${s?`<small>${s}</small>`:""}</span></li>`;
+  if(p==="inapp")return`<p class="in-warn">Tu as ouvert le lien depuis une appli (Instagram, Messenger…). Ouvre-le d'abord dans ton navigateur.</p><ol class="in-steps">
+    ${st(1,I_DOTS,"Touche les « ⋯ » ou « ⋮ » de la page","En haut ou en bas de l'écran")}${st(2,"🧭","Choisis « Ouvrir dans le navigateur »","Safari sur iPhone, Chrome sur Android")}${st(3,"↻","Puis suis ce guide à nouveau","Il réapparaîtra tout seul")}</ol>`;
+  if(p==="ios"||p==="ios-other")return`<ol class="in-steps">
+    ${st(1,I_SHARE,"Touche le bouton Partager",p==="ios"?"En bas de Safari (ou en haut à droite sur iPad). Si tu ne le vois pas, touche d'abord « ⋯ » à côté de l'adresse.":"En haut à droite, à côté de l'adresse")}
+    ${st(2,I_PLUS,"Choisis « Sur l'écran d'accueil »","Fais défiler la liste vers le bas si besoin")}
+    ${st(3,"✓","Touche « Ajouter »","FOMO apparaît sur ton écran d'accueil comme une vraie app")}</ol>
+    <p class="in-tip">Ensuite, ouvre FOMO depuis son icône : c'est là que tu réponds aux questions de départ et que tu reçois les alertes.</p>`;
+  return`<ol class="in-steps">
+    ${st(1,I_DOTS,p==="samsung"?"Touche le menu ☰ en bas à droite":"Touche le menu ⋮ en haut à droite","")}
+    ${st(2,I_PLUS,"Choisis « Installer l'application »","ou « Ajouter à l'écran d'accueil »")}
+    ${st(3,"✓","Confirme avec « Installer »","FOMO apparaît avec tes autres apps")}</ol>`;}
+function instOpen(force){
+  if(!force&&!needsInstallGuide())return false;const p=instPlatform();S.instSeen=Date.now();save();
+  let o=$("inst");if(!o){o=document.createElement("div");o.id="inst";o.className="inst";o.setAttribute("role","dialog");o.setAttribute("aria-modal","true");document.body.appendChild(o);
+    o.addEventListener("click",async ev=>{if(ev.target.closest("#inst-later")){instClose();return;}
+      if(ev.target.closest("#inst-go")&&INSTALL_EVT){INSTALL_EVT.prompt();try{const r=await INSTALL_EVT.userChoice;if(r&&r.outcome==="accepted"){S.installed=1;save();instClose();}}catch(e){}INSTALL_EVT=null;}});}
+  o.innerHTML=`<div class="inst-c"><div class="inst-logo"><img src="apple-touch-icon.png" alt="" width="72" height="72"></div>
+    <div class="inst-k">Version bêta</div><h2>Installe FOMO sur ton téléphone</h2>
+    <p class="inst-p">FOMO est une appli web : pas besoin de l'App Store ni du Play Store. En 3 gestes, elle s'installe sur ton écran d'accueil, s'ouvre en plein écran et peut t'envoyer les alertes billetterie.</p>
+    ${p==="android"||p==="samsung"?`<button class="inst-go" id="inst-go"${INSTALL_EVT?"":" hidden"}>Installer FOMO en 1 geste</button>`:""}
+    ${instSteps(p)}
+    <button class="inst-later" id="inst-later">Continuer dans le navigateur</button></div>`;
+  o.hidden=false;requestAnimationFrame(()=>o.classList.add("on"));return true;}
+function instClose(){const o=$("inst");if(!o)return;o.classList.remove("on");setTimeout(()=>{o.hidden=true;},250);}
 
 /* ================= Demande-moi : compréhension fine de la demande, 3 propositions fiables au maximum ================= */
 const ASK_EX=["Une soirée techno ce samedi à Paris","Un concert de rap pas cher la semaine prochaine","Un festival house à taille humaine en août 2027",
@@ -4764,6 +4869,7 @@ document.addEventListener("click",async ev=>{
 function renderProfile(){renderConns();}
 $("b-redo").onclick=()=>{runOnboarding(0);};
 $("b-guide").onclick=()=>{S.coach={};save();show("foryou");};
+$("b-install").onclick=()=>instOpen(true);
 $("b-reload").onclick=()=>{loadEvents();show("discover");};
 let armed=false;
 $("b-reset").onclick=function(){if(!armed){armed=true;this.textContent="Confirmer : tout effacer";setTimeout(()=>{armed=false;this.textContent="Tout réinitialiser"},3000);return;}
@@ -4872,6 +4978,8 @@ document.addEventListener("visibilitychange",()=>{if(document.visibilityState===
   show(S.onboarded?"foryou":"discover");
   if(S.stravaK){startStravaWatch();checkStrava();}
   if(!S.onboarded){OB_FB=back?esc(back):"";runOnboarding(S.obStep||0);}
+  // ouvert depuis le lien (pas encore installée) : d'abord le guide pour l'ajouter à l'écran d'accueil
+  if(!back)instOpen();
   else if(back)show("settings");
   await loadEvents();
   loadMarkets().then(()=>{if(VIEW==="discover")renderBubbles();}).catch(()=>{});
