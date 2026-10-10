@@ -393,7 +393,6 @@ details.more{background:var(--card);border:1px solid var(--line);border-radius:v
 details.more summary{cursor:pointer;font-weight:650;font-size:14.5px}
 .set-card{background:var(--card);border-radius:var(--r-md);padding:14px;display:flex;flex-direction:column;gap:10px}
 .set-card h3{margin:0;font-size:17px}
-.strava-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;border:0;border-radius:999px;background:#FC4C02;color:#fff;font:inherit;font-weight:750;font-size:16px;padding:13px 16px;cursor:pointer}
 .linkbtn{border:0;background:none;color:var(--ink2);text-decoration:underline;font:inherit;cursor:pointer;padding:0}
 .mhead.sep{color:var(--ink);border-top:1px solid var(--line);padding-top:14px;margin-top:6px}
 .mkmap{position:relative;height:min(56vh,440px);border-radius:var(--r-md);overflow:hidden;background:#E8ECE6;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab}
@@ -738,7 +737,7 @@ html,body{overscroll-behavior-y:contain}
   <section class="view" id="v-settings" hidden>
     <div class="vhead"><button class="icon-btn back" data-go="back" aria-label="Retour"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button><h1>Réglages</h1></div>
     <p class="sub">Tout reste dans ce navigateur : FOMO n'a pas de serveur et ne stocke rien ailleurs.</p>
-    <p class="note" id="file-warn" hidden>Tu as ouvert le fichier depuis ton ordinateur : les liens de musique et Strava ne marchent que depuis l'adresse web de FOMO.</p>
+    <p class="note" id="file-warn" hidden>Tu as ouvert le fichier depuis ton ordinateur : les liens de musique ne marchent que depuis l'adresse web de FOMO.</p>
     <div class="row"><button class="btn ghost sm" id="b-redo">Refaire l'accueil</button><button class="btn ghost sm" id="b-guide">Revoir le guide</button><button class="btn ghost sm" id="b-install">Installer sur mon téléphone</button><button class="btn ghost sm" id="b-reload">Recharger les événements</button><button class="btn ghost sm" id="b-reset">Tout réinitialiser</button></div>
     <div id="conns" class="view" style="gap:8px"></div>
   </section>
@@ -1226,12 +1225,12 @@ function parsePrice(s){const t=stripHtml(s);const m=[...t.matchAll(/(\d+(?:[.,]\
 
 /* ================= état ================= */
 const CFG_KEY="fomo2-cfg",ST_KEY="fomo2-state",COLL_KEY="fomo2-coll";
-function freshCfg(){return{gClientId:"",tmKey:"",scId:"",scSecret:"",spId:"",ghRepo:"",ghToken:"",bitId:"",stravaId:"",stravaSecret:""}}
+function freshCfg(){return{gClientId:"",tmKey:"",scId:"",scSecret:"",spId:"",ghRepo:"",ghToken:"",bitId:""}}
 function fresh(){return{name:"",onboarded:false,qdone:false,home:null,radius:15,
   w:{},gw:{},qg:{},aw:{},tw:{},teamw:{},sportw:{},levelw:{},expow:{},vw:{},
   freq:{},never:{},fest:{size:{},zone:"france"},race:{disc:{},dist:{},dplus:{},bike:{}},exfree:0,
   qa:[],rel:{},relFrom:{},seen:{},liked:{},disliked:{},swipes:0,vswipes:{},
-  prof:{sp:null,dz:null,yt:null,sc:null,mail:null,strava:null},cal:null,conn:{},notif:false,
+  prof:{sp:null,dz:null,yt:null,sc:null,mail:null},cal:null,conn:{},notif:false,
   dv:"soiree",df:{},ghSynced:"",obStep:0,nightCity:null,vtab:{},vf:{},fyF:"all",agF:"all",asks:[],impr:{}}}
 const load=(k,f)=>{try{const r=localStorage.getItem(k);if(r)return Object.assign(f(),JSON.parse(r));}catch(e){}return f();};
 let CFG=load(CFG_KEY,freshCfg),S=load(ST_KEY,fresh);
@@ -1998,7 +1997,6 @@ function raceFit(e){
   kms.forEach((k,i)=>{let f=0;const isTrail=(e.disc||[]).includes("trail");
     const rg=isTrail?R.trailKm:R.roadKm;if(rg){f+=k>=rg[0]&&k<=rg[1]?1:-.5;}
     if(isTrail&&R.dplus&&dp[i]!=null)f+=dp[i]>=R.dplus[0]&&dp[i]<=R.dplus[1]?.6:-.3;
-    if(S.prof.strava&&S.prof.strava.maxRunKm&&!isTrail&&k<=S.prof.strava.maxRunKm*1.6)f+=.3;
     best=Math.max(best,f);});
   return best;
 }
@@ -3028,10 +3026,7 @@ function bindArtistPicker(id,after){
 }
 function sportPickerHTML(id){
   const R=S.race||{},d=R.disc||{},sw=S.sportw||{};
-  const sv=S.prof.strava;
   return`<div class="picker" id="${id}">
-    ${sv?`<div class="fb">✓ Strava : ${sv.n} activités lues${sv.maxRunKm?", sortie la plus longue "+sv.maxRunKm+" km":""}. <button class="linkbtn" data-ps-st="off">Retirer</button></div>`
-      :`<button class="strava-btn" data-ps-st="on"><span aria-hidden="true">▲</span> Se connecter avec Strava</button><div class="small" data-ps-msg>${S.stravaK?"En attente de Strava… Autorise FOMO puis reviens ici.":typeof STATUS!=="undefined"&&STATUS.strava&&STATUS.strava.err?esc(STATUS.strava.msg):""}</div>`}
     <div class="lab">Tu pratiques</div>
     <div class="opts">${PLAY_D.map(([k,n])=>`<button class="chip" data-ps-d="${k}" aria-pressed="${(d[k]||0)>0}">${n}</button>`).join("")}<button class="chip" data-ps-d="none" aria-pressed="${!!S.noPlay}">Aucun</button></div>
     <div class="lab">Tes distances</div>
@@ -3049,10 +3044,6 @@ function bindSportPicker(id){
     if(k==="none"){S.noPlay=!S.noPlay;if(S.noPlay){R.disc={};S.vw.competition=-1.5;}else S.vw.competition=0;}
     else{S.noPlay=false;if((R.disc[k]||0)>0)delete R.disc[k];else{R.disc[k]=2;S.vw.competition=Math.max(S.vw.competition||0,1.5);}}
     PROF_V++;save();box.outerHTML=sportPickerHTML(id);bindSportPicker(id);});
-  box.querySelectorAll("[data-ps-st]").forEach(b=>b.onclick=async()=>{
-    if(b.dataset.psSt==="off"){S.prof.strava=null;delete S.conn.strava;PROF_V++;save();box.outerHTML=sportPickerHTML(id);bindSportPicker(id);return;}
-    const m=box.querySelector("[data-ps-msg]");m.textContent="Ouverture de Strava… Autorise FOMO puis reviens ici.";
-    try{if(!$("ob").hidden){obSteps();S.obStep=OB.indexOf("q:competition");save();}await startStrava();}catch(e){m.textContent=e.message;}});
   box.querySelectorAll("[data-ps-k]").forEach(b=>b.onclick=()=>{const k=b.dataset.psK;R.kz=R.kz||{};if(R.kz[k])delete R.kz[k];else R.kz[k]=1;applyKz(R);PROF_V++;save();b.setAttribute("aria-pressed",!!R.kz[k]);});
   box.querySelectorAll("[data-ps-s]").forEach(b=>b.onclick=()=>{const k=b.dataset.psS;S.sportw=S.sportw||{};if((S.sportw[k]||0)>0)delete S.sportw[k];else{S.sportw[k]=1.2;S.vw.sport=Math.max(S.vw.sport||0,1);}PROF_V++;save();b.setAttribute("aria-pressed",(S.sportw[k]||0)>0);});
 }
@@ -3100,12 +3091,8 @@ async function dreamArtist(a){
     :`<b>${esc(name)}</b> : pas de date annoncée en France pour l'instant. Je te préviens dès qu'il en annonce une.`;
 }
 function compHTML(){
-  const R=S.race||{},d=R.disc||{},on=k=>(d[k]||0)>0,sv=S.prof.strava;
-  let h=`<div class="why-box"><b>Connecte ton Strava</b><p>Avec tes sorties (course, vélo, natation), je repère les courses de ta distance et de ton niveau. Je lis seulement un résumé, une seule fois, puis je rends l'accès à Strava.</p></div>`;
-  h+=sv?`<div class="fb">✓ Strava : ${sv.n} activités lues${sv.maxRunKm?", sortie la plus longue "+sv.maxRunKm+" km":""}.</div>`
-       :`<button class="strava-btn" id="ob-st"><span aria-hidden="true">▲</span> Se connecter avec Strava</button><div class="small" id="ob-st-m">${S.stravaK?"En attente de Strava… Autorise FOMO puis reviens ici.":STATUS.strava&&STATUS.strava.err?esc(STATUS.strava.msg):""}</div>`;
-  if(sv)return h;
-  h+=`<div class="lab" style="margin-top:6px">Pas de Strava ? Dis-moi ce que tu pratiques</div>`+chipsHTML("disc",[["route","Course à pied"],["trail","Trail"],["velo","Cyclisme"],["triathlon","Triathlon"],["hyrox","Hyrox"]],on);
+  const R=S.race||{},d=R.disc||{},on=k=>(d[k]||0)>0;
+  let h=`<div class="lab">Dis-moi ce que tu pratiques</div>`+chipsHTML("disc",[["route","Course à pied"],["trail","Trail"],["velo","Cyclisme"],["triathlon","Triathlon"],["hyrox","Hyrox"]],on);
   if(on("route"))h+=chipsHTML("kz",[["s","5 à 10 km"],["m","Semi"],["l","Marathon"],["u","Ultra"]],k=>(R.kz||{})[k],"Tes distances sur route");
   if(on("trail"))h+=chipsHTML("tk",[["s","Moins de 20 km"],["m","20 à 42 km"],["l","42 à 80 km"],["u","Plus de 80 km"]],k=>(R.tk||{})[k],"Tes distances en trail")+chipsHTML("dpk",[["a","Moins de 500 m D+"],["b","500 à 1 500 m"],["c","Plus de 1 500 m"]],k=>(R.dpk||{})[k],"Le dénivelé que tu vises");
   if(on("triathlon"))h+=chipsHTML("tri",[["XS","XS"],["S","S"],["M","M"],["L","L"]],k=>(R.tri||{})[k],"Ton format de triathlon");
@@ -3197,7 +3184,6 @@ function renderOb(){
     bindField("ob-lf",sFest,async a=>{const r=await recogFest(a);if(r)S.vw.festival=Math.max(S.vw.festival||0,1);return r;});
     if(false)bindField("ob-if",sFest,async a=>{const r=await recogFest(a);S.festIdeal=a.text;if(r){S.vw.festival=Math.max(S.vw.festival||0,1.4);await recogFest(a);}return r?r.replace("Noté","Je m'en inspire pour te proposer des festivals de ce genre"):null;});
     bindField("ob-lm",sMatch,async a=>{const r=recogMatch(a);if(r)S.vw.sport=Math.max(S.vw.sport||0,1.2);return r;});
-    const stb=$("ob-st");if(stb)stb.onclick=async()=>{$("ob-st-m").textContent="Ouverture de Strava… Autorise FOMO puis reviens ici.";try{S.obStep=i;save();await startStrava();}catch(e){$("ob-st-m").textContent=e.message;}};
     $("ob-next").onclick=()=>{OB_FBS={};obGo(i+1);};return;}
   if(st==="done"){
     const n=(S.verts||[]).length;
@@ -3388,7 +3374,7 @@ async function connectYouTube(){
   return `${subs.length} abonnements, ${liked.length} vidéos aimées dont ${music} clips musicaux`;
 }
 
-/* ================= Spotify, SoundCloud, Strava (retour sur cette page) ================= */
+/* ================= Spotify, SoundCloud (retour sur cette page) ================= */
 const scRedirect=()=>location.origin+location.pathname.replace(/index\.html$/,"");
 function b64url(buf){return btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");}
 async function pkce(key,pre){const ver=b64url(crypto.getRandomValues(new Uint8Array(48)));const ch=b64url(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(ver)));
@@ -3418,55 +3404,6 @@ async function finishSC(code,state){const saved=savedState("fomo-sc",state);
   likes.forEach(t=>{genresOf((t.genre||"")+" "+(t.tag_list||"")).forEach(g=>gen[g]=(gen[g]||0)+1);const u=t.user&&t.user.username;if(u)art[u]=(art[u]||0)+.5;});
   S.prof.sc={gen,art,n:fol.length,nl:likes.length,at:Date.now()};S.conn.soundcloud=1;save();PROF_V++;refreshRelated(10);
   return `${fol.length} artistes suivis, ${likes.length} morceaux likés`;}
-// Strava : l'utilisateur touche « Se connecter avec Strava » puis « Autoriser ». Le secret de l'app FOMO reste sur le serveur Netlify.
-const STRAVA_FN="/.netlify/functions/strava";
-async function startStrava(){
-  if(isFile)throw new Error("Strava ne marche que depuis l'adresse web de FOMO.");
-  let id="";try{id=(await getJSON(STRAVA_FN)).client_id||"";}catch(e){}
-  if(!id)throw new Error("La connexion Strava arrive très bientôt. En attendant, touche tes sports ci-dessous.");
-  // le serveur FOMO reçoit la réponse de Strava : ça marche aussi depuis l'app installée (iPhone et Android)
-  const k=b64url(crypto.getRandomValues(new Uint8Array(15)));S.stravaK={k,at:Date.now()};save();
-  const url="https://www.strava.com/oauth/authorize?client_id="+encodeURIComponent(id)+"&redirect_uri="+encodeURIComponent(location.origin+STRAVA_FN)+"&response_type=code&approval_prompt=auto&scope=activity:read&state=st"+k;
-  const standalone=matchMedia("(display-mode: standalone)").matches||navigator.standalone;
-  if(standalone){const w=window.open(url,"_blank");if(!w)location.href=url;}else location.href=url;
-  startStravaWatch();
-}
-// au retour dans l'app (ou dès que la page Strava se ferme), on récupère le résumé
-let STW=null;
-async function checkStrava(){
-  if(!S.stravaK)return;if(Date.now()-S.stravaK.at>15*60e3){S.stravaK=null;save();return;}
-  try{const r=await fetch(STRAVA_FN+"?k="+encodeURIComponent(S.stravaK.k),{cache:"no-store"});if(r.status===404)return;
-    const j=await r.json().catch(()=>({}));S.stravaK=null;save();clearInterval(STW);
-    if(!r.ok){STATUS.strava={err:true,msg:j.error||"Strava ne répond pas, réessaie."};}
-    else{const m=applyStrava(j);STATUS.strava={msg:m};notify("Strava connecté",m);}
-    if(!$("ob").hidden)renderOb();else renderAll(true);if(typeof renderConns==="function"&&!$("v-settings").hidden)renderConns();}catch(e){}
-}
-function startStravaWatch(){clearInterval(STW);STW=setInterval(checkStrava,2500);setTimeout(()=>clearInterval(STW),15*60e3);}
-document.addEventListener("visibilitychange",()=>{if(!document.hidden)checkStrava();});
-addEventListener("focus",checkStrava);
-addEventListener("message",ev=>{if(ev.data&&ev.data.fomoStrava)checkStrava();});
-function applyStrava(sum){
-  const c=sum.counts||{},n=x=>c[x]||0,R=S.race=S.race||{disc:{}};R.disc=R.disc||{};
-  if(n("Run"))R.disc.route=Math.max(R.disc.route||0,Math.min(2,.5+n("Run")/15));if(n("TrailRun"))R.disc.trail=Math.max(R.disc.trail||0,Math.min(2,.5+n("TrailRun")/8));
-  if(n("Ride")+n("VirtualRide")+n("GravelRide"))R.disc.velo=Math.max(R.disc.velo||0,Math.min(2,(n("Ride")+n("GravelRide"))/10));if(n("MountainBikeRide"))R.disc.vtt=Math.max(R.disc.vtt||0,Math.min(2,n("MountainBikeRide")/6));
-  if(n("Swim")&&(n("Run")||n("Ride")))R.disc.triathlon=Math.max(R.disc.triathlon||0,Math.min(1.5,n("Swim")/10));
-  const med=sum.medRunKm||0,mx=sum.maxRunKm||0;
-  if(med){R.roadKm=[Math.max(5,Math.round(med)),Math.max(10,Math.round(Math.max(med*2.2,mx)))];}
-  if(n("TrailRun")&&mx)R.trailKm=[Math.max(8,Math.round(mx*.5)),Math.round(mx*1.6)];
-  S.prof.strava={counts:c,n:sum.n||0,maxRunKm:mx,avgDplus:sum.avgDplus,at:Date.now()};
-  if(!S.vw.competition||S.vw.competition<1.5)S.vw.competition=1.5;S.noPlay=false;S.conn.strava=1;save();PROF_V++;
-  const FR={Run:"courses",TrailRun:"trails",Ride:"sorties vélo",Swim:"nages",Walk:"marches",Hike:"randos",VirtualRide:"sorties home trainer",WeightTraining:"séances muscu",Workout:"séances"};
-  const top=Object.entries(c).sort((a,b)=>b[1]-a[1]).slice(0,3).map(x=>x[1]+" "+(FR[x[0]]||x[0])).join(", ");
-  return `Strava connecté : ${sum.n||0} activités lues${top?" ("+top+")":""}. Je vise les courses de ton niveau.`;}
-async function finishStrava(code,state){savedState("fomo-st",state);
-  if(CFG.stravaSecret){ // ancienne configuration du fondateur (clé dans l'app)
-    const tok=await getJSON("https://www.strava.com/oauth/token",{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:new URLSearchParams({client_id:CFG.stravaId.trim(),client_secret:CFG.stravaSecret.trim(),code,grant_type:"authorization_code"})});
-    const acts=await getJSON("https://www.strava.com/api/v3/athlete/activities?per_page=200",{headers:{Authorization:"Bearer "+tok.access_token}});
-    const c={},runs=[];(acts||[]).forEach(a=>{const t=a.sport_type||a.type;c[t]=(c[t]||0)+1;if(/Run/.test(t))runs.push((a.distance||0)/1000);});runs.sort((a,b)=>a-b);
-    return applyStrava({counts:c,n:(acts||[]).length,maxRunKm:runs.length?Math.round(runs[runs.length-1]):0,medRunKm:runs.length?runs[Math.floor(runs.length/2)]:0});}
-  const r=await fetch(STRAVA_FN,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({code})});
-  const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||"Strava ne répond pas, réessaie.");
-  return applyStrava(j);}
 
 /* ================= Pour toi : une sélection courte et précise, univers par univers ================= */
 // Règles produit :
@@ -3532,7 +3469,7 @@ const FY_PICK={
     const fits=e=>{if(disc.length&&!(e.disc||[]).some(d=>disc.includes(d)))return false;
       const ks=e.kms||[];if(ks.length){const road=R.roadKm,tr=R.trailKm,isT=(e.disc||[]).includes("trail");const rg=isT?tr:road;if(rg&&!ks.some(k=>k>=rg[0]*.8&&k<=rg[1]*1.2))return false;}
       if(R.dplusR&&(e.disc||[]).includes("trail")&&(e.dplus||[]).length&&!e.dplus.some(d=>d>=R.dplusR[0]*.7&&d<=R.dplusR[1]*1.3))return false;return true;};
-    if(!disc.length&&!S.prof.strava)return[];
+    if(!disc.length)return[];
     const L=B.filter(x=>x.e.cat==="competition"&&x.k!=null&&x.k<=FY_R&&fits(x.e)&&(D(x.e.d)-NOW)/864e5>=15);
     const pops=L.map(x=>x.e.pop||0).sort((a,b)=>a-b),q1=pops[Math.floor(pops.length/3)]||0,q2=pops[Math.floor(pops.length*2/3)]||0;
     const size=x=>(x.e.pop||0)>=q2&&q2>0?"big":(x.e.pop||0)>q1?"medium":"small";
@@ -3901,7 +3838,7 @@ $("ag-cal").addEventListener("click",ev=>{const mn=ev.target.closest("[data-mn]"
 // un événement enregistré dans FOMO part aussi dans le calendrier du téléphone (Apple, Google, Outlook, Samsung…)
 const IS_ANDROID=/android/i.test(navigator.userAgent),IS_IOS=/iphone|ipad|ipod/i.test(navigator.userAgent)||navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1;
 function calSpan(e){const s=D(e.d);let en=e.end?D(e.end):null;if(!en||en<=s||en-s>20*36e5)en=new Date(+s+(DUR[e.cat]||2)*36e5);return[s,en];}
-function calItem(e){const[s,en]=calSpan(e);return{i:e.id,t:e.t,s:s.toISOString(),e:en.toISOString(),l:[e.venue,e.addr||e.city].filter(Boolean).join(", "),u:e.link||e.more||"",d:VERTS[e.cat]?VERTS[e.cat].n:""};}
+function calItem(e){const[s,en]=calSpan(e);return{i:String(e.id).slice(0,40),t:String(e.t).slice(0,120),s:s.toISOString(),e:en.toISOString(),l:[e.venue,e.addr||e.city].filter(Boolean).join(", ").slice(0,120),u:String(e.link||e.more||"").slice(0,300),d:VERTS[e.cat]?VERTS[e.cat].n:""};}
 const b64u=s=>btoa(unescape(encodeURIComponent(s))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
 function icsUrl(list){return"/.netlify/functions/ics?j="+b64u(JSON.stringify(list.map(calItem)));}
 function gcalUrl(e){const[s,en]=calSpan(e),f=d=>d.toISOString().replace(/[-:]/g,"").replace(/\.\d{3}/,"");
@@ -3911,13 +3848,22 @@ function icsLocal(list){// ouvert depuis un fichier sur l'ordinateur : pas de se
   const L=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//FOMO//FR"];list.forEach(e=>{const[s,en]=calSpan(e);L.push("BEGIN:VEVENT","UID:"+e.id.replace(/\W+/g,"-")+"@fomo","DTSTAMP:"+st(new Date()),"DTSTART:"+st(s),"DTEND:"+st(en),"SUMMARY:"+es(e.t),"LOCATION:"+es(e.venue||e.city),"END:VEVENT");});
   L.push("END:VCALENDAR");const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([L.join("\r\n")],{type:"text/calendar"}));a.download="fomo.ics";document.body.appendChild(a);a.click();setTimeout(()=>a.remove(),500);}
 function phoneCalOpen(list,mode){
-  list=list.filter(e=>e&&e.d&&!e.approx&&!e.noDate);if(!list.length){notify("Agenda du téléphone","Cet événement n'a pas encore de date précise : il partira dans ton agenda dès qu'elle sera connue.");return;}
-  if(mode==="google"){list.slice(0,3).forEach(e=>window.open(gcalUrl(e),"_blank","noopener"));return;}
-  if(isFile){icsLocal(list);return;}
-  // iPhone : le calendrier s'ouvre par-dessus l'app (« Ajouter ») ; ailleurs, le fichier se télécharge et s'ouvre dans l'agenda
-  const a=document.createElement("a");a.href=icsUrl(list);a.rel="noopener";if(IS_IOS)a.target="_blank";else a.download=(list.length>1?"fomo-agenda":"fomo")+".ics";
-  document.body.appendChild(a);a.click();setTimeout(()=>a.remove(),500);
-  (S.phoneSent=S.phoneSent||{});list.forEach(e=>S.phoneSent[e.id]=1);save();}
+  list=list.filter(e=>e&&e.d&&!e.approx&&!e.noDate&&D(e.d)>new Date(+NOW-864e5));if(!list.length){notify("Agenda du téléphone","Cet événement n'a pas encore de date précise : il partira dans ton agenda dès qu'elle sera connue.");return;}
+  // Google Agenda : un seul événement à la fois (le navigateur bloque l'ouverture de plusieurs pages) ; plusieurs → fichier agenda
+  if(mode==="google"&&list.length===1){const w=window.open(gcalUrl(list[0]),"_blank");if(!w)location.href=gcalUrl(list[0]);markSent(list);return;}
+  if(isFile){icsLocal(list);markSent(list);return;}
+  // « Tout ajouter » : ce qui n'est pas encore parti dans l'agenda, et une adresse pas trop longue (sinon le serveur la refuse)
+  const fresh=list.filter(e=>!(S.phoneSent||{})[e.id]);if(list.length>1&&fresh.length)list=fresh;
+  let pick=[];for(const e of list){if(icsUrl(pick.concat([e])).length>6500)break;pick.push(e);}
+  if(!pick.length)pick=[list[0]];
+  const url=icsUrl(pick);
+  // iPhone : l'invitation s'ouvre par-dessus l'app, avec « Ajouter » ; Android : le fichier s'ouvre dans l'agenda
+  if(IS_IOS){const w=window.open(url,"_blank");if(!w)location.href=url;}
+  else{const a=document.createElement("a");a.href=url;a.rel="noopener";a.download=(pick.length>1?"fomo-agenda":"fomo")+".ics";document.body.appendChild(a);a.click();setTimeout(()=>a.remove(),800);
+    notify(pick.length>1?"📅 "+pick.length+" sorties prêtes pour ton agenda":"📅 Ajout à ton agenda","Touche le fichier téléchargé (fomo.ics) : ton agenda propose de l'ajouter."+(IS_ANDROID?" Avec Google Agenda, choisis plutôt « Google Agenda » dans Alertes → Mon agenda → Changer.":""));}
+  if(pick.length<list.length)setTimeout(()=>notify("Encore "+(list.length-pick.length)+" sorties","Touche à nouveau « Tout ajouter » pour les suivantes."),4200);
+  markSent(pick);}
+function markSent(L){S.phoneSent=S.phoneSent||{};L.forEach(e=>S.phoneSent[e.id]=1);save();}
 function phoneCalAdd(e){
   if(!e||S.phoneCal==="none")return;
   if(S.phoneCal==="ics"||S.phoneCal==="google"){phoneCalOpen([e],S.phoneCal);return;}
@@ -3987,7 +3933,7 @@ function renderAgenda(){
       if(ap.length)h+=`<div class="dayhead">Dates à confirmer</div>`+ap.map(e=>itemHTML(e,{when:true,pills:2,agenda:true})).join("");
       if(!up.length)h=`<div class="empty"><h3>Ton agenda est vide</h3><p>Touche « Mettre une alerte » sur un événement : il arrive ici et dans l'agenda de ton téléphone.</p><button class="btn sm" data-go="foryou">Voir Pour toi</button></div>`;}
     $("ag-day").innerHTML=h+pcBar;const cl=$("ag-clear");if(cl)cl.onclick=()=>{AG_DAY=null;renderAgenda();};
-    const pa=$("pc-all");if(pa)pa.onclick=()=>phoneCalOpen(nx,S.phoneCal==="google"?"google":"ics");
+    const pa=$("pc-all");if(pa)pa.onclick=()=>phoneCalOpen(nx,S.phoneCal==="google"&&nx.length===1?"google":"ics");
     $("pc-chg").onclick=()=>{const cur=S.phoneCal;delete S.phoneCal;save();const e=nx[0]||{t:"Tes prochaines sorties",id:"x"};
       phoneCalChoose(cur);};
   }
@@ -4799,9 +4745,6 @@ const CONNS=[
  {k:"tour",n:"Alertes de tournées",i:"♫",ds:"Prévenu dès qu'un de tes artistes annonce une date en France, avant la mise en vente. Branche ici une adresse Gmail dédiée aux alertes Bandsintown / Songkick : FOMO ne voit jamais ta boîte principale.",fields:[],btn:"Lire mes alertes",needG:1,
   help:()=>`<ol><li>Crée une adresse Gmail réservée à FOMO (ex. <i>prenom.fomo@gmail.com</i>). Elle ne contiendra que des alertes de concerts.</li><li>Crée un compte gratuit <a href="https://www.bandsintown.com" target="_blank" rel="noopener">Bandsintown</a> et/ou <a href="https://www.songkick.com" target="_blank" rel="noopener">Songkick</a> <b>avec cette adresse</b>, importe tes artistes Spotify, choisis ta ville et active les alertes e-mail. (Si tes comptes existent déjà, change leur adresse e-mail, ou crée dans ta boîte principale un filtre Gmail qui transfère les mails de bandsintown.com et songkick.com vers l'adresse dédiée.)</li><li>Dans Google Cloud, ajoute cette adresse aux « utilisateurs test » de ton écran de consentement.</li><li>Clique « Lire mes alertes » et <b>choisis l'adresse dédiée</b> dans la fenêtre Google. Tout reste dans ton navigateur : FOMO garde seulement artiste, ville et date.</li></ol>`,
   run:async()=>{const n=await scanAnnouncements();S.conn.tour=1;save();loadEvents(true);const w=S.prof.ann.who?" sur "+S.prof.ann.who:"";return n?n+" annonce"+(n>1?"s":"")+" de tournée en France"+w:"Aucune annonce"+w+" pour l'instant : vérifie que les alertes e-mail sont activées.";}},
- {grp:"Sport"},
- {k:"strava",n:"Strava",i:"St",ds:"Tes sorties course et vélo pour viser les bonnes compétitions.",fields:[["stravaId","Client ID",""],["stravaSecret","Client Secret",""]],top:()=>uriBox("u-st"),
-  help:()=>`<ol><li>Sur <a href="https://www.strava.com/settings/api" target="_blank" rel="noopener">strava.com/settings/api</a>, crée une application. Authorization Callback Domain : <code>${esc(isFile?"ton-site.netlify.app":location.host)}</code></li><li>Colle le Client ID et le Client Secret ici (ils restent dans ce navigateur).</li></ol>`,run:startStrava},
  {grp:"Sources d'événements"},
  {k:"gh",n:"Collecteur gratuit",i:"GH",ds:"RA, DICE, Fnac Spectacles, BilletReduc, Ticketac, expos, championnats et grandes affiches, courses Finishers et HYROX, festivals RA d'Europe, et les annonces de ta boîte de veille. Collecté chaque nuit sur ton GitHub.",fields:[["ghRepo","Ton dépôt GitHub","pseudo/nom-du-depot"],["ghToken","Jeton GitHub (Contents et Actions en écriture)","github_pat_…"]],
   help:()=>`<p>Dépôt public avec le fichier <code>.github/workflows/collect.yml</code> fourni, puis un jeton « Fine-grained » limité à ce dépôt, avec Contents et Actions en lecture et écriture.</p>`,
@@ -4813,7 +4756,7 @@ const CONNS=[
   help:()=>`<p>Conditions : <a href="https://corp.bandsintown.com/data-applications-terms" target="_blank" rel="noopener">Bandsintown Data Applications Terms</a>. En attendant, FOMO repère déjà en avance les dates de tes artistes en France via Ticketmaster.</p>`,
   run:async()=>{if(!CFG.bitId)throw new Error("Colle d'abord l'identifiant fourni par Bandsintown.");S.conn.bit=1;save();await ghSyncConfig(true);return"Envoyé au collecteur avec "+topArtists(60).length+" artistes à suivre";}}
 ];
-function connDone(k){return k==="loc"?!!(S.home&&S.home.src):k==="deezer"?!!S.prof.dz:k==="spotify"?!!S.prof.sp:k==="youtube"?!!S.prof.yt:k==="soundcloud"?!!S.prof.sc:k==="gcal"?!!S.cal:k==="gmail"?!!S.prof.mail:k==="tour"?!!S.prof.ann:k==="strava"?!!S.prof.strava:k==="gh"?!!(COLL.index&&CFG.ghRepo):k==="tm"?!!(S.conn.tm&&CFG.tmKey):k==="bit"?!!(S.conn.bit&&CFG.bitId):false;}
+function connDone(k){return k==="loc"?!!(S.home&&S.home.src):k==="deezer"?!!S.prof.dz:k==="spotify"?!!S.prof.sp:k==="youtube"?!!S.prof.yt:k==="soundcloud"?!!S.prof.sc:k==="gcal"?!!S.cal:k==="gmail"?!!S.prof.mail:k==="tour"?!!S.prof.ann:k==="gh"?!!(COLL.index&&CFG.ghRepo):k==="tm"?!!(S.conn.tm&&CFG.tmKey):k==="bit"?!!(S.conn.bit&&CFG.bitId):false;}
 function connSummary(k){
   if(k==="loc"&&S.home)return (S.home.src==="gps"?"Position détectée : ":"Ville : ")+homeCity()+" · rayon "+(S.radius||15)+" km";
   if(k==="spotify"&&S.prof.sp)return S.prof.sp.n+" artistes repérés";
@@ -4823,7 +4766,6 @@ function connSummary(k){
   if(k==="gcal"&&S.cal)return S.cal.busy.length+" créneaux occupés, "+S.cal.trips.length+" déplacement(s) · lu le "+dshort(new Date(S.cal.at))+" "+hm(new Date(S.cal.at));
   if(k==="gmail"&&S.prof.mail)return S.prof.mail.n+" billets retrouvés";
   if(k==="tour"&&S.prof.ann)return S.prof.ann.items.length+" annonces lues"+(S.prof.ann.who?" sur "+S.prof.ann.who:"")+" · le "+dshort(new Date(S.prof.ann.at));
-  if(k==="strava"&&S.prof.strava)return S.prof.strava.n+" activités analysées";
   if(k==="gh"&&COLL.index){const lab={fnac:"Fnac Spectacles",sg:"Shotgun",ra:"RA",dice:"DICE",br:"BilletReduc",tac:"Ticketac",offi:"Expos",sports:"Matchs",finishers:"Courses",artists:"Tes artistes (RA)",festivals:"Festivals RA Europe"};
     return Object.values(COLL.files).map(f=>Object.entries(f.sources||{}).map(([k,v])=>(lab[k]||k)+" "+v.n+(v.err?" (échec)":"")).join(", ")).filter(Boolean).join(" · ")+" · collecte du "+dshort(new Date(COLL.index.updated));}
   if(k==="tm"&&S.conn.tm)return "Clé active";
@@ -4857,7 +4799,7 @@ document.addEventListener("click",async ev=>{
   const d=t.closest&&t.closest("[data-disc]");
   if(d){const k=d.dataset.disc;delete S.conn[k];
     if(k==="gcal"){S.cal=null;TOK.cal=null;}if(k==="gmail"){S.prof.mail=null;TOK.mail=null;}if(k==="youtube"){S.prof.yt=null;TOK.yt=null;}
-    if(k==="spotify")S.prof.sp=null;if(k==="deezer")S.prof.dz=null;if(k==="soundcloud")S.prof.sc=null;if(k==="strava")S.prof.strava=null;if(k==="tour")S.prof.ann=null;if(k==="tm")CFG.tmKey="";if(k==="bit")CFG.bitId="";
+    if(k==="spotify")S.prof.sp=null;if(k==="deezer")S.prof.dz=null;if(k==="soundcloud")S.prof.sc=null;if(k==="tour")S.prof.ann=null;if(k==="tm")CFG.tmKey="";if(k==="bit")CFG.bitId="";
     if(k==="gh"){COLL={index:null,files:{}};saveColl();CFG.ghToken="";}
     STATUS[k]={};PROF_V++;save();renderProfile();if(["tm","gh"].includes(k))loadEvents();return;}
   const b=t.closest&&t.closest("[data-conn]");if(!b)return;
@@ -4966,17 +4908,18 @@ document.addEventListener("visibilitychange",()=>{if(document.visibilityState===
   let back=null;
   if(qs.get("code")||qs.get("error")){
     history.replaceState(null,"",location.pathname);
-    const k=st.startsWith("sp")?"spotify":st.startsWith("sc")?"soundcloud":st.startsWith("st")?"strava":null;
+    const k=st.startsWith("sp")?"spotify":st.startsWith("sc")?"soundcloud":null;
     if(k){STATUS[k]={busy:true,msg:"Finalisation de la connexion…"};
       try{if(qs.get("error"))throw new Error("Connexion refusée : "+(qs.get("error_description")||qs.get("error")));
-        const m=await (k==="spotify"?finishSP:k==="soundcloud"?finishSC:finishStrava)(qs.get("code"),st);STATUS[k]={msg:""};back=m;notify("Connecté",m);}
+        const m=await (k==="spotify"?finishSP:finishSC)(qs.get("code"),st);STATUS[k]={msg:""};back=m;notify("Connecté",m);}
       catch(e){STATUS[k]={err:true,msg:e.message};back=e.message;}}
   }
   fyMorning();
   // à chaque ouverture de l'app : Pour toi, sur le serpentin de la semaine
   if(S.onboarded){S.fyMode="week";save();}
   show(S.onboarded?"foryou":"discover");
-  if(S.stravaK){startStravaWatch();checkStrava();}
+  // Strava a été retiré de FOMO : on efface ce qui restait dans le téléphone
+  if(S.prof.strava||S.stravaK||S.conn.strava||location.hash.includes("strava=")){delete S.prof.strava;delete S.stravaK;delete S.conn.strava;delete CFG.stravaId;delete CFG.stravaSecret;save();if(location.hash.includes("strava="))history.replaceState(null,"",location.pathname+location.search);}
   if(!S.onboarded){OB_FB=back?esc(back):"";runOnboarding(S.obStep||0);}
   // ouvert depuis le lien (pas encore installée) : d'abord le guide pour l'ajouter à l'écran d'accueil
   if(!back)instOpen();
