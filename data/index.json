@@ -2,17 +2,17 @@
  "cities": {
   "paris": {
    "name": "Paris",
-   "updated": "2026-10-09T15:29:34.328042+00:00",
-   "n": 7879,
+   "updated": "2026-10-10T04:32:09.086361+00:00",
+   "n": 8063,
    "sources": {
     "ra": {
      "n": 164
     },
     "dice": {
-     "n": 444
+     "n": 423
     },
     "tm": {
-     "n": 6826
+     "n": 6811
     },
     "fnac": {
      "n": 0,
@@ -37,37 +37,37 @@
   },
   "france": {
    "name": "Festivals",
-   "updated": "2026-10-09T15:29:34.328042+00:00",
-   "n": 1878,
+   "updated": "2026-10-10T04:32:09.086361+00:00",
+   "n": 1876,
    "sources": {
     "festivals": {
-     "n": 1878
+     "n": 1876
     }
    }
   },
   "sports": {
    "name": "Sport (France)",
-   "updated": "2026-10-09T15:29:34.328042+00:00",
-   "n": 1009,
+   "updated": "2026-10-10T04:32:09.086361+00:00",
+   "n": 1005,
    "sources": {
     "sports": {
-     "n": 1009
+     "n": 1005
     }
    }
   },
   "races": {
    "name": "Courses (France)",
-   "updated": "2026-10-09T15:29:34.328042+00:00",
-   "n": 5203,
+   "updated": "2026-10-10T04:32:09.086361+00:00",
+   "n": 5168,
    "sources": {
     "races": {
-     "n": 5203
+     "n": 5168
     }
    }
   },
   "artists": {
    "name": "Dates de tes artistes",
-   "updated": "2026-10-09T15:29:34.328042+00:00",
+   "updated": "2026-10-10T04:32:09.086361+00:00",
    "n": 2,
    "sources": {
     "artists": {
@@ -87,8 +87,8 @@
   },
   "metz": {
    "name": "Metz",
-   "updated": "2026-10-06T15:28:46.392236+00:00",
-   "n": 585,
+   "updated": "2026-10-10T04:32:09.086361+00:00",
+   "n": 637,
    "sources": {
     "ra": {
      "n": 0
@@ -98,14 +98,14 @@
      "err": "HTTP Error 404: Not Found"
     },
     "tm": {
-     "n": 219
+     "n": 236
     },
     "fnac": {
      "n": 0,
      "err": "HTTP Error 403: Forbidden"
     },
     "dtour": {
-     "n": 394
+     "n": 407
     },
     "marches": {
      "n": 0
@@ -123,8 +123,8 @@
   },
   "nancy": {
    "name": "Nancy",
-   "updated": "2026-10-06T15:28:46.392236+00:00",
-   "n": 627,
+   "updated": "2026-10-10T04:32:09.086361+00:00",
+   "n": 667,
    "sources": {
     "ra": {
      "n": 0
@@ -134,14 +134,14 @@
      "err": "HTTP Error 404: Not Found"
     },
     "tm": {
-     "n": 240
+     "n": 247
     },
     "fnac": {
      "n": 0,
      "err": "HTTP Error 403: Forbidden"
     },
     "dtour": {
-     "n": 423
+     "n": 431
     },
     "marches": {
      "n": 0
@@ -603,7 +603,7 @@
   },
   "buzz": {
    "name": "Les plus attendus",
-   "updated": "2026-10-09T15:29:34.328042+00:00",
+   "updated": "2026-10-10T04:32:09.086361+00:00",
    "n": 38,
    "sources": {
     "buzz": {
@@ -1293,7 +1293,107 @@
      "err": "HTTP Error 404: Not Found"
     }
    }
+  },
+  "angers": {
+   "name": "Angers",
+   "updated": "2026-10-10T04:32:09.086361+00:00",
+   "n": 434,
+   "sources": {
+    "ra": {
+     "n": 0
+    },
+    "dice": {
+     "n": 0,
+     "err": "HTTP Error 404: Not Found"
+    },
+    "tm": {
+     "n": 129
+    },
+    "fnac": {
+     "n": 0,
+     "err": "HTTP Error 403: Forbidden"
+    },
+    "dtour": {
+     "n": 266
+    },
+    "marches": {
+     "n": 0
+    },
+    "br": {
+     "n": 52
+    },
+    "tac": {
+     "n": 0
+    },
+    "offi": {
+     "n": 0
+    }
+   }
+  },
+  "reims": {
+   "name": "Reims",
+   "updated": "2026-10-10T04:32:09.086361+00:00",
+   "n": 493,
+   "sources": {
+    "ra": {
+     "n": 0
+    },
+    "dice": {
+     "n": 0,
+     "err": "HTTP Error 404: Not Found"
+    },
+    "tm": {
+     "n": 132
+    },
+    "fnac": {
+     "n": 0,
+     "err": "HTTP Error 403: Forbidden"
+    },
+    "dtour": {
+     "n": 357
+    },
+    "marches": {
+     "n": 0
+    },
+    "br": {
+     "n": 10
+    },
+    "tac": {
+     "n": 0
+    },
+    "offi": {
+     "n": 0
+    }
+   }
+  },
+  "barcelone": {
+   "name": "Barcelone",
+   "updated": "2026-10-10T04:32:09.086361+00:00",
+   "n": 179,
+   "sources": {
+    "ra": {
+     "n": 186
+    },
+    "dice": {
+     "n": 0,
+     "err": "HTTP Error 404: Not Found"
+    }
+   }
+  },
+  "lisbonne": {
+   "name": "Lisbonne",
+   "updated": "2026-10-10T04:32:09.086361+00:00",
+   "n": 110,
+   "sources": {
+    "ra": {
+     "n": 114
+    },
+    "dice": {
+     "n": 0,
+     "err": "HTTP Error 404: Not Found"
+    }
+   }
   }
  },
- "updated": "2026-10-09T15:29:34.328042+00:00"
+ "updated": "2026-10-10T04:32:09.086361+00:00"
 }
