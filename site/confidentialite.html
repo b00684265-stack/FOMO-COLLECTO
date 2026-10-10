@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Confidentialité et mentions légales · FOMO</title>
+<meta name="description" content="Comment FOMO traite tes données, et qui édite et héberge l'application.">
+<link rel="icon" href="favicon.png">
+<style>
+:root{--paper:#F4F5F8;--card:#fff;--ink:#15162B;--ink2:#5C5F76;--line:#E1E3EC;--hot:#FF2E63;--ok:#12A77A;--soft:#FFE9EF}
+@media (prefers-color-scheme:dark){:root{--paper:#0F1020;--card:#1A1B30;--ink:#F2F3FA;--ink2:#A7AAC2;--line:#2A2C45;--hot:#FF4D7A;--ok:#3CC79A;--soft:#3A1A2B}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;-webkit-text-size-adjust:100%}
+main{max-width:720px;margin:0 auto;padding:max(24px,env(safe-area-inset-top)) 16px 56px}
+.back{display:inline-flex;align-items:center;gap:6px;color:var(--ink2);text-decoration:none;font-weight:700;font-size:15px;margin-bottom:18px}
+.logo{font-weight:900;font-size:26px;letter-spacing:-.02em}.logo i{font-style:normal;color:var(--hot)}
+h1{font-size:30px;line-height:1.15;margin:6px 0 8px;letter-spacing:-.01em}
+.lead{color:var(--ink2);margin:0 0 22px}
+.tldr{background:var(--soft);border-radius:18px;padding:16px 18px;margin:0 0 26px}
+.tldr>b{display:block;margin-bottom:6px}
+.tldr ul{margin:0;padding-left:20px}
+section{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px 18px 8px;margin:0 0 14px}
+h2{font-size:19px;margin:0 0 8px}
+p,li{color:var(--ink)}
+ul{padding-left:20px;margin:0 0 12px}
+li{margin:4px 0}
+a{color:var(--hot)}
+.small{color:var(--ink2);font-size:14px}
+dl{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:0 0 12px}
+dt{color:var(--ink2);font-size:14px}dd{margin:0}
+</style>
+</head>
+<body>
+<main>
+  <a class="back" href="/">‹ Retour à FOMO</a>
+  <div class="logo">FO<i>MO</i></div>
+  <h1>Confidentialité et mentions légales</h1>
+  <p class="lead">Mise à jour le 10 octobre 2026. FOMO est une application en version bêta, gratuite et sans publicité.</p>
+
+  <div class="tldr"><b>En bref</b>
+    <ul>
+      <li>Pas de compte, pas de mot de passe, pas d'e-mail demandé.</li>
+      <li>Tes goûts, tes ♥, tes alertes et ton agenda restent <b>sur ton téléphone</b>.</li>
+      <li>FOMO compte seulement son audience, de façon anonyme, sans cookie.</li>
+      <li>Rien n'est vendu ni partagé à des fins publicitaires.</li>
+    </ul>
+  </div>
+
+  <section>
+    <h2>Ce qui reste sur ton téléphone</h2>
+    <p>Tes réponses au questionnaire de départ, ta ville, tes univers, les événements que tu aimes, écartes ou as déjà faits, tes alertes et ton agenda sont enregistrés uniquement dans la mémoire de ton navigateur ou de l'app installée. FOMO s'en sert pour te proposer des sorties, et ce calcul se fait sur ton téléphone. Aucun serveur ne reçoit ces informations.</p>
+    <p>Si tu utilises ta position précise, elle sert à trier les événements par distance, sur ton téléphone. Seule exception : près de Paris, une position arrondie (à une centaine de mètres près) est envoyée au service public « Que faire à Paris » de la Ville de Paris, pour trouver ce qui se passe dans ton quartier. Elle n'y est pas associée à ton identité.</p>
+  </section>
+
+  <section>
+    <h2>Mesure d'audience</h2>
+    <p>Pour savoir combien de personnes utilisent FOMO et quelles fonctions servent, l'app envoie des compteurs anonymes à <a href="https://www.goatcounter.com" target="_blank" rel="noopener">GoatCounter</a> : ouverture de l'app, onglet ou univers ouvert, type de geste (alerte, « Pourquoi pas », « Déjà fait »…), type d'appareil et pays. Le nom des événements et ce que tu écris dans « Demande-moi » ne sont jamais envoyés.</p>
+    <p>GoatCounter ne dépose aucun cookie et ne crée aucun profil : une même personne n'est pas suivie d'un jour à l'autre. C'est pourquoi aucun bandeau de consentement n'est affiché.</p>
+  </section>
+
+  <section>
+    <h2>Les services utilisés par l'app</h2>
+    <p>Comme tout site, FOMO s'appuie sur quelques services techniques. Ils voient l'adresse internet de ton téléphone le temps de répondre :</p>
+    <ul>
+      <li><b>Netlify</b> héberge l'application.</li>
+      <li><b>GitHub</b> fournit la liste des événements, qui sont des informations publiques.</li>
+      <li><b>Google Fonts</b> fournit la police d'écriture.</li>
+      <li><b>Deezer</b> sert à trouver des artistes proches de ceux que tu aimes. Seuls des noms d'artistes lui sont envoyés.</li>
+      <li><b>geo.api.gouv.fr</b> (service public) retrouve les villes que tu tapes dans la recherche de lieu.</li>
+    </ul>
+    <p>Si tu colles le lien public de ton profil Spotify ou SoundCloud, le serveur de FOMO lit cette page publique une seule fois pour repérer tes artistes, puis l'oublie. Rien n'est conservé.</p>
+    <p>Quand tu ajoutes une sortie à l'agenda de ton téléphone, le serveur fabrique le fichier agenda à la volée et ne le garde pas. Quand tu touches « Billetterie » ou « S'inscrire », tu quittes FOMO pour le site de l'organisateur ou de la billetterie, qui a ses propres règles.</p>
+  </section>
+
+  <section>
+    <h2>Tes droits et comment tout effacer</h2>
+    <p>Comme FOMO ne garde aucune donnée te concernant sur un serveur, tout est entre tes mains. Dans l'app, va dans <b>Réglages → Tout réinitialiser</b> pour tout effacer. Tu peux aussi supprimer l'app de ton écran d'accueil ou effacer les données du site dans ton navigateur.</p>
+    <p>Pour toute question sur tes données, écris à <a href="mailto:fomo8820@gmail.com">fomo8820@gmail.com</a>. Tu peux aussi saisir la <a href="https://www.cnil.fr/fr/plaintes" target="_blank" rel="noopener">CNIL</a>.</p>
+    <p class="small">Si FOMO propose un jour une sauvegarde en ligne ou des notifications envoyées par un serveur, cette page sera mise à jour avant, et ces fonctions resteront facultatives.</p>
+  </section>
+
+  <section>
+    <h2>Mentions légales</h2>
+    <dl>
+      <dt>Éditeur</dt><dd>Nathan Forget, à titre personnel et non commercial</dd>
+      <dt>Contact</dt><dd><a href="mailto:fomo8820@gmail.com">fomo8820@gmail.com</a></dd>
+      <dt>Hébergeur</dt><dd>Netlify, Inc., 101 2nd Street, Suite 575, San Francisco, CA 94105, États-Unis · <a href="https://www.netlify.com" target="_blank" rel="noopener">netlify.com</a></dd>
+    </dl>
+    <p class="small">Les informations sur les événements (dates, lieux, prix, liens) proviennent des organisateurs, des billetteries et de sources publiques. Elles sont données à titre indicatif : vérifie toujours sur le site de l'organisateur avant d'acheter ou de t'inscrire. Les noms et marques cités appartiennent à leurs propriétaires.</p>
+  </section>
+
+  <p class="small" style="text-align:center;margin-top:24px"><a href="/">Revenir à FOMO</a></p>
+</main>
+</body>
+</html>

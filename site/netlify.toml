@@ -5,3 +5,9 @@
   # le robot de collecte enregistre ses données toutes les 15 minutes dans le même dépôt :
   # on ne republie le site que si un fichier du dossier « site » a changé
   ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- ."
+
+# page « Confidentialité et mentions légales » à une adresse courte
+[[redirects]]
+  from = "/confidentialite"
+  to = "/confidentialite.html"
+  status = 200

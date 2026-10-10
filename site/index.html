@@ -659,7 +659,10 @@ html,body{overscroll-behavior-y:contain}
 .in-warn{margin:0;font-size:14px;color:var(--ink);background:var(--warn-soft);border-radius:14px;padding:10px 12px;text-align:left}
 .inst-go{border:0;border-radius:999px;background:var(--hot);color:#fff;font:inherit;font-weight:800;font-size:16px;padding:15px;cursor:pointer;box-shadow:0 10px 24px color-mix(in srgb,var(--hot) 35%,transparent)}
 .inst-later{border:0;background:none;color:var(--ink3);font:inherit;font-weight:700;font-size:14px;padding:12px;cursor:pointer}
+.ob-priv{margin:10px 0 0;text-align:center;font-size:12.5px;color:var(--ink3)}.ob-priv a{color:inherit;text-decoration:underline}
 </style>
+<!-- mesure d'audience anonyme (GoatCounter : sans cookie, sans donnée personnelle) -->
+<script data-goatcounter="https://fomo.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 </head>
 <body>
 <div class="app">
@@ -739,6 +742,7 @@ html,body{overscroll-behavior-y:contain}
     <p class="sub">Tout reste dans ce navigateur : FOMO n'a pas de serveur et ne stocke rien ailleurs.</p>
     <p class="note" id="file-warn" hidden>Tu as ouvert le fichier depuis ton ordinateur : les liens de musique ne marchent que depuis l'adresse web de FOMO.</p>
     <div class="row"><button class="btn ghost sm" id="b-redo">Refaire l'accueil</button><button class="btn ghost sm" id="b-guide">Revoir le guide</button><button class="btn ghost sm" id="b-install">Installer sur mon téléphone</button><button class="btn ghost sm" id="b-reload">Recharger les événements</button><button class="btn ghost sm" id="b-reset">Tout réinitialiser</button></div>
+    <p class="small" style="margin-top:6px">Tes goûts, tes ♥ et tes alertes restent sur ton téléphone. <a href="/confidentialite" target="_blank" rel="noopener">Confidentialité et mentions légales</a></p>
     <div id="conns" class="view" style="gap:8px"></div>
   </section>
 </div>
@@ -768,8 +772,8 @@ const VERTS={
   soiree:{n:"Soirées",one:"soirée",main:1},
   concert:{n:"Concerts",one:"concert",main:1},
   festival:{n:"Festivals",one:"festival",main:1},
-  sport:{n:"Affiches sportives",one:"affiche",main:1},
-  competition:{n:"Compétitions",one:"course",main:1},
+  sport:{n:"Sports",one:"affiche",main:1},
+  competition:{n:"Dossards",one:"course",main:1},
   expo:{n:"Expos",one:"expo"},
   theatre:{n:"Théâtre",one:"spectacle"},
   spectacle:{n:"Spectacles",one:"spectacle"},
@@ -1447,7 +1451,7 @@ async function loadParis(){
   const seen=new Set(out.map(e=>e.id));
   // Vie de quartier : tout ce qui se passe à moins de 2,5 km de toi (ou du lieu choisi en haut), sur 4 mois
   try{const c=S.browse||homePos(),lim4=new Date(NOW.getTime()+120*864e5);
-    const wq=`date_end >= date'${d2(NOW)}' AND date_start <= date'${d2(lim4)}' AND within_distance(lat_lon, geom'POINT(${(+c.lon).toFixed(5)} ${(+c.lat).toFixed(5)})', 2.5km)`;
+    const wq=`date_end >= date'${d2(NOW)}' AND date_start <= date'${d2(lim4)}' AND within_distance(lat_lon, geom'POINT(${(+c.lon).toFixed(3)} ${(+c.lat).toFixed(3)})', 2.5km)`;
     for(let page=0;page<6;page++){const j=await getJSON(QFAP+"?limit=100&offset="+(page*100)+"&order_by=date_start&where="+encodeURIComponent(wq));const rs=j.results||[];
       rs.forEach(r=>{const e=qfapNorm(r);if(e&&!seen.has(e.id)){seen.add(e.id);out.push(e);}});if(rs.length<100)break;}}catch(e){}
   for(const extra of [`audience like "%nfant%"`,`qfap_tags like "%nfant%"`,`(qfap_tags like "%onf%rence%" OR title like "%onf%rence%" OR qfap_tags like "%ébat%")`]){
@@ -2638,7 +2642,7 @@ addEventListener("resize",()=>{if(!$("v-discover").hidden)renderBubbles();});
 
 /* --- écran d'un univers --- */
 let VENUE_NEXT=null;
-function openVert(cat){CUR=cat;VPAGE=40;VPANEL=null;{S.vf=S.vf||{};S.vf[cat]={};const f=VF();if(VENUE_NEXT){f.venue=VENUE_NEXT;VENUE_NEXT=null;}}S.dv=cat;save();$("vt-q").value=VF().q||"";show("vert");}
+function openVert(cat){if(typeof gc==="function")gc("univers-"+cat,"Univers : "+(VERTS[cat]?VERTS[cat].n:cat));CUR=cat;VPAGE=40;VPANEL=null;{S.vf=S.vf||{};S.vf[cat]={};const f=VF();if(VENUE_NEXT){f.venue=VENUE_NEXT;VENUE_NEXT=null;}}S.dv=cat;save();$("vt-q").value=VF().q||"";show("vert");}
 function curSeg(){const conf=VCONF[CUR];if(!conf.segs)return null;S.vtab=S.vtab||{};const s=S.vtab[CUR];if(conf.segs.some(x=>x[0]===s))return s;
   // pas encore choisi : la première partie qui a des événements
   const c=CUR;const hit=conf.segs.find(([k])=>vItems(c,k).length);CUR=c;return(hit||conf.segs[0])[0];}
@@ -2971,12 +2975,12 @@ function obShell(i,title,lead,body,foot){
       <div class="ob-steps" aria-hidden="true">${OB.map((_,j)=>`<i class="${j<i?"done":j===i?"cur":""}"></i>`).join("")}</div>
       <button class="ob-skip" id="ob-later">Passer</button></div>
     <div class="ob-hero"><div class="ob-emo" aria-hidden="true">${OB_EMO[k||st]||"✨"}</div><h1 class="q">${title}</h1>${lead?`<p class="lead">${lead}</p>`:""}</div>
-    <div class="body">${body}</div><div class="foot">${foot}</div>`;
+    <div class="body">${body}</div><div class="foot">${foot}</div>${i===0?`<p class="ob-priv">🔒 Pas de compte : tes goûts restent sur ton téléphone · <a href="/confidentialite" target="_blank" rel="noopener">Confidentialité</a></p>`:""}`;
   $("ob-later").onclick=()=>finishOnboarding();
   const bk=$("ob-back");if(bk)bk.onclick=()=>obGo(i-1);
 }
 function obGo(i){S.obStep=i;save();OB_FB="";renderOb();}
-function finishOnboarding(){if(!S.verts||!S.verts.length)S.verts=null;S.onboarded=true;S.obStep=0;save();$("ob").hidden=true;document.body.style.overflow="";PROF_V++;show("foryou");ghSyncConfig().catch(()=>{});}
+function finishOnboarding(){if(typeof gc==="function")gc("onboarding-termine","Parcours de départ terminé");if(!S.verts||!S.verts.length)S.verts=null;S.onboarded=true;S.obStep=0;save();$("ob").hidden=true;document.body.style.overflow="";PROF_V++;show("foryou");ghSyncConfig().catch(()=>{});}
 function runOnboarding(step){$("ob").hidden=false;document.body.style.overflow="hidden";S.obStep=step||0;save();renderOb();}
 function srcBtn(k,name,sub,color,done,extra){return`<button class="src-btn${done?" done":""}" data-src="${k}"><span class="lg" style="background:${color}">${name.slice(0,2)}</span><span><b>${name}</b><small>${sub}</small></span><span class="st">${done?"Connecté":""}</span></button>${extra||""}`;}
 function textStep(i,o){
@@ -4133,6 +4137,30 @@ function instOpen(force){
   o.hidden=false;requestAnimationFrame(()=>o.classList.add("on"));return true;}
 function instClose(){const o=$("inst");if(!o)return;o.classList.remove("on");setTimeout(()=>{o.hidden=true;},250);}
 
+/* ================= mesure d'audience anonyme (GoatCounter) =================
+   Aucun cookie, aucun identifiant, aucune donnée personnelle : seulement des compteurs (« alerte mise », « univers ouvert »…). */
+const GC_Q=[];let GC_T=null;
+function gc(path,title){
+  if(location.protocol==="file:"||/^(localhost|127\.)/.test(location.hostname))return;
+  GC_Q.push({path:String(path).slice(0,80),title:String(title||path).slice(0,80),event:true});
+  const flush=()=>{const g=window.goatcounter;if(!g||!g.count){if(!GC_T)GC_T=setTimeout(()=>{GC_T=null;flush();},1500);return;}
+    while(GC_Q.length){try{g.count(GC_Q.shift());}catch(e){}}};
+  flush();}
+// type d'ouverture : app installée ou navigateur, iPhone ou Android
+(function(){const inst=isStandalone(),p=instPlatform();setTimeout(()=>gc(inst?"ouverture-app-installee":"ouverture-navigateur",(inst?"Ouverture (app installée)":"Ouverture (navigateur)")+" · "+p),1200);})();
+addEventListener("appinstalled",()=>gc("installation","Installée sur l'écran d'accueil"));
+// les gestes, sans le nom de l'événement
+document.addEventListener("click",ev=>{const t=ev.target;
+  const c=t.closest("[data-like],[data-cal],[data-done],[data-nope],.sheet .cta a,#inst-later,#inst-go");if(!c)return;
+  const id=c.dataset.like||c.dataset.cal||c.dataset.done||c.dataset.nope,e=id&&typeof byId==="function"?byId(id):null,cat=e?e.cat:"";
+  if(c.dataset.like)gc("action-pourquoi-pas","♥ Pourquoi pas"+(cat?" · "+cat:""));
+  else if(c.dataset.cal)gc("action-alerte","🔔 Alerte"+(cat?" · "+cat:""));
+  else if(c.dataset.done)gc("action-deja-fait","✓ Déjà fait"+(cat?" · "+cat:""));
+  else if(c.dataset.nope)gc("action-pas-pour-moi","✕ Pas pour moi"+(cat?" · "+cat:""));
+  else if(c.id==="inst-later")gc("guide-installation-ignore","Guide d'installation : continuer dans le navigateur");
+  else if(c.id==="inst-go")gc("guide-installation-bouton","Guide d'installation : bouton Installer");
+  else gc("clic-billetterie","Clic billetterie / inscription");},true);
+
 /* ================= Demande-moi : compréhension fine de la demande, 3 propositions fiables au maximum ================= */
 const ASK_EX=["Une soirée techno ce samedi à Paris","Un concert de rap pas cher la semaine prochaine","Un festival house à taille humaine en août 2027",
   "Une expo pour les enfants ce week-end","Un trail de 30 km avec du dénivelé au printemps","Une conférence sur l'IA ce mois-ci"];
@@ -4428,7 +4456,7 @@ function askWhy(x,q){
   return [...new Set(o)].slice(0,4).join(" · ");
 }
 let ASKQ=null,ASKR=[],ASKN=0;
-function runAsk(text,more){
+function runAsk(text,more){if(typeof gc==="function"&&!more)gc("demande-moi","Demande-moi : question posée");
   const q=more&&ASKQ?ASKQ:parseAsk(text,ASKQ);
   // on cherche strictement ; s'il n'y a rien, on élargit une contrainte à la fois (et on le dit)
   const steps=[[{},""],[{date:true},"j'ai élargi un peu les dates"],[{size:true},"sans tenir compte de la taille"],[{genre:true},"tous styles confondus"],
@@ -4839,6 +4867,7 @@ function show(v){
   if(v==="agenda")renderAgenda();if(v==="ask")renderAsk();if(v==="settings")renderProfile();
   window.scrollTo(0,0);
   if(TAB_OF[v]&&typeof coachMaybe==="function")coachMaybe(TAB_OF[v]);
+  if(typeof gc==="function"&&v!=="vert")gc("vue-"+v,{foryou:"Pour toi",discover:"Découverte (bulles)",agenda:"Alertes",ask:"Demande-moi",settings:"Réglages",markets:"Marchés"}[v]||v);
 }
 function showView(v){document.querySelectorAll(".view[id^=v-]").forEach(s=>s.hidden=s.id!=="v-"+v);
   document.querySelectorAll("nav.tabs button").forEach(b=>b.setAttribute("aria-selected",b.dataset.v===TAB_OF[v]));
