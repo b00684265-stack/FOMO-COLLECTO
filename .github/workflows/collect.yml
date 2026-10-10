@@ -967,6 +967,10 @@ jobs:
 
           # ---------------- Sport (TheSportsDB, clé gratuite) ----------------
           SDB = "https://www.thesportsdb.com/api/v1/json/123/"
+          # billetteries officielles des clubs (vérifiées) : un match renvoie vers la billetterie du club qui reçoit
+          SPORT_TIX = {"rugby": {"ASM Clermont Auvergne": "https://www.asm-rugby.com/billetterie", "Aviron Bayonnais": "https://billetterie.abrugby.fr/", "Castres Olympique": "https://billetterie.castres-olympique.com/fr", "Lyon OU": "https://billetterie.lourugby.fr/", "Montpellier Hérault Rugby": "https://store.montpellier-rugby.com/", "RC Toulonnais": "https://tickets.rctoulon.com/fr/", "Racing Métro 92": "https://www.racing92.fr/billetterie/", "Section Paloise": "https://billetterie.section-paloise.com/fr/", "Stade Français Paris": "https://billetterie.stade.fr/fr/", "Stade Rochelais": "https://billetterie.staderochelais.com/fr", "Stade Toulousain": "https://billetterie.stadetoulousain.fr/fr/", "USA Perpignan": "https://billetterie.usap.fr/fr", "Union Bordeaux Bègles": "https://billetterie.ubbrugby.com/fr", "Vannes": "https://billetterie.rcvannes.bzh/"}, "basket": {"Boulazac Basket Dordogne": "https://boulazac-basket.billetterie-club.fr/home", "Bourg-en-Bresse": "https://jlbourg-basket.billetterie-club.fr/home", "Cholet": "https://www.cholet-basket.com/billetterie-acces", "Chorale Roanne Basket": "https://chorale-roanne.billetterie-club.fr/home", "Dijon": "https://billetterie-basket.jdadijon.com/fr", "Gravelines-Dunkerque": "https://billetterie.bcmbasket.com/fr", "Le Mans Sarthe Basket": "https://billetterie.msb.fr/fr", "Limoges": "https://csp.billetterie-club.fr/", "Lyon-Villeurbanne": "https://web.digitick.com/index-css5-asvelmobile-pg1.html", "Nanterre": "https://billetterie.nanterre92.com/fr/", "Paris Basketball": "https://billetterie.parisbasketball.com/fr/", "SLUC Nancy Basket": "https://billetterie.sluc-basket.fr/fr", "Saint-Quentin Basket-Ball": "https://sqbb.fr", "Strasbourg": "https://web.digitick.com/index-css5-sigstrasbourgbasket-pg1.html", "Élan Béarnais": "https://www.elan-bearnais.fr/", "Élan Chalon": "https://tickets.elanchalon.com/fr"}, "hand": {"C Chartres Métropole Handball": "https://ccmhb.billetterie-club.fr/home", "Cesson Rennes MHB": "https://www.cesson-handball.com/billetterie", "Chambéry Savoie Handball": "https://billetterie.teamchambe.com/", "Dunkerque Handball Grand Littoral": "https://usdk.billetterie-club.fr/home", "Fenix Toulouse Handball": "https://billetterie.fenix-toulouse.fr/", "HBC Nantes": "https://billetterie.hbcnantes.com/fr/prochainsmatchs-regroupement", "Limoges Handball": "https://lh-handball.billetterie-club.fr/home", "Montpellier Handball": "https://billetterie.montpellierhandball.com/", "PAUC Handball": "https://pauc-handball.billetterie-club.fr/home", "Paris Saint-Germain Handball": "https://billetterie.psg.fr/fr/hand", "Saint-Raphaël Var Handball": "https://srvhb.billetterie-club.fr/home", "Saran Loiret HB": "https://septors.billetterie-club.com/home", "Sélestat Alsace Handball": "https://shop.sa-hb.com/billetterie", "Tremblay-en-France Handball": "https://www.tremblayhandball.com/", "USAM Nîmes Gard": "https://usam-nimesgard.fr/billetterie/"}, "volley": {"AS Cannes": "https://www.ascannesvolley.com/billetterie/", "Arago de Sète": "https://aragodesete.fr/billetterie/", "Chaumont Volley": "https://cvb52.com/billetterie/", "Montpellier HSC": "https://www.montpellier-volley.com/index.php/billetterie/", "Narbonne Volley": "https://narbonnevolley.com/billetterie-officielle-centurions-narbonne/", "Nice Volley-Ball": "https://nicevolleyball.fr/index.php/achats/billetterie", "Paris Volley": "https://parisvolley.com/pages/billetterie", "Plessis-Robinson": "https://www.plessisrobinsonvolleyball.fr/billetterie/", "Saint-Nazaire VBA": "https://www.billetweb.fr/pro/snvba", "Spacer's Toulouse Volley": "https://billetterie.spacerstoulouse.fr/", "Stade Poitevin VB": "https://alternaspvb.billetterie-club.fr/home", "Tourcoing Lille Métropole": "https://tourcoing-volley.com/", "Tours Volley-Ball": "https://toursvolleyball.billetterie-club.fr/home"}, "foot": {"Angers": "https://billetterie.angers-sco.fr/", "Auxerre": "https://billetterie.aja.fr/", "Brest": "https://billetterie.sb29.bzh/", "Le Havre": "https://www.billetterie.hac-foot.com/", "Le Mans": "https://billetterie.lemansfc.fr/", "Lens": "https://billetterie.rclens.fr/", "Lille": "https://billetterie.losc.fr/", "Lorient": "https://billetterie.fclorient.bzh/", "Lyon": "https://billetterie.ol.fr/", "Marseille": "https://billetterie.om.fr/fr/", "Monaco": "https://billetterie.asmonaco.com/fr/", "Nice": "https://billetterie.ogcnice.com/", "Paris FC": "https://billetterie.parisfc.fr/fr/", "Paris Saint-Germain": "https://billetterie.psg.fr/fr/", "Rennes": "https://billetterie.staderennais.com/fr/billetterie", "Strasbourg": "https://billetterie.rcstrasbourgalsace.fr/fr/", "Toulouse": "https://billetterie.toulousefc.com/fr/", "Troyes": "https://ticket.estac.fr/fr"}}
+          TIX_KEY = {"football": "foot", "rugby": "rugby", "basket": "basket", "handball": "hand", "volley": "volley"}
+          SPORT_WORD = {"foot": "football", "rugby": "rugby", "basket": "basket", "hand": "handball", "volley": "volley", "tennis": "tennis", "velo": "cyclisme"}
           LEAGUES = [  # id, sport, compétition, nb de journées, type
               (4334, "Football", "Ligue 1", 34, "national"),
               (4430, "Rugby", "Top 14", 26, "national"),
@@ -1513,7 +1517,8 @@ jobs:
                                       "d": t.isoformat(), "end": None, "v": e.get("strVenue") or "", "a": "",
                                       "city": e.get("strCity") or "", "lat": None, "lon": None, "p": None, "soldout": False,
                                       "img": e.get("strThumb") or e.get("strPoster") or "", "round": r,
-                                      "link": "https://www.google.com/search?q=" + urllib.parse.quote(f"billetterie {home} {away} {comp}"),
+                                      # lien vers la billetterie officielle du club qui reçoit (jamais vers un site de paris : les sponsors de ligue sont exclus)
+                                      "link": SPORT_TIX.get(TIX_KEY.get(str(sport).lower(), ""), {}).get(home) or "https://www.google.com/search?q=" + urllib.parse.quote(f"billetterie officielle {home} {SPORT_WORD.get(str(sport).lower(), str(sport).lower())} -\"paris sportifs\" -parier -cote -pronostic -betclic -winamax -unibet -parionssport -bwin -zebet"),
                                       "lineup": [], "desc": ""})
                   log(f"  Sport {comp}: {got} matchs à venir")
               big = big_events()
@@ -1534,7 +1539,15 @@ jobs:
                          "chronometrage.com", "sportinnovation.fr", "endurancechrono.com", "ats-sport.com", "helloasso.com", "weezevent.com",
                          "billetweb.fr", "hyrox.com", "utmb.world", "ironman.com", "my.raceresult.com", "inscriptions", "inscription", "registration")
           SKIP_DOMAINS = ("finishers.com", "cloudinary.com", "facebook.com", "instagram.com", "twitter.com", "x.com", "youtube.com", "strava.com",
-                          "google.", "apple.com", "tiktok.com", "linkedin.com", "marathons.com", "kavval")
+                          "google.", "apple.com", "tiktok.com", "linkedin.com", "marathons.com", "kavval",
+                          # bibliothèques de scripts chargées par les pages (jamais des sites de course) ; polyfill.io a été racheté et redirige vers des sites de paris
+                          "polyfill.io", "polyfill.com", "cdnjs", "bootstrapcdn", "jquery.com", "fontawesome", "typekit", "recaptcha", "hcaptcha", "stripe.com",
+                          "paypal.com", "segment.", "mixpanel", "intercom", "zendesk", "crisp.chat", "tawk.to", "matomo", "plausible", "amplitude", "branch.io",
+                          "onesignal", "pusher", "algolia", "contentful", "prismic", "storyblok", "sanity.io", "vercel", "netlify", "herokuapp", "wordpress.com/",
+                          "pinterest", "whatsapp", "messenger", "t.me", "snapchat", "spotify", "deezer", "soundcloud", "vimeo", "dailymotion")
+          # jamais de lien vers un site de jeux d'argent
+          BET_RX = re.compile(r"winamax|betclic|unibet|parionssport|enligne\.fdj|pmu\.fr|zebet|bwin|pokerstars|netbet|vbet|feelingbet|genybet|betsson|1xbet|"
+                              r"stake\.|bet365|casino|slot|poker|polyfill", re.I)
           LINKS_PATH = os.path.join(DATA, "race-links.json")
 
 
@@ -1555,8 +1568,9 @@ jobs:
 
 
           def _pick_links(urls):
-              reg = next((u for _, u in urls if any(d in u.lower() for d in REG_DOMAINS)), None)
-              site = next((u for _, u in urls if u != reg), None)
+              ok = lambda u: u and not ASSET_RX.search(u) and not any(d in u.lower() for d in SKIP_DOMAINS) and not BET_RX.search(u)
+              reg = next((u for _, u in urls if ok(u) and any(d in u.lower() for d in REG_DOMAINS)), None)
+              site = next((u for _, u in urls if ok(u) and u != reg), None)
               return reg, site
 
 
@@ -1635,10 +1649,13 @@ jobs:
           def _page_urls(page):
               """Toutes les adresses d'une page, y compris celles cachées dans les données de l'application (JSON)."""
               txt = html.unescape(page).replace("\\u002F", "/").replace("\\/", "/").replace("\\u0026", "&").replace('\\"', '"')
-              regs = [u for u in REG_KEY_RX.findall(txt) if not ASSET_RX.search(u)]
-              sites = [u for u in SITE_KEY_RX.findall(txt) if not ASSET_RX.search(u) and not any(d in u for d in SKIP_DOMAINS)]
-              allu = [u.rstrip(".,;)") for u in re.findall(r'https?://[^\s"\'<>\\)]+', txt)]
-              allu = [u for u in allu if not ASSET_RX.search(u) and not any(d in u for d in SKIP_DOMAINS)]
+              ok = lambda u: not ASSET_RX.search(u) and not any(d in u.lower() for d in SKIP_DOMAINS) and not BET_RX.search(u)
+              regs = [u for u in REG_KEY_RX.findall(txt) if ok(u)]
+              sites = [u for u in SITE_KEY_RX.findall(txt) if ok(u)]
+              # les autres adresses : seulement celles des liens cliquables (<a href>), jamais celles des scripts ou des styles
+              allu = [html.unescape(u).rstrip(".,;)") for u in re.findall(r'<a\b[^>]*href=["\'](https?://[^"\'<>\s]+)', page, re.I)]
+              allu += [u.rstrip(".,;)") for u in re.findall(r'https?://[^\s"\'<>\\)]+', txt) if any(d in u.lower() for d in REG_DOMAINS if d not in ("inscription", "inscriptions", "registration"))]
+              allu = [u for u in allu if ok(u)]
               return regs, sites, allu
 
 
@@ -1655,7 +1672,7 @@ jobs:
                   if href.startswith("mailto:") or href.startswith("tel:") or href.startswith("javascript"):
                       continue
                   u = urllib.parse.urljoin(site, href)
-                  if ASSET_RX.search(u) or any(d in u for d in SKIP_DOMAINS):
+                  if ASSET_RX.search(u) or any(d in u.lower() for d in SKIP_DOMAINS) or BET_RX.search(u):
                       continue
                   score = 0
                   if any(d in u.lower() for d in REG_DOMAINS if d not in ("inscription", "inscriptions", "registration")):
@@ -1683,7 +1700,7 @@ jobs:
                   cache = json.load(open(LINKS_PATH, encoding="utf-8"))
               except Exception:  # noqa: BLE001
                   cache = {}
-              V = 2  # version de la méthode : les fiches lues avec l'ancienne méthode sont relues
+              V = 3  # version de la méthode : les fiches lues avec l'ancienne méthode sont relues (3 : plus jamais d'adresse de script prise pour un site)
               today = dt.date.today()
               todo = []
               for e in out:
@@ -1694,8 +1711,10 @@ jobs:
                       reg, site = reg or c.get("reg"), site or c.get("site")
                   elif not reg:
                       todo.append(e)
-                  if site and ASSET_RX.search(site):
+                  if site and (ASSET_RX.search(site) or BET_RX.search(site) or any(d in site.lower() for d in SKIP_DOMAINS)):
                       site = None
+                  if reg and (BET_RX.search(reg) or any(d in reg.lower() for d in SKIP_DOMAINS)):
+                      reg = None
                   if reg:
                       e["reg"] = reg
                   if site:
@@ -1719,7 +1738,8 @@ jobs:
                       cache["_diag"] = 1
                       log("   aperçu d'une fiche Finishers sans lien : " + ", ".join(sorted({urllib.parse.urlsplit(u).netloc for u in re.findall(r'https?://[^\s"\'<>\\)]+', page)}))[:400])
                   reg = next(iter(regs), None) or next((u for u in allu if any(d in u.lower() for d in REG_DOMAINS)), None)
-                  site = next(iter(sites), None) or next((u for u in allu if u != reg), None)
+                  # site officiel : seulement s'il est déclaré comme tel dans la fiche (plus de « première adresse venue »)
+                  site = next(iter(sites), None)
                   if not reg and site:
                       reg = _reg_from_site(site)
                       if reg:
@@ -1739,6 +1759,8 @@ jobs:
               # le bouton de l'app mène à l'inscription ; sinon au site officiel ; Finishers seulement en dernier recours
               for e in out:
                   target = e.get("reg") or e.get("site")
+                  if target and BET_RX.search(target):
+                      target = None
                   if target:
                       e["more"] = e["link"]
                       e["link"] = target
@@ -1786,12 +1808,370 @@ jobs:
               return out
 
 
+          # ---------------- Courses : sources officielles en plus de Finishers (o-trail, FFA, FFTri) ----------------
+          # Toujours dans le respect du robots.txt de chaque site, à petite vitesse, et avec une mémoire (data/race-extra.json)
+          # pour ne relire une fiche que tous les quelques jours.
+          EXTRA_PATH = os.path.join(DATA, "race-extra.json")
+          _ROBOTS = {}
+
+
+          def allowed(url):
+              import urllib.robotparser
+              host = urllib.parse.urlsplit(url).netloc
+              if host not in _ROBOTS:
+                  rp = urllib.robotparser.RobotFileParser()
+                  try:
+                      rp.parse(get(f"https://{host}/robots.txt", tries=1).splitlines())
+                  except Exception:  # noqa: BLE001
+                      rp = None
+                  _ROBOTS[host] = rp
+              rp = _ROBOTS[host]
+              return True if rp is None else rp.can_fetch(UA, url)
+
+
+          MOIS_FR = {"janvier": 1, "fevrier": 2, "février": 2, "mars": 3, "avril": 4, "mai": 5, "juin": 6, "juillet": 7, "aout": 8, "août": 8,
+                     "septembre": 9, "octobre": 10, "novembre": 11, "decembre": 12, "décembre": 12,
+                     "janv": 1, "fevr": 2, "févr": 2, "avr": 4, "juil": 7, "sept": 9, "oct": 10, "nov": 11, "dec": 12, "déc": 12}
+
+
+          def fr_date(txt, ref=None):
+              """« samedi 10 octobre 2026 », « 10 oct. 2026 », « 10/10/2026 » → date (la première trouvée)."""
+              ref = ref or dt.date.today()
+              t = norm_txt(txt)
+              m = re.search(r"\b(\d{1,2})(?:er)?\s+(janv(?:ier)?|f[eé]vr(?:ier)?|mars|avr(?:il)?|mai|juin|juil(?:let)?|ao[uû]t|sept(?:embre)?|oct(?:obre)?|nov(?:embre)?|d[eé]c(?:embre)?)\.?\s*(\d{4})?", t)
+              if m:
+                  mo = MOIS_FR.get(m.group(2).replace("é", "e").replace("û", "u")) or MOIS_FR.get(m.group(2))
+                  if mo:
+                      y = int(m.group(3)) if m.group(3) else (ref.year if (mo, int(m.group(1))) >= (ref.month, ref.day) else ref.year + 1)
+                      try:
+                          return dt.date(y, mo, int(m.group(1)))
+                      except ValueError:
+                          return None
+              m = re.search(r"\b(\d{1,2})/(\d{1,2})/(\d{4})\b", t)
+              if m:
+                  try:
+                      return dt.date(int(m.group(3)), int(m.group(2)), int(m.group(1)))
+                  except ValueError:
+                      return None
+              return None
+
+
+          def commune_geo(cp=None, nom=None, dep=None, cache=None):
+              """Position du centre de la commune (API officielle geo.api.gouv.fr), gardée en mémoire."""
+              k = f"c:{cp or ''}:{norm_txt(nom or '')}:{dep or ''}"
+              if cache is not None and k in cache:
+                  return cache[k]
+              q = {"fields": "centre,nom", "limit": "1", "boost": "population"}
+              if cp:
+                  q["codePostal"] = cp
+              if nom:
+                  q["nom"] = nom
+              if dep:
+                  q["codeDepartement"] = dep
+              r = None
+              try:
+                  j = json.loads(get("https://geo.api.gouv.fr/communes?" + urllib.parse.urlencode(q), tries=1))
+                  if j and j[0].get("centre"):
+                      lon, lat = j[0]["centre"]["coordinates"]
+                      r = [round(lat, 5), round(lon, 5), j[0].get("nom")]
+              except Exception:  # noqa: BLE001
+                  r = None
+              if cache is not None:
+                  cache[k] = r
+              return r
+
+
+          # ce que dit la page d'inscription : on ne classe une course que si c'est écrit noir sur blanc
+          REG_OPEN_RX = re.compile(r"inscriptions?\s+(?:sont\s+|est\s+)?(?:ouvertes?|en cours|disponibles?)|registration\s+(?:is\s+)?open|je m.inscris|s.inscrire maintenant|"
+                                   r"ajouter au panier|choisir (?:mon|ma|une) (?:course|[ée]preuve|distance)|places? restantes?", re.I)
+          REG_CLOSED_RX = re.compile(r"inscriptions?\s+(?:sont\s+)?(?:ferm[ée]es|cl[ôo]tur[ée]es|termin[ée]es|closes?)|complet|sold.?out|plus de dossards|"
+                                     r"registration\s+(?:is\s+)?closed", re.I)
+          REG_SOON_RX = re.compile(r"(?:ouverture\s+des\s+inscriptions|inscriptions?\s+(?:ouvriront|ouvrent|ouvertes?\s+(?:à partir du|dès le|le))|"
+                                   r"opening of registrations?|registrations? open(?:s|ing)?\s+on)\s*(?:le|:|-|au)?\s*([^.<\n]{0,60})", re.I)
+          REG_SOON_NODATE = re.compile(r"inscriptions?\s+(?:bient[ôo]t|prochainement|[àa] venir|pas encore ouvertes)|registrations?\s+(?:coming soon|not yet open)", re.I)
+
+
+          def reg_status(url, cache):
+              """« open », « soon » (avec la date d'ouverture si elle est écrite), « closed », ou rien quand ce n'est pas écrit clairement."""
+              if not url:
+                  return None, None
+              c = cache.get(url)
+              if c and c.get("at", "") >= (dt.date.today() - dt.timedelta(days=3)).isoformat():
+                  return c.get("st"), c.get("open_at")
+              st, oa = None, None
+              try:
+                  if not allowed(url):
+                      raise ValueError("robots")
+                  page = get(url, tries=1)
+                  txt = re.sub(r"\s+", " ", html.unescape(re.sub(r"(?is)<(script|style)[^>]*>.*?</\1>", " ", page)))
+                  txt = re.sub(r"<[^>]+>", " ", txt)
+                  m = REG_SOON_RX.search(txt)
+                  if m:
+                      d = fr_date(m.group(1))
+                      if d and d > dt.date.today():
+                          st, oa = "soon", d.isoformat()
+                  if not st and REG_CLOSED_RX.search(txt):
+                      st = "closed"
+                  if not st and REG_SOON_NODATE.search(txt):
+                      st = "soon"
+                  if not st and REG_OPEN_RX.search(txt):
+                      st = "open"
+              except Exception:  # noqa: BLE001
+                  st = None
+              cache[url] = {"st": st, "open_at": oa, "at": dt.date.today().isoformat()}
+              return st, oa
+
+
+          def _kms(txt):
+              ks = sorted({round(float(x.replace(",", ".")), 1) for x in re.findall(r"(\d{1,3}(?:[.,]\d)?)\s?km\b", txt) if 0.5 <= float(x.replace(",", ".")) <= 400}, reverse=True)
+              dps = sorted({int(x) for x in re.findall(r"(\d{2,5})\s?m?\s?D\+", txt) if 10 <= int(x) <= 30000}, reverse=True)
+              return ks[:8], dps[:8]
+
+
+          def otrail(cache, geo):
+              """Trails vérifiés sur o-trail.fr (12 mois) : date, commune, distances, D+, lien d'inscription et site de l'organisateur."""
+              today = dt.date.today()
+              url = ("https://o-trail.fr/calendrier-trail?pays=FR&departement=&date_debut=" + today.isoformat() +
+                     "&date_fin=" + (today + dt.timedelta(days=365)).isoformat() + "&type_trail=&verifiee=1")
+              if not allowed(url):
+                  log("  o-trail : lecture refusée par robots.txt")
+                  return []
+              page = get(url, tries=2)
+              slugs = list(dict.fromkeys(re.findall(r'href="(?:https://o-trail\.fr)?(/evenement/[a-z0-9-]+)(?:\?edition=(\d{4}))?', page)))
+              log(f"  o-trail : {len(slugs)} trails vérifiés listés")
+              out, n_read = [], 0
+              for path, ed in slugs:
+                  u = "https://o-trail.fr" + path + (f"?edition={ed}" if ed else "")
+                  c = cache.get(u)
+                  if not c or c.get("at", "") < (today - dt.timedelta(days=7)).isoformat():
+                      if n_read >= 320 or not allowed(u):
+                          if not c:
+                              continue
+                      else:
+                          time.sleep(0.8)
+                          n_read += 1
+                          try:
+                              p = get(u, tries=1)
+                          except Exception:  # noqa: BLE001
+                              continue
+                          txt = re.sub(r"\s+", " ", html.unescape(re.sub(r"<[^>]+>", " ", re.sub(r"(?is)<(script|style)[^>]*>.*?</\1>", " ", p))))
+                          ld = ld_events(p)
+                          name = (ld[0].get("name") if ld else None) or (re.search(r"<h1[^>]*>([\s\S]*?)</h1>", p) or [None, ""])[1]
+                          name = re.sub(r"<[^>]+>", "", html.unescape(name or "")).strip()
+                          d0 = None
+                          if ld and ld[0].get("startDate"):
+                              try:
+                                  d0 = dt.date.fromisoformat(str(ld[0]["startDate"])[:10])
+                              except ValueError:
+                                  d0 = None
+                          d0 = d0 or fr_date(txt)
+                          cp = (re.search(r"\((\d{5})\)", txt) or re.search(r"\b(\d{5})\b", txt) or [None, None])[1]
+                          comm = (re.search(r"([A-ZÉÈÀÂÎÔÛ][\w'’ -]{1,40})\s*\(\d{5}\)", txt) or [None, ""])[1].strip()
+                          reg = next((html.unescape(h) for h, l in re.findall(r'<a[^>]+href="(https?://[^"]+)"[^>]*>([\s\S]{0,80}?)</a>', p)
+                                      if re.search(r"inscri", l, re.I) and "o-trail.fr" not in h), None)
+                          site = next((html.unescape(h) for h, l in re.findall(r'<a[^>]+href="(https?://[^"]+)"[^>]*>([\s\S]{0,80}?)</a>', p)
+                                       if re.search(r"site (?:officiel|web|de l.organisateur)|site internet", l, re.I) and "o-trail.fr" not in h), None)
+                          ks, dps = _kms(txt)
+                          c = {"t": name, "d": d0.isoformat() if d0 else None, "cp": cp, "city": comm, "reg": reg, "site": site, "kms": ks, "dplus": dps,
+                               "at": today.isoformat()}
+                          cache[u] = c
+                  if not c or not c.get("t") or not c.get("d") or c["d"] < today.isoformat():
+                      continue
+                  g = commune_geo(cp=c.get("cp"), cache=geo) if c.get("cp") else None
+                  out.append({"id": "ot-" + path.rsplit("/", 1)[-1], "src": "otrail", "kind": "race", "t": c["t"], "d": c["d"], "end": None,
+                              "v": c.get("city") or (g[2] if g else ""), "city": c.get("city") or (g[2] if g else ""), "a": c.get("cp") or "",
+                              "lat": g[0] if g else None, "lon": g[1] if g else None, "disc": ["trail"], "kms": c.get("kms") or [], "dplus": c.get("dplus") or [],
+                              "races": [{"km": k, "disc": "trail"} for k in (c.get("kms") or [])], "pop": 0, "img": "",
+                              "link": c.get("reg") or c.get("site") or u, "reg": c.get("reg"), "site": c.get("site"), "more": u, "lineup": [], "desc": ""})
+              log(f"  o-trail : {len(out)} trails gardés ({n_read} fiches lues cette nuit)")
+              return out
+
+
+          def athle(cache, geo):
+              """Calendrier officiel de la FFA (athle.fr) : courses hors stade (route, trail) des 12 prochains mois."""
+              today = dt.date.today()
+              out, seen = [], set()
+              for m in range(12):
+                  a = (today.replace(day=1) + dt.timedelta(days=32 * m)).replace(day=1)
+                  b = (a + dt.timedelta(days=32)).replace(day=1) - dt.timedelta(days=1)
+                  if m == 0:
+                      a = today
+                  u = ("https://www.athle.fr/bases/liste.aspx?frmbase=calendrier&frmmode=1&frmespace=0&frmtri=D"
+                       f"&frmdate_j1={a.day}&frmdate_m1={a.month}&frmdate_a1={a.year}&frmdate_j2={b.day}&frmdate_m2={b.month}&frmdate_a2={b.year}")
+                  if not allowed(u):
+                      log("  FFA : lecture refusée par robots.txt")
+                      return out
+                  time.sleep(1.0)
+                  try:
+                      page = get(u, tries=1)
+                  except Exception as ex:  # noqa: BLE001
+                      log(f"  FFA {a:%m/%Y} : {ex}")
+                      continue
+                  for row in re.findall(r"<tr[^>]*>([\s\S]*?)</tr>", page):
+                      link = re.search(r'href="(/competitions/\d{20,})"', row)
+                      if not link:
+                          continue
+                      txt = re.sub(r"\s+", " ", html.unescape(re.sub(r"<[^>]+>", " | ", row))).strip(" |")
+                      cells = [x.strip() for x in txt.split("|") if x.strip()]
+                      if not re.search(r"running|hors.?stade|route|trail|nature", txt, re.I) or re.search(r"\bcross\b|stade|marche nordique|animation|kids|annul", txt, re.I):
+                          continue
+                      title = next((x for x in cells if len(x) > 4 and not re.match(r"^\d", x) and not re.search(r"running|meeting|d[ée]partemental|r[ée]gional|national|label|fiche|r[ée]sultat", x, re.I)), None)
+                      day = fr_date(" ".join(cells[:2]) + f" {a.year if a.month <= 12 else ''}", ref=a)
+                      if not title or not day or day < today:
+                          continue
+                      dep = (re.search(r"\b(\d{2,3}[AB]?)\b", " ".join(cells[2:])) or [None, None])[1]
+                      city = next((x for x in cells[1:] if re.match(r"^[A-ZÉÈ][\w'’ -]{2,40}$", x) and x != title), "")
+                      label = (re.search(r"label\s+(or|argent|bronze|nickel|national|r[ée]gional)", txt, re.I) or [None, None])[1]
+                      key = (norm_txt(title), day.isoformat())
+                      if key in seen:
+                          continue
+                      seen.add(key)
+                      sheet = "https://www.athle.fr" + link.group(1)
+                      g = commune_geo(nom=city, dep=(dep or "").lstrip("0").zfill(2) if dep and dep.isdigit() else dep, cache=geo) if city else None
+                      ks, dps = _kms(txt)
+                      disc = ["trail"] if re.search(r"trail|nature|montagne", txt, re.I) else ["route"]
+                      out.append({"id": "ffa-" + link.group(1).rsplit("/", 1)[-1][:24], "src": "athle", "kind": "race", "t": title.title() if title.isupper() else title,
+                                  "d": day.isoformat(), "end": None, "v": city, "city": city, "a": dep or "", "lat": g[0] if g else None, "lon": g[1] if g else None,
+                                  "disc": disc, "kms": ks, "dplus": dps, "races": [{"km": k, "disc": disc[0]} for k in ks], "pop": 0, "label": label, "img": "",
+                                  "link": sheet, "more": sheet, "lineup": [], "desc": ""})
+              # la fiche officielle donne souvent le site de l'organisateur et le lien d'inscription : on en lit une partie chaque nuit
+              n_read = 0
+              for e in sorted(out, key=lambda e: (0 if e.get("label") else 1, e["d"])):
+                  c = cache.get(e["more"])
+                  if not c or c.get("at", "") < (today - dt.timedelta(days=10)).isoformat():
+                      if n_read >= 250 or not allowed(e["more"]):
+                          if not c:
+                              continue
+                      else:
+                          time.sleep(0.8)
+                          n_read += 1
+                          try:
+                              p = get(e["more"], tries=1)
+                          except Exception:  # noqa: BLE001
+                              continue
+                          links = re.findall(r'<a[^>]+href="(https?://[^"]+)"[^>]*>([\s\S]{0,80}?)</a>', p)
+                          reg = next((html.unescape(h) for h, l in links if re.search(r"inscri|engag", l + h, re.I) and "athle.fr" not in h and not BET_RX.search(h)), None)
+                          site = next((html.unescape(h) for h, l in links if re.search(r"site|internet|web", l, re.I) and "athle.fr" not in h and not BET_RX.search(h)
+                                       and not any(d in h.lower() for d in SKIP_DOMAINS)), None)
+                          ks, dps = _kms(re.sub(r"<[^>]+>", " ", p))
+                          c = {"reg": reg, "site": site, "kms": ks, "dplus": dps, "at": today.isoformat()}
+                          cache[e["more"]] = c
+                  e["reg"], e["site"] = c.get("reg"), c.get("site")
+                  if c.get("kms") and not e["kms"]:
+                      e["kms"], e["races"] = c["kms"], [{"km": k, "disc": e["disc"][0]} for k in c["kms"]]
+                  e["dplus"] = e["dplus"] or c.get("dplus") or []
+                  e["link"] = e["reg"] or e["site"] or e["more"]
+              log(f"  FFA : {len(out)} courses hors stade ({n_read} fiches lues cette nuit, {sum(1 for e in out if e.get('reg') or e.get('site'))} avec le site de l'organisateur)")
+              return out
+
+
+          def fftri(cache, geo):
+              """Calendrier de la FFTri (fftri.t2area.com) : triathlons, duathlons… (lecture prudente, la page peut changer)."""
+              u = "https://fftri.t2area.com/calendrier.html"
+              if not allowed(u):
+                  log("  FFTri : lecture refusée par robots.txt")
+                  return []
+              try:
+                  page = get(u, tries=1)
+              except Exception as ex:  # noqa: BLE001
+                  log(f"  FFTri : {ex}")
+                  return []
+              today, out = dt.date.today(), []
+              for ev in ld_events(page):
+                  try:
+                      d0 = dt.date.fromisoformat(str(ev.get("startDate"))[:10])
+                  except ValueError:
+                      continue
+                  if d0 < today:
+                      continue
+                  loc = ev.get("location") or {}
+                  addr = (loc.get("address") or {}) if isinstance(loc, dict) else {}
+                  city = addr.get("addressLocality") if isinstance(addr, dict) else ""
+                  g = commune_geo(cp=addr.get("postalCode"), cache=geo) if isinstance(addr, dict) and addr.get("postalCode") else None
+                  out.append({"id": "tri-" + slug(ev.get("name", ""))[:40] + "-" + d0.isoformat(), "src": "fftri", "kind": "race", "t": ev.get("name", ""),
+                              "d": d0.isoformat(), "end": None, "v": city or "", "city": city or "", "a": "", "lat": g[0] if g else None, "lon": g[1] if g else None,
+                              "disc": ["triathlon"], "kms": [], "dplus": [], "races": [], "pop": 0, "img": "", "link": ev.get("url") or u, "lineup": [], "desc": ""})
+              if not out:  # pas de données structurées : on note la forme de la page pour l'améliorer
+                  log("  FFTri : aucune épreuve lisible (aperçu : " + re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", page))[:300] + ")")
+              else:
+                  log(f"  FFTri : {len(out)} épreuves")
+              return out
+
+
+          def _same_race(a, b):
+              if abs((dt.date.fromisoformat(a["d"][:10]) - dt.date.fromisoformat(b["d"][:10])).days) > 1:
+                  return False
+              ta = set(w for w in norm_txt(a["t"]).replace("-", " ").split() if len(w) > 2 and w not in ("trail", "course", "les", "des", "du", "de", "la", "edition"))
+              tb = set(w for w in norm_txt(b["t"]).replace("-", " ").split() if len(w) > 2 and w not in ("trail", "course", "les", "des", "du", "de", "la", "edition"))
+              sim = len(ta & tb) / max(1, min(len(ta), len(tb)))
+              near = (a.get("lat") and b.get("lat") and abs(a["lat"] - b["lat"]) < 0.15 and abs(a["lon"] - b["lon"]) < 0.2) or norm_txt(a.get("city")) == norm_txt(b.get("city"))
+              return sim >= 0.6 or (sim >= 0.34 and near)
+
+
+          def merge_races(base, extra):
+              """Une seule fiche par course, quelle que soit la source : on garde la plus complète et on réunit les liens."""
+              by_day = {}
+              for e in base:
+                  by_day.setdefault(e["d"][:10], []).append(e)
+              added = 0
+              for x in extra:
+                  d = dt.date.fromisoformat(x["d"][:10])
+                  cands = [e for k in (d - dt.timedelta(days=1), d, d + dt.timedelta(days=1)) for e in by_day.get(k.isoformat(), [])]
+                  m = next((e for e in cands if _same_race(e, x)), None)
+                  if m:
+                      for k in ("reg", "site", "label"):
+                          if x.get(k) and not m.get(k):
+                              m[k] = x[k]
+                      if x.get("reg") and (not m.get("link") or "finishers.com" in m.get("link", "")):
+                          m["more"], m["link"] = m.get("link"), x["reg"]
+                      if not m.get("lat") and x.get("lat"):
+                          m["lat"], m["lon"] = x["lat"], x["lon"]
+                      m["kms"] = m.get("kms") or x.get("kms")
+                      m["srcs"] = sorted(set((m.get("srcs") or [m["src"]]) + [x["src"]]))
+                      continue
+                  by_day.setdefault(x["d"][:10], []).append(x)
+                  base.append(x)
+                  added += 1
+              return added
+
+
           def races_all_plus():
               out = races_all()
               try:
                   out += hyrox()
               except Exception as e:  # noqa: BLE001
                   log(f"  HYROX: {e}")
+              try:
+                  cache = json.load(open(EXTRA_PATH, encoding="utf-8"))
+              except Exception:  # noqa: BLE001
+                  cache = {}
+              geo = cache.setdefault("_geo", {})
+              for name, fn in (("o-trail", otrail), ("FFA", athle), ("FFTri", fftri)):
+                  try:
+                      n = merge_races(out, fn(cache, geo))
+                      log(f"  {name} : {n} courses ajoutées (les autres étaient déjà là et ont été complétées)")
+                  except Exception as e:  # noqa: BLE001
+                      log(f"  {name} : échec ({e})")
+              # statut des inscriptions, seulement quand la page de l'organisateur le dit clairement
+              rs = cache.setdefault("_reg", {})
+              n_chk, today = 0, dt.date.today()
+              for e in sorted(out, key=lambda e: e["d"]):
+                  u = e.get("reg")
+                  if not u or e["d"] > (today + dt.timedelta(days=300)).isoformat():
+                      continue
+                  if u not in rs and n_chk >= 400:
+                      continue
+                  if u not in rs:
+                      n_chk += 1
+                      time.sleep(0.4)
+                  st, oa = reg_status(u, rs)
+                  if st:
+                      e["reg_status"] = st
+                  if oa:
+                      e["reg_open_at"] = oa
+              log(f"  Inscriptions : {sum(1 for e in out if e.get('reg_status') == 'open')} ouvertes, {sum(1 for e in out if e.get('reg_status') == 'soon')} à venir "
+                  f"({sum(1 for e in out if e.get('reg_open_at'))} avec date d'ouverture), {sum(1 for e in out if e.get('reg_status') == 'closed')} complètes ou closes")
+              json.dump(cache, open(EXTRA_PATH, "w", encoding="utf-8"), ensure_ascii=False)
               out.sort(key=lambda e: e["d"])
               return out
 
