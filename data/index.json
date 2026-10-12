@@ -2,24 +2,24 @@
  "cities": {
   "paris": {
    "name": "Paris",
-   "updated": "2026-10-11T15:27:07.023077+00:00",
-   "n": 7782,
+   "updated": "2026-10-12T04:35:33.066794+00:00",
+   "n": 7959,
    "sources": {
     "ra": {
-     "n": 162
+     "n": 161
     },
     "dice": {
-     "n": 393
+     "n": 371
     },
     "tm": {
-     "n": 6789
+     "n": 6783
     },
     "fnac": {
      "n": 0,
      "err": "HTTP Error 403: Forbidden"
     },
     "dtour": {
-     "n": 238
+     "n": 232
     },
     "marches": {
      "n": 80
@@ -31,43 +31,43 @@
      "n": 13
     },
     "offi": {
-     "n": 357
+     "n": 348
     }
    }
   },
   "france": {
    "name": "Festivals",
-   "updated": "2026-10-11T15:27:07.023077+00:00",
-   "n": 1867,
+   "updated": "2026-10-12T04:35:33.066794+00:00",
+   "n": 1864,
    "sources": {
     "festivals": {
-     "n": 1867
+     "n": 1864
     }
    }
   },
   "sports": {
    "name": "Sport (France)",
-   "updated": "2026-10-11T15:27:07.023077+00:00",
-   "n": 981,
+   "updated": "2026-10-12T04:35:33.066794+00:00",
+   "n": 978,
    "sources": {
     "sports": {
-     "n": 981
+     "n": 978
     }
    }
   },
   "races": {
    "name": "Courses (France)",
-   "updated": "2026-10-11T15:27:07.023077+00:00",
-   "n": 5154,
+   "updated": "2026-10-12T04:35:33.066794+00:00",
+   "n": 5223,
    "sources": {
     "races": {
-     "n": 5154
+     "n": 5223
     }
    }
   },
   "artists": {
    "name": "Dates de tes artistes",
-   "updated": "2026-10-11T15:27:07.023077+00:00",
+   "updated": "2026-10-12T04:35:33.066794+00:00",
    "n": 2,
    "sources": {
     "artists": {
@@ -603,7 +603,7 @@
   },
   "buzz": {
    "name": "Les plus attendus",
-   "updated": "2026-10-11T15:27:07.023077+00:00",
+   "updated": "2026-10-12T04:35:33.066794+00:00",
    "n": 41,
    "sources": {
     "buzz": {
@@ -685,31 +685,31 @@
   },
   "lyon": {
    "name": "Lyon",
-   "updated": "2026-10-08T04:32:47.657527+00:00",
-   "n": 3077,
+   "updated": "2026-10-12T04:35:33.066794+00:00",
+   "n": 2995,
    "sources": {
     "ra": {
-     "n": 57
+     "n": 52
     },
     "dice": {
      "n": 0,
      "err": "HTTP Error 404: Not Found"
     },
     "tm": {
-     "n": 2635
+     "n": 2554
     },
     "fnac": {
      "n": 0,
      "err": "HTTP Error 403: Forbidden"
     },
     "dtour": {
-     "n": 317
+     "n": 315
     },
     "marches": {
      "n": 0
     },
     "br": {
-     "n": 84
+     "n": 91
     },
     "tac": {
      "n": 0
@@ -721,31 +721,31 @@
   },
   "marseille": {
    "name": "Marseille",
-   "updated": "2026-10-08T04:32:47.657527+00:00",
-   "n": 2490,
+   "updated": "2026-10-12T04:35:33.066794+00:00",
+   "n": 2381,
    "sources": {
     "ra": {
-     "n": 85
+     "n": 71
     },
     "dice": {
      "n": 0,
      "err": "HTTP Error 404: Not Found"
     },
     "tm": {
-     "n": 1009
+     "n": 983
     },
     "fnac": {
      "n": 0,
      "err": "HTTP Error 403: Forbidden"
     },
     "dtour": {
-     "n": 1348
+     "n": 1279
     },
     "marches": {
      "n": 0
     },
     "br": {
-     "n": 76
+     "n": 75
     },
     "tac": {
      "n": 0
@@ -784,31 +784,31 @@
   },
   "toulouse": {
    "name": "Toulouse",
-   "updated": "2026-10-08T15:31:37.213599+00:00",
-   "n": 1503,
+   "updated": "2026-10-12T04:35:33.066794+00:00",
+   "n": 1524,
    "sources": {
     "ra": {
-     "n": 18
+     "n": 15
     },
     "dice": {
      "n": 0,
      "err": "HTTP Error 404: Not Found"
     },
     "tm": {
-     "n": 738
+     "n": 716
     },
     "fnac": {
      "n": 0,
      "err": "HTTP Error 403: Forbidden"
     },
     "dtour": {
-     "n": 746
+     "n": 748
     },
     "marches": {
      "n": 0
     },
     "br": {
-     "n": 57
+     "n": 55
     },
     "tac": {
      "n": 0
@@ -820,30 +820,30 @@
   },
   "bordeaux": {
    "name": "Bordeaux",
-   "updated": "2026-10-08T15:31:37.213599+00:00",
-   "n": 1793,
+   "updated": "2026-10-12T04:35:33.066794+00:00",
+   "n": 1749,
    "sources": {
     "ra": {
-     "n": 13
+     "n": 12
     },
     "dice": {
-     "n": 57
+     "n": 52
     },
     "tm": {
-     "n": 1456
+     "n": 1427
     },
     "fnac": {
      "n": 0,
      "err": "HTTP Error 403: Forbidden"
     },
     "dtour": {
-     "n": 240
+     "n": 218
     },
     "marches": {
      "n": 0
     },
     "br": {
-     "n": 59
+     "n": 54
     },
     "tac": {
      "n": 0
@@ -1474,7 +1474,35 @@
      "err": "HTTP Error 404: Not Found"
     }
    }
+  },
+  "anvers": {
+   "name": "Anvers",
+   "updated": "2026-10-12T04:35:33.066794+00:00",
+   "n": 53,
+   "sources": {
+    "ra": {
+     "n": 55
+    },
+    "dice": {
+     "n": 0,
+     "err": "HTTP Error 404: Not Found"
+    }
+   }
+  },
+  "gand": {
+   "name": "Gand",
+   "updated": "2026-10-12T04:35:33.066794+00:00",
+   "n": 52,
+   "sources": {
+    "ra": {
+     "n": 52
+    },
+    "dice": {
+     "n": 0,
+     "err": "HTTP Error 404: Not Found"
+    }
+   }
   }
  },
- "updated": "2026-10-11T15:27:07.023077+00:00"
+ "updated": "2026-10-12T04:35:33.066794+00:00"
 }
