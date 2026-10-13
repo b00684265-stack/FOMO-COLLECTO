@@ -35,7 +35,7 @@ dt{color:var(--ink2);font-size:14px}dd{margin:0}
   <a class="back" href="/">‹ Retour à FOMO</a>
   <div class="logo">FO<i>MO</i></div>
   <h1>Confidentialité et mentions légales</h1>
-  <p class="lead">Mise à jour le 10 octobre 2026. FOMO est une application en version bêta, gratuite et sans publicité.</p>
+  <p class="lead">Mise à jour le 13 octobre 2026. FOMO est une application en version bêta, gratuite et sans publicité.</p>
 
   <div class="tldr"><b>En bref</b>
     <ul>
@@ -49,7 +49,7 @@ dt{color:var(--ink2);font-size:14px}dd{margin:0}
   <section>
     <h2>Ce qui reste sur ton téléphone</h2>
     <p>Tes réponses au questionnaire de départ, ta ville, tes univers, les événements que tu aimes, écartes ou as déjà faits, tes alertes et ton agenda sont enregistrés uniquement dans la mémoire de ton navigateur ou de l'app installée. FOMO s'en sert pour te proposer des sorties, et ce calcul se fait sur ton téléphone. Aucun serveur ne reçoit ces informations.</p>
-    <p>Si tu utilises ta position précise, elle sert à trier les événements par distance, sur ton téléphone. Seule exception : près de Paris, une position arrondie (à une centaine de mètres près) est envoyée au service public « Que faire à Paris » de la Ville de Paris, pour trouver ce qui se passe dans ton quartier. Elle n'y est pas associée à ton identité.</p>
+    <p>Si tu utilises ta position précise, elle sert à trier les événements par distance, sur ton téléphone. Pour afficher ta rue et ton quartier, et pour chercher ce qui se passe autour de toi, une position est envoyée à des services publics et au serveur de FOMO (détails ci-dessous). Elle n'est jamais associée à ton identité, et FOMO ne garde pas d'historique de tes positions.</p>
   </section>
 
   <section>
@@ -67,6 +67,8 @@ dt{color:var(--ink2);font-size:14px}dd{margin:0}
       <li><b>Google Fonts</b> fournit la police d'écriture.</li>
       <li><b>Deezer</b> sert à trouver des artistes proches de ceux que tu aimes. Seuls des noms d'artistes lui sont envoyés.</li>
       <li><b>geo.api.gouv.fr</b> (service public) retrouve les villes que tu tapes dans la recherche de lieu.</li>
+      <li><b>La Base Adresse Nationale</b> (service public, IGN) : quand tu touches « Utiliser ma position précise », ta position lui est envoyée une fois pour afficher ta rue et ton quartier.</li>
+      <li><b>Le serveur de FOMO</b> reçoit une position arrondie (à environ 1 km près) de la ville choisie, de ta ville ou de ton séjour, pour chercher les fêtes, brocantes, concerts et spectacles autour (sources : DATAtourisme et Ticketmaster). Rien n'est conservé, à part une copie temporaire des résultats, commune à tout le monde.</li>
     </ul>
     <p>Si tu colles le lien public de ton profil Spotify ou SoundCloud, le serveur de FOMO lit cette page publique une seule fois pour repérer tes artistes, puis l'oublie. Rien n'est conservé.</p>
     <p>Quand tu ajoutes une sortie à l'agenda de ton téléphone, le serveur fabrique le fichier agenda à la volée et ne le garde pas. Quand tu touches « Billetterie » ou « S'inscrire », tu quittes FOMO pour le site de l'organisateur ou de la billetterie, qui a ses propres règles.</p>

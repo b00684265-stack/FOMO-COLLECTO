@@ -660,6 +660,13 @@ html,body{overscroll-behavior-y:contain}
 .inst-go{border:0;border-radius:999px;background:var(--hot);color:#fff;font:inherit;font-weight:800;font-size:16px;padding:15px;cursor:pointer;box-shadow:0 10px 24px color-mix(in srgb,var(--hot) 35%,transparent)}
 .inst-later{border:0;background:none;color:var(--ink3);font:inherit;font-weight:700;font-size:14px;padding:12px;cursor:pointer}
 .ob-priv{margin:10px 0 0;text-align:center;font-size:12.5px;color:var(--ink3)}.ob-priv a{color:inherit;text-decoration:underline}
+.wk-where{font-size:12px;font-weight:800;color:var(--hot);margin:0 0 4px}
+.fy-stays{display:flex;flex-direction:column;gap:8px}.fy-stays:empty{display:none}
+.stay{display:flex;align-items:center;gap:10px;background:var(--hot-soft);border-radius:16px;padding:10px 12px}
+.stay-i{font-size:20px}.stay-t{flex:1;min-width:0}.stay-t b{display:block;font-size:15px}.stay-t small{display:block;color:var(--ink2);font-size:12.5px;line-height:1.35}
+.stay-x{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;font:inherit;font-size:12.5px;font-weight:700;padding:7px 11px;cursor:pointer}
+.stay-dates{display:flex;flex-direction:column;gap:8px;border:1px solid var(--line);border-radius:16px;padding:12px}.stay-dates .row{gap:10px;flex-wrap:wrap}
+.stay-dates label{display:flex;align-items:center;gap:6px;font-size:14px}.stay-dates input{font:inherit;border:1px solid var(--line);border-radius:10px;padding:6px 8px;background:var(--card);color:var(--ink)}
 </style>
 <!-- mesure d'audience anonyme (GoatCounter : sans cookie, sans donnée personnelle) -->
 <script data-goatcounter="https://fomo.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
@@ -712,6 +719,7 @@ html,body{overscroll-behavior-y:contain}
   <section class="view" id="v-foryou" hidden>
     <div class="ptr" id="ptr" aria-hidden="true"><span class="ptr-i">↓</span><span class="ptr-t">Tire pour rafraîchir</span></div>
     <div><h1 class="h-page" id="fy-title">Pour toi</h1><p class="sub" id="fy-sub">Classé par correspondance avec tes goûts. Chaque ♥ affine la suite.</p></div>
+    <div class="fy-stays" id="fy-stays"></div>
     <div class="fy-pick" id="fy-mode"><button class="fy-pbtn" id="fy-pbtn" aria-haspopup="listbox" aria-expanded="false"><span id="fy-plab">🗓️ Ta semaine</span><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button><div class="fy-menu" id="fy-menu" role="listbox" hidden></div></div>
     <div class="chips" id="fy-filter"></div>
     <p class="fy-hint" id="fy-hint" hidden>← Glisse à gauche ou à droite pour changer d'univers →</p>
@@ -1279,18 +1287,33 @@ function nearestCity(p){let best=null,bd=1e9;for(const k of CITIES){if(!GEO[k])c
 const homePos=()=>S.home&&S.home.lat!=null?S.home:{lat:GEO.Paris[0],lon:GEO.Paris[1],city:"Paris"};
 const homeCity=()=>(S.home&&S.home.city&&S.home.city!=="Autour de moi"?S.home.city:(S.home&&S.home.near))||"Paris";
 const citySlug=c=>norm(c).replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
-function tripAt(d){if(!S.cal)return null;const t=D(d);return S.cal.trips.find(x=>t>=new Date(x.s)&&t<new Date(x.e))||null;}
-function expectedAt(d){const tr=d?tripAt(d):null;if(tr){const p=cityPos(tr.city);if(p)return Object.assign(p,{trip:tr.city});}return homePos();}
+// séjours : « je suis à Honfleur jusqu'à dimanche » (choisi dans l'app) ou déplacements trouvés dans l'agenda
+function stays(){const now=Date.now();return(S.stays||[]).filter(x=>new Date(x.e)>now);}
+function stayNow(){const t=Date.now();return stays().find(x=>t>=new Date(x.s)&&t<new Date(x.e))||null;}
+function tripAt(d){const t=D(d);const st=stays().find(x=>t>=new Date(x.s)&&t<new Date(x.e));if(st)return st;if(!S.cal)return null;return(S.cal.trips||[]).find(x=>t>=new Date(x.s)&&t<new Date(x.e))||null;}
+function expectedAt(d){const tr=d?tripAt(d):null;if(tr){const p=tr.lat!=null?{lat:+tr.lat,lon:+tr.lon}:cityPos(tr.city);if(p)return Object.assign({},p,{trip:tr.city});}return homePos();}
 function eventPos(e){if(e.lat!=null&&e.lon!=null&&!isNaN(e.lat))return{lat:+e.lat,lon:+e.lon};return cityPos(e.city);}
 function locate(){
   return new Promise((res,rej)=>{
     if(!navigator.geolocation)return rej(new Error("Ce navigateur ne donne pas accès à la position."));
-    navigator.geolocation.getCurrentPosition(p=>{const pt={lat:p.coords.latitude,lon:p.coords.longitude};const n=nearestCity(pt);
-      S.home={lat:pt.lat,lon:pt.lon,city:n.d<45?n.city:"Autour de moi",near:n.city,src:"gps",at:Date.now()};save();res(S.home);},
+    // position précise (GPS du téléphone), puis le nom de la rue et du quartier
+    navigator.geolocation.getCurrentPosition(async p=>{const pt={lat:p.coords.latitude,lon:p.coords.longitude};const n=nearestCity(pt);
+      S.home={lat:pt.lat,lon:pt.lon,city:n.d<45?n.city:"Autour de moi",near:n.city,src:"gps",acc:Math.round(p.coords.accuracy||0),at:Date.now()};
+      try{const q=await whereAmI(pt);if(q){S.home.city=q.city||S.home.city;S.home.quartier=q.quartier;S.home.street=q.street;}}catch(e){}
+      save();res(S.home);},
       e=>rej(new Error(e.code===1?"Position refusée : autorise la localisation pour ce site dans ton navigateur, ou choisis ta ville.":"Position indisponible pour l'instant.")),
-      {enableHighAccuracy:false,timeout:12000,maximumAge:30*60*1000});
+      {enableHighAccuracy:true,timeout:15000,maximumAge:2*60*1000});
   });
 }
+// adresse la plus proche (Base Adresse Nationale, service public) : rue, arrondissement ou commune
+async function whereAmI(pt){
+  for(const u of["https://data.geopf.fr/geocodage/reverse?lon="+pt.lon.toFixed(5)+"&lat="+pt.lat.toFixed(5)+"&limit=1","https://api-adresse.data.gouv.fr/reverse/?lon="+pt.lon.toFixed(5)+"&lat="+pt.lat.toFixed(5)+"&limit=1"]){
+    try{const ac=new AbortController(),t=setTimeout(()=>ac.abort(),5000);const r=await fetch(u,{signal:ac.signal});clearTimeout(t);if(!r.ok)continue;const j=await r.json();
+      const pr=((j.features||[])[0]||{}).properties||(j.label?j:null);if(!pr)continue;
+      const arr=String(pr.district||"").match(/(\d+)(?:er|e)\s+Arrondissement/i);
+      const quartier=arr?(pr.city||"")+" "+arr[1]+(arr[1]==="1"?"er":"e"):(pr.district||pr.city||"");
+      return{city:pr.city||"",quartier,street:pr.street||pr.name||""};}catch(e){}}
+  return null;}
 // villes et villages trouvés par la recherche (toutes les communes de France) : retenus pour la suite
 for(const k in (S.geoX||{})){GEO[k]=S.geoX[k];GEO_N[norm(k)]=k;}
 function learnPlace(p){if(!p||p.lat==null||!p.name)return;S.geoX=S.geoX||{};const k=Object.keys(S.geoX);if(k.length>200)delete S.geoX[k[0]];
@@ -1594,6 +1617,11 @@ async function ghRead(path){
   return res.json();
 }
 let COLL_HOME=null;
+let COLL_PLACES=[];
+// la ville collectée la plus proche d'un lieu (Honfleur → Le Havre, Villeurbanne → Lyon), pour le lieu choisi en haut et les séjours
+const NOT_CITY=["france","sports","races","artists","buzz","festivals-kb","announcements"];
+function nearSlug(idx,p){if(!idx||!p||p.lat==null)return null;let best=null,bd=40;Object.entries(idx.cities||{}).forEach(([k,v])=>{if(NOT_CITY.includes(k))return;const c=cityPos(v.name||k);if(!c)return;const d=km(p,c);if(d<bd){bd=d;best=k;}});return best;}
+function collPlaces(idx){return[S.browse,...stays()].map(p=>nearSlug(idx||COLL.index,p)).filter(Boolean);}
 async function loadCollector(){
   if(!CFG.ghRepo)return 0;
   const idx=await ghRead("data/index.json");
@@ -1603,7 +1631,8 @@ async function loadCollector(){
   if(!idx.cities||!idx.cities[hs]){const hp=homePos();let best=null,bd=90;
     Object.entries(idx.cities||{}).forEach(([k,v])=>{const p=cityPos(v.name||k);if(!p)return;const d=km(hp,p);if(d<bd){bd=d;best=k;}});if(best)hs=best;}
   COLL_HOME=hs;
-  const want=[...new Set([hs,S.nightCity&&citySlug(S.nightCity.city),...((S.cal&&S.cal.trips)||[]).map(t=>citySlug(t.city))].filter(Boolean).concat(["buzz","france","sports","races","artists","festivals-kb","announcements"]))];
+  COLL_PLACES=collPlaces(idx);
+  const want=[...new Set([hs,S.nightCity&&citySlug(S.nightCity.city),...((S.cal&&S.cal.trips)||[]).map(t=>citySlug(t.city)),...COLL_PLACES].filter(Boolean).concat(["buzz","france","sports","races","artists","festivals-kb","announcements"]))];
   await collBoot();
   const files={},old=COLL.files||{},oldIdx=(COLL.index&&COLL.index.cities)||{};
   // en parallèle, et seulement ce qui a changé depuis la dernière ouverture
@@ -1615,10 +1644,11 @@ async function loadCollector(){
   return Object.values(files).reduce((n,f)=>n+(f.events||[]).length,0);
 }
 function collectorEvents(){
-  const out=[],hs=COLL.home||citySlug(homeCity()),ns=S.nightCity?citySlug(S.nightCity.city):null;
+  const out=[],hs=COLL.home||citySlug(homeCity()),ns=S.nightCity?citySlug(S.nightCity.city):null;COLL_PLACES=collPlaces();
   for(const s in COLL.files){const f=COLL.files[s];if(s==="festivals-kb"||s==="announcements")continue;
     (f.events||[]).forEach(x=>{if(x.src==="sg")return;const e=collNorm(x,f);if(!e)return;
-      if(s===ns&&s!==hs){if(e.cat!=="soiree"&&e.cat!=="festival")return;e.picked=1;}
+      if(s===ns&&s!==hs&&!COLL_PLACES.includes(s)){if(e.cat!=="soiree"&&e.cat!=="festival")return;e.picked=1;}
+      else if(COLL_PLACES.includes(s)){if(e.noDate)return;}
       else if(!["france","sports","races","artists",hs].includes(s)){if(e.noDate)return;const tr=tripAt(e.d);if(!tr||citySlug(tr.city)!==s)return;e.trip=tr.city;}
       out.push(e);});}
   (S.dreamRaw||[]).forEach(x=>{const e=collNorm(x,{city:""});if(e)out.push(e);});
@@ -1720,10 +1750,11 @@ async function loadEvents(quiet){
     ["Ticketmaster sport",loadTMMonths("countryCode=FR&classificationName=sports",12,1)],
     ["Ticketmaster spectacles",loadTMMonths(near+"&classificationName=arts%20%26%20theatre",6,1)],
     ["Corrections",loadCuration().then(()=>[])],
+    ["Autour de toi",loadLocalAround().then(()=>[]).catch(()=>[])],
     ["Collecteur",loadCollector().then(()=>[]).catch(e=>{STATUS.gh={err:true,msg:e.message};return[];})]
   ];
   // affichage immédiat avec la collecte gardée dans le téléphone, puis avec la nouvelle collecte, puis complété par le reste
-  const quick=()=>{const evs=keepRules(dedupe(collectorEvents().concat(TRACKED,annEvents())));
+  const quick=()=>{const evs=keepRules(dedupe(collectorEvents().concat(TRACKED,annEvents(),LOCAL_EV)));
     if(evs.length&&(LOADING||!EVENTS.length)){EVENTS=evs;LOADING=false;PROF_V++;$("src-txt").textContent="Mise à jour…";renderAll(true);}};
   if(!quiet&&!EVENTS.length){await collBoot();if(Object.keys(COLL.files||{}).length)quick();
     jobs[jobs.length-1][1].then(()=>{if(LOADING||EVENTS.length<50)quick();});}
@@ -1731,7 +1762,7 @@ async function loadEvents(quiet){
   const errs=[];let list=[];
   res.forEach((r,i)=>{if(r.status==="fulfilled")list=list.concat(r.value);else errs.push(jobs[i][0]+" : "+r.reason.message);});
   const before=new Set(EVENTS.map(e=>e.id));
-  EVENTS=keepRules(dedupe(list.concat(collectorEvents(),TRACKED,annEvents())));
+  EVENTS=keepRules(dedupe(list.concat(collectorEvents(),TRACKED,annEvents(),LOCAL_EV)));
   checkLikedChanges();
   LOADING=false;LOAD_ERR=errs.join(" · ");LAST_LOAD=Date.now();
   const n=EVENTS.filter(e=>e.src!=="kb").length,fresh=EVENTS.filter(e=>!before.has(e.id)&&e.src!=="kb").length;
@@ -1823,6 +1854,39 @@ function applyCrit(L){
 }
 // dans « Coups de cœur » : recommandée par la critique, et pas mal notée par le public
 const isCoupCoeur=e=>e.cat==="theatre"&&(e.critW||0)>=1&&!(e.rating&&e.rating<7.5)&&((e.critW||0)>=2||(e.rating||0)>=8.5||(e.crit||[]).length>=2);
+/* --- Vie de quartier partout en France : fêtes, brocantes, animations autour du lieu choisi (DATAtourisme, via le serveur FOMO) --- */
+let LOCAL_EV=[],LOCAL_BY={},LOCAL_BUSY={};
+// les lieux qui comptent : chez toi, la ville choisie en haut, tes séjours
+function placesOfInterest(){const L=[homePos()];if(S.browse&&S.browse.lat!=null)L.push(S.browse);stays().forEach(x=>{if(x.lat!=null)L.push({lat:+x.lat,lon:+x.lon});});
+  const out=[];L.forEach(p=>{if(p&&p.lat!=null&&!out.some(q=>km(q,p)<4))out.push({lat:+p.lat,lon:+p.lon});});return out.slice(0,4);}
+function localCenter(){const p=S.browse&&S.browse.lat!=null?S.browse:homePos();return p&&p.lat!=null?{lat:+p.lat,lon:+p.lon}:null;}
+// concerts et spectacles (Ticketmaster) seulement là où la collecte de la nuit ne passe pas
+function collectedNear(p){const idx=(COLL.index&&COLL.index.cities)||{};return Object.entries(idx).some(([k,v])=>{if(["france","sports","races","artists","buzz","festivals-kb","announcements"].includes(k))return false;const c=cityPos(v.name||k);return c&&km(c,p)<25;});}
+async function loadLocalFor(c,force){
+  if(!COLL.index){try{await collBoot();}catch(e){}}
+  const key=c.lat.toFixed(2)+","+c.lon.toFixed(2),tm=collectedNear(c)?0:1;
+  if(!force&&LOCAL_BY[key])return LOCAL_BY[key];
+  let raw=null;try{const all=JSON.parse(localStorage.getItem("fomo2-loc2")||"{}");const c0=all[key];if(!force&&c0&&Date.now()-c0.at<12*36e5&&c0.tm>=tm)raw=c0.events;}catch(e){}
+  if(!raw){if(LOCAL_BUSY[key])return LOCAL_BY[key]||[];LOCAL_BUSY[key]=1;
+    try{const r=await fetch("/.netlify/functions/local?lat="+c.lat.toFixed(2)+"&lon="+c.lon.toFixed(2)+"&r=10"+(tm?"&tm=1":""));const j=await r.json();raw=j.events||[];
+      try{const all=JSON.parse(localStorage.getItem("fomo2-loc2")||"{}");all[key]={at:Date.now(),tm,events:raw};const ks=Object.keys(all).sort((a,b)=>all[b].at-all[a].at);ks.slice(4).forEach(k=>delete all[k]);localStorage.setItem("fomo2-loc2",JSON.stringify(all));}catch(e){}}
+    catch(e){raw=[];}finally{delete LOCAL_BUSY[key];}}
+  LOCAL_BY[key]=raw;return raw;}
+async function loadLocalAround(force){
+  if(isFile)return[];const P=placesOfInterest();
+  await Promise.all(P.map(c=>loadLocalFor(c,force).catch(()=>[])));
+  const keys=new Set(P.map(c=>c.lat.toFixed(2)+","+c.lon.toFixed(2))),seen=new Set(),out=[];
+  Object.entries(LOCAL_BY).forEach(([k,L])=>{if(!keys.has(k))return;L.forEach(x=>{if(seen.has(x.id))return;seen.add(x.id);const e=collNorm(x,{city:x.city||""});if(e){e._loc=1;out.push(e);}});});
+  LOCAL_EV=out;
+  if(!LOADING&&EVENTS.length){EVENTS=keepRules(dedupe(EVENTS.filter(e=>!e._loc).concat(LOCAL_EV)));PROF_V++;renderAll(true);}
+  return LOCAL_EV;}
+// les marchés de la carte (OpenStreetMap) deviennent des rendez-vous datés, pour le filtre « Marchés » de Vie de quartier
+function osmMarketEvents(){if(typeof MK==="undefined"||!MK.items)return[];const t0=new Date(NOW.getFullYear(),NOW.getMonth(),NOW.getDate());
+  return MK.items.filter(m=>m.src==="osm"&&m.rules).map(m=>{const st=mkState(m);if(st.n==null)return null;
+    const a=st.a!=null?st.a:(m.rules.days[(wd(NOW)+st.n)%7][0]||[])[0];const start=new Date(+t0+st.n*864e5+((a!=null&&a>=0?a:8*60))*6e4);
+    const dl=m.rules.days.map((x,i)=>x.length?i:-1).filter(i=>i>=0);
+    return finalize({id:m.id,src:"osm",cat:"local",mk:1,market:true,t:m.name,w:"Marché"+(dl.length?" · "+dl.map(i=>DAYS_FRL[i].slice(0,3)+".").join(" "):""),venue:m.street||m.name,addr:m.city,city:m.city,lat:m.lat,lon:m.lon,
+      d:start.toISOString(),end:new Date(+start+4.5*36e5).toISOString(),days:dl,link:m.web||"https://www.openstreetmap.org/?mlat="+m.lat+"&mlon="+m.lon+"#map=18/"+m.lat+"/"+m.lon,img:""});}).filter(Boolean);}
 let MK_EVENTS=[];
 // un même match vu dans la collecte (calendrier) et chez Ticketmaster : une seule fiche, avec la date de mise en vente de Ticketmaster
 const TEAM_ALIAS={"psg":"paris saint germain","om":"marseille","ol":"lyon","losc":"lille","asse":"saint etienne","ogc":"nice"};
@@ -2449,7 +2513,7 @@ function vPlaceOf(f){
   if(f.loc&&!LOC_CODES(f.loc)){const p=cityPos(f.loc);if(p)return{name:p.city,lat:p.lat,lon:p.lon};}
   return null;}
 // rayon : choisi au curseur, sinon celui de l'univers (0 = sans limite)
-function curRad(conf,f){if(conf.fixedR)return conf.fixedR;if(S.browseR!=null)return S.browseR;if(conf.near)return 5;if(CUR==="festival")return vPlaceOf(f)?80:0;return conf.radius;}
+function curRad(conf,f){if(conf.fixedR)return f.rad||conf.fixedR;if(S.browseR!=null)return S.browseR;if(conf.near)return 5;if(CUR==="festival")return vPlaceOf(f)?80:0;return conf.radius;}
 function summer(){const y=NOW.getMonth()>8?NOW.getFullYear()+1:NOW.getFullYear();return[new Date(y,4,1),new Date(y,8,30,23,59)];}
 const ymd=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
 function dateRange(f){
@@ -2531,13 +2595,16 @@ function distBucket(k){return k==null?[9,"Distance inconnue"]:k<1.5?[0,"Dans ton
 // position précise d'un lieu (coordonnées, ou arrondissement de Paris) ; null si on ne connaît que la ville
 function precisePos(e){if(e.lat!=null&&e.lon!=null&&!isNaN(e.lat))return{lat:+e.lat,lon:+e.lon};
   const m=String((e.addr||"")+" "+(e.venue||"")).match(/\b75(0\d\d|116)\b/);if(m){const a=m[1]==="116"?16:+m[1];const c=PARIS_ARR[a];if(c)return{lat:c[0],lon:c[1]};}return null;}
+// les marchés de la carte autour du lieu choisi, chargés au premier besoin
+function mkEnsure(){if(typeof MK==="undefined"||MK.busy)return;const c=locMk(),ck=c.lat.toFixed(2)+","+c.lon.toFixed(2)+",";if(MK.items.length&&MK.key.startsWith(ck))return;
+  setTimeout(()=>loadMarkets().then(()=>{if(VIEW==="vert"&&CUR==="local")renderVList();}).catch(()=>{}),0);}
 function vItems(cat,seg){
   CUR=cat;const f=VF(),conf=VCONF[cat],c0=locCenter(),q=norm(f.q||"");
   if(f.date&&f.date.k==="summer"&&cat!=="festival")delete f.date;
   if(f.date&&f.date.k==="month")delete f.date;
   let L=cat==="local"?EVENTS.filter(e=>NB_CATS.includes(e.cat)&&!e.proj&&!e.approx&&!e.tba&&D(e.until||e.end||e.d)>NOW)
       // les marchés n'apparaissent qu'avec le filtre « Marchés »
-      .concat((f.lt||[]).includes("marche")?MK_EVENTS.filter(e=>D(e.until||e.end||e.d)>NOW):[])
+      .concat((f.lt||[]).includes("marche")?(mkEnsure(),MK_EVENTS.filter(e=>D(e.until||e.end||e.d)>NOW).concat(osmMarketEvents())):[])
     :EVENTS.filter(e=>e.cat===cat&&(e.approx||e.until||(e.end&&cat==="local")?(D(e.until||e.end||e.d)>NOW||e.approx):D(e.d)>NOW));
   if(cat==="festival")L=L.concat(festProjected(L));
   // un lieu choisi (en touchant son nom dans une fiche) : tous ses événements, sans autre filtre
@@ -2787,7 +2854,10 @@ function renderVList(){
     if(!e._open&&!lastMode&&L[0]&&L[0]._open&&!openDone){openDone=true;h+=`<div class="mhead sep">Date d'ouverture pas encore connue</div>`;last="";}
     if(lab!==last){h+=`<div class="mhead">${esc(lab)}</div>`;last=lab;}
     h+=itemHTML(e,{pills:2,dist:e._k});});
-  $("vt-list").innerHTML=h;$("vt-more").hidden=L.length<=VPAGE;$("vt-more").textContent="Afficher plus ("+(L.length-VPAGE)+")";
+  // Vie de quartier : peu de choses à moins de 2 km (petite ville, campagne) → proposer d'élargir
+  if(CUR==="local"){const R=curRad(VCONF.local,f),nx=R<5?5:R<10?10:0;if(nx&&L.length<12)h+=`<div class="ag-none"><p>${L.length?"C'est tout à moins de "+R+" km.":""} Il se passe sûrement d'autres choses un peu plus loin.</p><button class="btn sm" id="vt-more-r" data-r="${nx}">Voir jusqu'à ${nx} km</button></div>`;}
+  $("vt-list").innerHTML=h;$("vt-more").hidden=L.length<=VPAGE;
+  const mr=$("vt-more-r");if(mr)mr.onclick=()=>{VF().rad=+mr.dataset.r;VPAGE=40;save();renderVert();};$("vt-more").textContent="Afficher plus ("+(L.length-VPAGE)+")";
 }
 $("vt-more").onclick=()=>{VPAGE+=40;renderVList();};
 $("vt-seg").addEventListener("click",ev=>{const b=ev.target.closest("[data-seg]");if(!b)return;S.vtab=S.vtab||{};S.vtab[CUR]=b.dataset.seg;VPAGE=40;save();renderVert();});
@@ -3422,16 +3492,17 @@ function sportTier(e){const t=(e.comp||"")+" "+(e.t||"");if(WORLD_RX.test(t))ret
   return e.level==="international"||e.level==="europe"?"inter":"national";}
 const FY_N_OF={soiree:3,concert:3,festival:3,theatre:2,competition:3,sport:3,expo:2,spectacle:3,experience:2,local:1};
 function fyCount(k){const f=(S.freq||{})[k];const n=FY_N_OF[k]||2;return Math.max(1,f>=4?n+1:f===1?n-1:n);}
-function kmHome(e){const p=eventPos(e);return p?km(homePos(),p):null;}
+// distance depuis l'endroit où tu seras ce jour-là (chez toi, ou ta ville de séjour)
+function kmHome(e){const p=eventPos(e);if(!p)return null;const s0=D(e.d),at=e.noDate||e.approx?homePos():expectedAt(e.until&&s0<NOW?NOW:e.d);return km(at,p);}
 function nearHome(e,R){const k=kmHome(e);return k!=null&&k<=R;}
 function topGenres(n){const g=taste().gen;return Object.entries(g).filter(([k,v])=>["sp","sc","dz","yt","q","like"].some(s=>v.by[s])).sort((a,b)=>b[1].t-a[1].t).slice(0,n).map(([k])=>k);}
 function likedIn(cat){return Object.values(S.interest||{}).concat(Object.values(S.liked||{})).filter(x=>x&&x.cat===cat);}
 // candidats : à venir, pas refusés, regroupés par série de dates, notés une fois
 function fyBase(){
   // plus rapide : on écarte d'abord ce qui est trop loin (sauf festivals et grandes affiches sportives), avant de noter
-  const hp=homePos(),farOk=e=>e.cat==="festival"||e.cat==="sport";
+  const farOk=e=>e.cat==="festival"||e.cat==="sport";
   const L=EVENTS.filter(e=>vertOn(e.cat)&&!(VERTS[e.cat]||{}).noDeck&&!S.disliked[e.id]&&!e.noDate&&(e.approx||D(e.until||e.end||e.d)>NOW)&&!e.soldout
-    &&!(S.liked[e.id]&&S.liked[e.id].likedAt<FEED_T0)&&(farOk(e)||(()=>{const p=eventPos(e);return !p||km(hp,p)<=FY_R;})()));
+    &&!(S.liked[e.id]&&S.liked[e.id].likedAt<FEED_T0)&&(farOk(e)||(()=>{const k=kmHome(e);if(k==null){const tr=e.approx?null:tripAt(e.d);return !(tr&&tr.lat!=null);}return k<=FY_R;})()));
   const runs=groupRuns(L,e=>e.cat==="sport"||e.cat==="competition"||e.approx||e.market?null:groupKey(e),e=>e.d);
   return runs.map(r=>{const e=r.length>1?mergeRun(r):r[0];const x=Object.assign({e},score(e));
     const it=r.map(y=>(S.interest||{})[y.id]).find(Boolean);if(it&&!it.auto)x.loved=it.likedAt||1;x.k=kmHome(e);return x;});
@@ -3593,6 +3664,8 @@ function wkPlan(){
     {const s0=D(e.d),long0=e.until||(e.end&&D(e.end)-s0>20*36e5),e0=long0?D(e.until||e.end):s0;if(e0<t0||s0>=wkEnd)return;}
     if(typeof isMarketOnly==="function"&&isMarketOnly(e))return;
     const k=kmHome(e);if(k!=null&&k>(e.cat==="festival"||e.cat==="sport"&&e.big?FY_R:30))return;
+    // en séjour : un événement dont on ne connaît pas le lieu ne passe pas
+    if(k==null){const tr=tripAt(e.d);if(tr&&tr.lat!=null)return;}
     const x=score(e);if(x.block||(typeof clash==="function"&&clash(e)))return;
     const long=e.until||(e.end&&D(e.end)-D(e.d)>20*36e5);
     let v=x.s+(fy.has(groupKey(e))?3:0)+((S.interest||{})[e.id]&&!(S.interest[e.id]).auto?4:0)+(e.buzz?1.5:0)-(k!=null?k/12:1);
@@ -3652,7 +3725,7 @@ function renderWeek(){
   feed.innerHTML=banner+`<h2 class="wk-h">${WK_OFF?"La semaine suivante, jour par jour":"Ta semaine, jour par jour"}</h2><div class="wk" id="wk"><svg class="wk-path" id="wk-path" aria-hidden="true"></svg>${P.days.map((day,i)=>{
     const wd=day.d.getDay(),lab=WK_OFF?capital(WD[wd].replace(".","")):i===0?"Auj.":i===1?"Demain":capital(WD[wd].replace(".","")),we=wd===0||wd===6;
     return`<section class="wk-day ${i%2?"r":"l"}${we?" we":""}${day.items.length?"":" free"}"><div class="wk-node"><b>${esc(lab)}</b><span>${day.d.getDate()}</span><small>${esc(MO[day.d.getMonth()])}</small></div>
-      <div class="wk-items">${day.items.length?day.items.map(it=>wkItemHTML(it,day)).join(""):`<p class="wk-free">${we?"Rien qui te ressemble ce jour-là : journée libre 😌":"Soirée libre"}</p>`}</div></section>`;}).join("")}</div>`;
+      <div class="wk-items">${(()=>{const tr=tripAt(new Date(day.d.getFullYear(),day.d.getMonth(),day.d.getDate(),14));return tr&&tr.lat!=null?`<div class="wk-where">📍 ${esc(tr.city)}</div>`:"";})()}${day.items.length?day.items.map(it=>wkItemHTML(it,day)).join(""):`<p class="wk-free">${we?"Rien qui te ressemble ce jour-là : journée libre 😌":"Soirée libre"}</p>`}</div></section>`;}).join("")}</div>`;
   feed.insertAdjacentHTML("beforeend",`<div class="wk-next">${WK_OFF?`<button class="btn ghost wide" data-wkoff="0">← Revenir à cette semaine</button>`:`<button class="btn wide" data-wkoff="1">Passer à la semaine suivante →</button>`}</div>`);
   // tes ♥ plus lointains : après la semaine
   const end=new Date(+today+7*864e5),later=Object.keys(S.interest||{}).filter(id=>!(S.interest[id]||{}).auto).map(id=>EVENTS.find(y=>y.id===id)||S.interest[id])
@@ -3697,8 +3770,14 @@ async function fyMorningCheck(){if(!fyMorning())return;
   PROF_V++;if(VIEW==="foryou")renderForYou();}
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")fyMorningCheck();});
 setInterval(()=>{if(document.visibilityState==="visible")fyMorningCheck();},10*60e3);
+function renderStays(){const L=stays().filter(x=>new Date(x.s)<new Date(+NOW+14*864e5));
+  $("fy-stays").innerHTML=L.map((x,i)=>{const s=new Date(x.s),e=new Date(+new Date(x.e)-60e3),now=s<=NOW;
+    return`<div class="stay"><span class="stay-i">📍</span><span class="stay-t"><b>${now?"Tu es à ":"Bientôt à "}${esc(x.city)}</b><small>${now?"":"du "+dlong(s)+" "}jusqu'au ${esc(dlong(e))} : ta semaine et tes idées sont choisies là-bas</small></span><button class="stay-x" data-stayx="${i}" aria-label="Terminer ce séjour">Terminer</button></div>`;}).join("");}
+$("fy-stays").addEventListener("click",ev=>{const b=ev.target.closest("[data-stayx]");if(!b)return;const L=stays(),x=L[+b.dataset.stayx];if(!x)return;
+  S.stays=(S.stays||[]).filter(y=>!(y.s===x.s&&y.city===x.city));save();PROF_V++;try{localStorage.removeItem("fomo2-wk");}catch(e){}
+  notify("Séjour terminé","Ta semaine revient autour de chez toi.");renderForYou();loadEvents(true);});
 function renderForYou(){
-  $("fy-title").textContent=S.name?"Pour toi, "+S.name:"Pour toi";
+  $("fy-title").textContent=S.name?"Pour toi, "+S.name:"Pour toi";renderStays();
   const week=S.fyMode!=="sel";
   $("fy-filter").hidden=week;$("fy-plab").textContent=fyViewLab(week?"week":S.fyF||"all");
   if(week){$("fy-hint").hidden=true;$("fy-more").hidden=true;FY_MORE=0;renderWeek();return;}
@@ -4877,8 +4956,27 @@ $("b-settings").onclick=()=>show("settings");
 /* --- lieu et rayon de Découverte : un seul réglage, en haut à droite --- */
 const WR=["auto",1,2,3,5,7,10,15,20,30,50,80,100,150,200,300,0];
 const wrLab=r=>r==="auto"||r==null?"Rayon auto":r===0?"Sans limite":r+" km";
-function whereLabel(){$("where-txt").textContent=S.browse?S.browse.name:homeCity();$("where-r").textContent=wrLab(S.browseR);
+function whereLabel(){const g=S.home&&S.home.src==="gps";$("where-txt").textContent=S.browse?S.browse.name:g&&S.home.quartier?S.home.quartier:homeCity();$("where-r").textContent=wrLab(S.browseR);
   $("where").classList.toggle("custom",!!(S.browse||S.browseR!=null));}
+/* --- séjour : « Hey, combien de temps es-tu à Honfleur ? » --- */
+function stayAsk(p){
+  const t0=new Date(NOW.getFullYear(),NOW.getMonth(),NOW.getDate()),eod=d=>new Date(d.getFullYear(),d.getMonth(),d.getDate(),23,59).toISOString();
+  const dow=t0.getDay(),toSun=dow===0?0:7-dow,sun=new Date(+t0+toSun*864e5),ymdL=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+  const opt=(k,ic,ti,sub)=>`<button class="pc-opt" data-stay="${k}"><span class="ic">${ic}</span><span><b>${ti}</b><small>${sub}</small></span></button>`;
+  openSheet(`<div class="in pcsheet"><h3>Hey, combien de temps es-tu à ${esc(p.name)} ?</h3><p class="small">Ta semaine et tes idées de sorties s'adaptent : là-bas pendant ton séjour, chez toi ensuite.</p>
+    ${opt("day","☀️","Aujourd'hui","Jusqu'à ce soir")}${opt("we","🧳",dow===0||dow===6?"Ce week-end":"Jusqu'à dimanche","Jusqu'au "+dlong(sun))}${opt("week","🗓️","Toute la semaine","Jusqu'au "+dlong(new Date(+t0+6*864e5)))}
+    <div class="stay-dates"><b>Ou choisis tes dates</b><div class="row"><label>Du <input type="date" id="st-a" value="${ymdL(t0)}" min="${ymdL(t0)}"></label><label>au <input type="date" id="st-b" value="${ymdL(new Date(+t0+2*864e5))}" min="${ymdL(t0)}"></label></div><button class="btn sm" data-stay="dates">Ze parti</button></div>
+    <button class="lnk" data-stay="none" style="align-self:center">Je regarde juste, je n'y suis pas</button></div>`,"phonecal");
+  document.querySelectorAll("[data-stay]").forEach(b=>b.onclick=()=>{const k=b.dataset.stay;if(k==="none"){closeSheet();return;}
+    let s=new Date(t0),e;
+    if(k==="day")e=eod(t0);else if(k==="we")e=eod(sun);else if(k==="week")e=eod(new Date(+t0+6*864e5));
+    else{const a=$("st-a").value,z=$("st-b").value;if(!a||!z)return;s=new Date(a+"T00:00");e=eod(new Date(z+"T12:00"));if(new Date(e)<s)return;}
+    S.stays=stays().filter(x=>!(new Date(x.s)<new Date(e)&&new Date(x.e)>s)).concat([{city:p.name,lat:+p.lat,lon:+p.lon,s:s.toISOString(),e}]).sort((a,b)=>new Date(a.s)-new Date(b.s));
+    S.fyMode="week";save();PROF_V++;try{localStorage.removeItem("fomo2-wk");}catch(x){}closeSheet();
+    if(typeof gc==="function")gc("sejour","Séjour déclaré");
+    notify("📍 Ta semaine passe à "+p.name,"Jusqu'au "+dlong(new Date(+new Date(e)-60e3))+". Ensuite, retour autour de chez toi.");
+    loadEvents(true).then(()=>{if(VIEW==="foryou")renderForYou();});});
+}
 function setBrowse(p,r){
   S.browse=p?{name:p.name,lat:+p.lat,lon:+p.lon,country:p.country||"FR"}:null;S.browseR=r==="auto"?null:r;
   if(p){S.browseHist=[{name:p.name,lat:+p.lat,lon:+p.lon}].concat((S.browseHist||[]).filter(x=>x.name!==p.name)).slice(0,4);}
@@ -4886,12 +4984,17 @@ function setBrowse(p,r){
   S.nightCity=p&&norm(p.name)!==norm(homeCity())?{city:p.name,country:p.country||countryOfCity(p.name),lat:+p.lat,lon:+p.lon}:null;
   save();whereLabel();PROF_V++;VPAGE=40;if(S.nightCity)refreshShotgun();
   if(typeof MK!=="undefined"){MK.key="";}
-  renderAll(true);if(VIEW==="vert")renderVert();if(VIEW==="markets")renderMarkets();}
+  // retour « autour de moi » : le séjour en cours s'arrête
+  if(!p&&stayNow()){S.stays=stays().filter(x=>new Date(x.s)>NOW);save();PROF_V++;try{localStorage.removeItem("fomo2-wk");}catch(e){}}
+  renderAll(true);if(VIEW==="vert")renderVert();if(VIEW==="markets")renderMarkets();
+  // tout se recharge autour du nouveau lieu (collecte de la ville la plus proche, fêtes et concerts du coin)
+  loadEvents(true).then(()=>{if(VIEW==="vert")renderVert();});
+  if(p&&km(homePos(),p)>20&&!stays().some(x=>km(x,p)<15))setTimeout(()=>stayAsk(p),350);if(typeof MK!=="undefined"&&(VF().lt||[]).includes("marche"))loadMarkets().then(()=>{if(VIEW==="vert")renderVert();}).catch(()=>{});}
 $("where").onclick=()=>{
   let pick=S.browse,rad=S.browseR==null?"auto":S.browseR;
   const gps=S.home&&S.home.src==="gps";
   openSheet(`<div class="in wsheet"><h3>Où veux-tu sortir ?</h3>
-    <button class="wopt" id="w-me" aria-pressed="${!pick}"><span class="ic">📍</span><span>Autour de moi<small>${gps?"Ta position":esc(homeCity())}</small></span></button>
+    <button class="wopt" id="w-me" aria-pressed="${!pick}"><span class="ic">📍</span><span>Autour de moi<small>${gps?esc([S.home.street,S.home.quartier].filter(Boolean).join(", ")||"Ta position")+(S.home.acc?" · à "+S.home.acc+" m près":""):esc(homeCity())}</small></span></button>
     ${placeSearchHTML("w-q","Une autre ville : Lyon, Lille, Biarritz…")}
     ${(S.browseHist||[]).length?`<div class="wrecent">${S.browseHist.map((h,i)=>`<button class="chip" data-wh-h="${i}" aria-pressed="${!!(pick&&pick.name===h.name)}">${esc(h.name)}</button>`).join("")}</div>`:""}
     <p class="small" id="w-msg">${pick?"Autour de <b>"+esc(pick.name)+"</b>":""}</p>
@@ -4902,7 +5005,7 @@ $("where").onclick=()=>{
     <button class="btn wide hot" id="w-ok">Voir les événements</button>
     ${!gps?`<button class="lnk" id="w-gps" style="align-self:center">Utiliser ma position précise</button>`:""}</div>`,"where");
   const msg=()=>{$("w-msg").innerHTML=pick?"Autour de <b>"+esc(pick.name)+"</b>":"";$("w-me").setAttribute("aria-pressed",String(!pick));};
-  $("w-me").onclick=()=>{pick=null;msg();};
+  $("w-me").onclick=()=>{pick=null;msg();if(gps&&Date.now()-(S.home.at||0)>5*60e3)locate().then(()=>{whereLabel();msg();}).catch(()=>{});};
   document.querySelectorAll("[data-wh-h]").forEach(b=>b.onclick=()=>{pick=S.browseHist[+b.dataset.whH];msg();document.querySelectorAll("[data-wh-h]").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));});
   bindPlaceSearch("w-q",p=>{pick=p;msg();});
   const r=$("w-r");r.oninput=()=>{rad=WR[+r.value];$("w-rv").textContent=wrLab(rad);};
@@ -4926,7 +5029,7 @@ function renderAll(quiet){
 /* ================= démarrage ================= */
 window.__fomo={get S(){return S},set S(v){S=v},get CFG(){return CFG},get EVENTS(){return EVENTS},set EVENTS(v){EVENTS=v;PROF_V++;},get COLL(){return COLL},set COLL(v){COLL=v},
   score,feedItems,vItems,segOf,taste,collNorm,tmNorm,qfapNorm,dedupe,keepRules,analyzeCal,allAlerts,openings,loadEvents,renderAll,bump(){PROF_V++;},recogNight,recogFest,recogMatch,recogRace,
-  scenSub,fyMorningCheck,wkPlan,curatedFeed,collectorEvents,annEvents,IDB,get COLLF(){return COLL},finalize,parseAsk,runAsk,ask,openVert,openInfo,toggleLike,show,infoPills,annDate,annArtist,scanAnnouncements,veilleEvents,connectDeezer,runOnboarding,
+  scenSub,setBrowse,wkPlan2:()=>wkPlan(),fyMorningCheck,wkPlan,curatedFeed,collectorEvents,annEvents,IDB,get COLLF(){return COLL},finalize,parseAsk,runAsk,ask,openVert,openInfo,toggleLike,show,infoPills,annDate,annArtist,scanAnnouncements,veilleEvents,connectDeezer,runOnboarding,
   setCal(items){S.cal=analyzeCal(items);S.conn.gcal=1;PROF_V++;save();},setTok(k){TOK[k]={t:"test",exp:Date.now()+1e7};}};
 // rouvrir l'app (même restée en arrière-plan plus de 10 minutes) : retour sur le serpentin de la semaine
 let HIDDEN_AT=0;
