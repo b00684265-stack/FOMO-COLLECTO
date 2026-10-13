@@ -667,6 +667,7 @@ html,body{overscroll-behavior-y:contain}
 .stay-x{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;font:inherit;font-size:12.5px;font-weight:700;padding:7px 11px;cursor:pointer}
 .stay-dates{display:flex;flex-direction:column;gap:8px;border:1px solid var(--line);border-radius:16px;padding:12px}.stay-dates .row{gap:10px;flex-wrap:wrap}
 .stay-dates label{display:flex;align-items:center;gap:6px;font-size:14px}.stay-dates input{font:inherit;border:1px solid var(--line);border-radius:10px;padding:6px 8px;background:var(--card);color:var(--ink)}
+.w-locs{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
 </style>
 <!-- mesure d'audience anonyme (GoatCounter : sans cookie, sans donnée personnelle) -->
 <script data-goatcounter="https://fomo.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
@@ -1298,13 +1299,21 @@ function locate(){
     if(!navigator.geolocation)return rej(new Error("Ce navigateur ne donne pas accès à la position."));
     // position précise (GPS du téléphone), puis le nom de la rue et du quartier
     navigator.geolocation.getCurrentPosition(async p=>{const pt={lat:p.coords.latitude,lon:p.coords.longitude};const n=nearestCity(pt);
-      S.home={lat:pt.lat,lon:pt.lon,city:n.d<45?n.city:"Autour de moi",near:n.city,src:"gps",acc:Math.round(p.coords.accuracy||0),at:Date.now()};
-      try{const q=await whereAmI(pt);if(q){S.home.city=q.city||S.home.city;S.home.quartier=q.quartier;S.home.street=q.street;}}catch(e){}
-      save();res(S.home);},
+      const here={lat:pt.lat,lon:pt.lon,city:n.d<45?n.city:"Autour de moi",near:n.city,src:"gps",acc:Math.round(p.coords.accuracy||0),at:Date.now()};
+      try{const q=await whereAmI(pt);if(q){here.city=q.city||here.city;here.quartier=q.quartier;here.street=q.street;}}catch(e){}
+      S.here=here;
+      // loin de chez toi (une autre ville) : « chez toi » ne bouge pas, on te demande combien de temps tu restes
+      const away=S.onboarded&&S.home&&S.home.lat!=null&&km(S.home,pt)>8&&norm(here.city||"")!==norm(homeCity());
+      if(away){save();if(typeof travelAsk==="function")travelAsk(here);res(Object.assign({},S.home,{away:here}));return;}
+      S.home=here;save();res(S.home);},
       e=>rej(new Error(e.code===1?"Position refusée : autorise la localisation pour ce site dans ton navigateur, ou choisis ta ville.":"Position indisponible pour l'instant.")),
       {enableHighAccuracy:true,timeout:15000,maximumAge:2*60*1000});
   });
 }
+let WHERE_AT=0;
+async function checkWhere(){if(!S.onboarded||!S.home||S.home.src!=="gps"||!navigator.geolocation||Date.now()-WHERE_AT<30*60e3)return;
+  try{if(navigator.permissions){const st=await navigator.permissions.query({name:"geolocation"});if(st.state!=="granted")return;}}catch(e){return;}
+  WHERE_AT=Date.now();try{const h=await locate();if(!h.away){whereLabel();}}catch(e){}}
 // adresse la plus proche (Base Adresse Nationale, service public) : rue, arrondissement ou commune
 async function whereAmI(pt){
   for(const u of["https://data.geopf.fr/geocodage/reverse?lon="+pt.lon.toFixed(5)+"&lat="+pt.lat.toFixed(5)+"&limit=1","https://api-adresse.data.gouv.fr/reverse/?lon="+pt.lon.toFixed(5)+"&lat="+pt.lat.toFixed(5)+"&limit=1"]){
@@ -3774,7 +3783,7 @@ function renderStays(){const L=stays().filter(x=>new Date(x.s)<new Date(+NOW+14*
   $("fy-stays").innerHTML=L.map((x,i)=>{const s=new Date(x.s),e=new Date(+new Date(x.e)-60e3),now=s<=NOW;
     return`<div class="stay"><span class="stay-i">📍</span><span class="stay-t"><b>${now?"Tu es à ":"Bientôt à "}${esc(x.city)}</b><small>${now?"":"du "+dlong(s)+" "}jusqu'au ${esc(dlong(e))} : ta semaine et tes idées sont choisies là-bas</small></span><button class="stay-x" data-stayx="${i}" aria-label="Terminer ce séjour">Terminer</button></div>`;}).join("");}
 $("fy-stays").addEventListener("click",ev=>{const b=ev.target.closest("[data-stayx]");if(!b)return;const L=stays(),x=L[+b.dataset.stayx];if(!x)return;
-  S.stays=(S.stays||[]).filter(y=>!(y.s===x.s&&y.city===x.city));save();PROF_V++;try{localStorage.removeItem("fomo2-wk");}catch(e){}
+  S.stays=(S.stays||[]).filter(y=>!(y.s===x.s&&y.city===x.city));if(S.browse&&km(S.browse,x)<15){S.browse=null;whereLabel();}save();PROF_V++;try{localStorage.removeItem("fomo2-wk");}catch(e){}
   notify("Séjour terminé","Ta semaine revient autour de chez toi.");renderForYou();loadEvents(true);});
 function renderForYou(){
   $("fy-title").textContent=S.name?"Pour toi, "+S.name:"Pour toi";renderStays();
@@ -4958,25 +4967,30 @@ const WR=["auto",1,2,3,5,7,10,15,20,30,50,80,100,150,200,300,0];
 const wrLab=r=>r==="auto"||r==null?"Rayon auto":r===0?"Sans limite":r+" km";
 function whereLabel(){const g=S.home&&S.home.src==="gps";$("where-txt").textContent=S.browse?S.browse.name:g&&S.home.quartier?S.home.quartier:homeCity();$("where-r").textContent=wrLab(S.browseR);
   $("where").classList.toggle("custom",!!(S.browse||S.browseR!=null));}
-/* --- séjour : « Hey, combien de temps es-tu à Honfleur ? » --- */
-function stayAsk(p){
+/* --- séjour : « Hey, combien de temps seras-tu à Honfleur ? » --- */
+function stayAsk(p,gpsHere){
   const t0=new Date(NOW.getFullYear(),NOW.getMonth(),NOW.getDate()),eod=d=>new Date(d.getFullYear(),d.getMonth(),d.getDate(),23,59).toISOString();
   const dow=t0.getDay(),toSun=dow===0?0:7-dow,sun=new Date(+t0+toSun*864e5),ymdL=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
   const opt=(k,ic,ti,sub)=>`<button class="pc-opt" data-stay="${k}"><span class="ic">${ic}</span><span><b>${ti}</b><small>${sub}</small></span></button>`;
-  openSheet(`<div class="in pcsheet"><h3>Hey, combien de temps es-tu à ${esc(p.name)} ?</h3><p class="small">Ta semaine et tes idées de sorties s'adaptent : là-bas pendant ton séjour, chez toi ensuite.</p>
+  openSheet(`<div class="in pcsheet"><h3>Hey, combien de temps seras-tu à ${esc(p.name)} ?</h3><p class="small">Ta semaine et tes idées de sorties s'adaptent : là-bas pendant ton séjour, chez toi ensuite.</p>
     ${opt("day","☀️","Aujourd'hui","Jusqu'à ce soir")}${opt("we","🧳",dow===0||dow===6?"Ce week-end":"Jusqu'à dimanche","Jusqu'au "+dlong(sun))}${opt("week","🗓️","Toute la semaine","Jusqu'au "+dlong(new Date(+t0+6*864e5)))}
     <div class="stay-dates"><b>Ou choisis tes dates</b><div class="row"><label>Du <input type="date" id="st-a" value="${ymdL(t0)}" min="${ymdL(t0)}"></label><label>au <input type="date" id="st-b" value="${ymdL(new Date(+t0+2*864e5))}" min="${ymdL(t0)}"></label></div><button class="btn sm" data-stay="dates">Ze parti</button></div>
-    <button class="lnk" data-stay="none" style="align-self:center">Je regarde juste, je n'y suis pas</button></div>`,"phonecal");
+    ${gpsHere?`<button class="lnk" data-stay="move" style="align-self:center">J'habite ici maintenant</button>`:`<button class="lnk" data-stay="none" style="align-self:center">Je regarde juste, je n'y vais pas</button>`}</div>`,"phonecal");
   document.querySelectorAll("[data-stay]").forEach(b=>b.onclick=()=>{const k=b.dataset.stay;if(k==="none"){closeSheet();return;}
+    if(k==="move"){S.home=Object.assign({},gpsHere);S.stays=[];S.browse=null;save();PROF_V++;closeSheet();whereLabel();notify("📍 Bienvenue à "+(gpsHere.city||""),"FOMO te propose maintenant ce qui se passe autour de chez toi, ici.");loadEvents(true);return;}
     let s=new Date(t0),e;
     if(k==="day")e=eod(t0);else if(k==="we")e=eod(sun);else if(k==="week")e=eod(new Date(+t0+6*864e5));
     else{const a=$("st-a").value,z=$("st-b").value;if(!a||!z)return;s=new Date(a+"T00:00");e=eod(new Date(z+"T12:00"));if(new Date(e)<s)return;}
     S.stays=stays().filter(x=>!(new Date(x.s)<new Date(e)&&new Date(x.e)>s)).concat([{city:p.name,lat:+p.lat,lon:+p.lon,s:s.toISOString(),e}]).sort((a,b)=>new Date(a.s)-new Date(b.s));
+    if(gpsHere){S.browse={name:p.name,lat:+p.lat,lon:+p.lon,country:"FR"};whereLabel();}
     S.fyMode="week";save();PROF_V++;try{localStorage.removeItem("fomo2-wk");}catch(x){}closeSheet();
     if(typeof gc==="function")gc("sejour","Séjour déclaré");
     notify("📍 Ta semaine passe à "+p.name,"Jusqu'au "+dlong(new Date(+new Date(e)-60e3))+". Ensuite, retour autour de chez toi.");
     loadEvents(true).then(()=>{if(VIEW==="foryou")renderForYou();});});
 }
+// position du téléphone dans une autre ville : même question, avec « j'habite ici maintenant »
+function travelAsk(here){const st=stayNow();if(st&&km(st,here)<15)return;if(!$("sheet").hidden||COACH_ON)return setTimeout(()=>travelAsk(here),1500);
+  stayAsk({name:here.city||here.near||"cette ville",lat:here.lat,lon:here.lon},here);}
 function setBrowse(p,r){
   S.browse=p?{name:p.name,lat:+p.lat,lon:+p.lon,country:p.country||"FR"}:null;S.browseR=r==="auto"?null:r;
   if(p){S.browseHist=[{name:p.name,lat:+p.lat,lon:+p.lon}].concat((S.browseHist||[]).filter(x=>x.name!==p.name)).slice(0,4);}
@@ -4989,7 +5003,7 @@ function setBrowse(p,r){
   renderAll(true);if(VIEW==="vert")renderVert();if(VIEW==="markets")renderMarkets();
   // tout se recharge autour du nouveau lieu (collecte de la ville la plus proche, fêtes et concerts du coin)
   loadEvents(true).then(()=>{if(VIEW==="vert")renderVert();});
-  if(p&&km(homePos(),p)>20&&!stays().some(x=>km(x,p)<15))setTimeout(()=>stayAsk(p),350);if(typeof MK!=="undefined"&&(VF().lt||[]).includes("marche"))loadMarkets().then(()=>{if(VIEW==="vert")renderVert();}).catch(()=>{});}
+  if(p&&km(homePos(),p)>8&&norm(p.name||"")!==norm(homeCity())&&!stays().some(x=>km(x,p)<15))setTimeout(()=>stayAsk(p),400);if(typeof MK!=="undefined"&&(VF().lt||[]).includes("marche"))loadMarkets().then(()=>{if(VIEW==="vert")renderVert();}).catch(()=>{});}
 $("where").onclick=()=>{
   let pick=S.browse,rad=S.browseR==null?"auto":S.browseR;
   const gps=S.home&&S.home.src==="gps";
@@ -5003,14 +5017,18 @@ $("where").onclick=()=>{
       <div class="rad-s"><span>Auto</span><span>Sans limite</span></div>
       <p class="small">« Auto » : le bon rayon pour chaque univers (5 km pour les expos, 60 km pour les concerts, partout pour les festivals…).</p></div>
     <button class="btn wide hot" id="w-ok">Voir les événements</button>
-    ${!gps?`<button class="lnk" id="w-gps" style="align-self:center">Utiliser ma position précise</button>`:""}</div>`,"where");
+    <div class="w-locs"><button class="btn ghost sm" id="w-gps">📍 Position précise</button><button class="btn ghost sm" id="w-ref">↻ Actualiser</button></div></div>`,"where");
   const msg=()=>{$("w-msg").innerHTML=pick?"Autour de <b>"+esc(pick.name)+"</b>":"";$("w-me").setAttribute("aria-pressed",String(!pick));};
   $("w-me").onclick=()=>{pick=null;msg();if(gps&&Date.now()-(S.home.at||0)>5*60e3)locate().then(()=>{whereLabel();msg();}).catch(()=>{});};
   document.querySelectorAll("[data-wh-h]").forEach(b=>b.onclick=()=>{pick=S.browseHist[+b.dataset.whH];msg();document.querySelectorAll("[data-wh-h]").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));});
   bindPlaceSearch("w-q",p=>{pick=p;msg();});
   const r=$("w-r");r.oninput=()=>{rad=WR[+r.value];$("w-rv").textContent=wrLab(rad);};
   $("w-ok").onclick=()=>{closeSheet();setBrowse(pick,rad);};
-  const g=$("w-gps");if(g)g.onclick=async()=>{try{await locate();pick=null;closeSheet();afterCity();setBrowse(null,rad);}catch(e){$("w-msg").textContent=e.message;}};
+  // position du téléphone : chez toi → mise à jour ; dans une autre ville → la question du séjour
+  const goGps=async b=>{b.disabled=true;$("w-msg").textContent="Localisation…";try{const h=await locate();pick=null;closeSheet();
+      if(h.away){whereLabel();return;}afterCity();setBrowse(null,rad);notify("📍 Position mise à jour",[h.street,h.quartier].filter(Boolean).join(", ")+(h.acc?" · à "+h.acc+" m près":""));}
+    catch(e){$("w-msg").textContent=e.message;b.disabled=false;}};
+  $("w-gps").onclick=()=>goGps($("w-gps"));$("w-ref").onclick=()=>goGps($("w-ref"));
 };
 function afterCity(){whereLabel();PROF_V++;loadEvents();ghSyncConfig().catch(()=>{});}
 let tt;function notify(ti,tx){$("t-ti").textContent=ti;$("t-tx").textContent=tx||"";$("toast").classList.add("show");clearTimeout(tt);tt=setTimeout(()=>$("toast").classList.remove("show"),3800);}
@@ -5059,6 +5077,8 @@ document.addEventListener("visibilitychange",()=>{if(document.visibilityState===
   await loadEvents();
   loadMarkets().then(()=>{if(VIEW==="discover")renderBubbles();}).catch(()=>{});
   startAutoRefresh();scheduleNotifs();
+  // à l'ouverture : es-tu dans une autre ville ? (seulement si la localisation est déjà autorisée)
+  setTimeout(checkWhere,2500);document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")setTimeout(checkWhere,1500);});
   if(S.onboarded&&Object.keys(S.rel).length<10)refreshRelated(8);
 })();
 })();
