@@ -668,6 +668,22 @@ html,body{overscroll-behavior-y:contain}
 .stay-dates{display:flex;flex-direction:column;gap:8px;border:1px solid var(--line);border-radius:16px;padding:12px}.stay-dates .row{gap:10px;flex-wrap:wrap}
 .stay-dates label{display:flex;align-items:center;gap:6px;font-size:14px}.stay-dates input{font:inherit;border:1px solid var(--line);border-radius:10px;padding:6px 8px;background:var(--card);color:var(--ink)}
 .w-locs{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+#fy-mode[hidden]{display:none!important}
+.stay{padding:6px 6px 6px 12px;border-radius:999px}.stay-t{font-size:13.5px;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.stay-t b{display:inline;font-size:13.5px;color:var(--ink)}.stay-x{padding:5px 10px;font-size:12px}
+.dq-box{margin:12px 0 4px}.dq-h{display:block;font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:var(--ink2);margin:0 0 6px}
+.dchips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:2px;margin:0 -2px 6px;-webkit-overflow-scrolling:touch}.dchips::-webkit-scrollbar{display:none}
+.dchips .chip{min-height:36px;padding:7px 13px;font-size:13.5px;font-weight:650}
+.dq-cal{margin-top:6px}
+.dscroll{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:4px 2px 6px;margin:2px -2px 4px;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity}.dscroll::-webkit-scrollbar{display:none}
+.dday{flex:none;scroll-snap-align:start;width:52px;height:64px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;border-radius:16px;border:1.5px solid var(--line);background:var(--card);color:var(--ink);font:inherit;cursor:pointer;transition:transform .1s}
+.dday small{font-size:11px;font-weight:650;color:var(--ink2);line-height:1.1}.dday b{font-size:20px;font-weight:800;line-height:1.15}
+.dday.we small:first-child{color:var(--hot)}.dday.m1{margin-left:8px}
+.dday.all,.dday.more{width:70px}.dday.all b,.dday.more b{font-size:17px}.dday.more.lab{width:auto;padding:0 12px}.dday.more b.t{font-size:13.5px;white-space:nowrap}
+.dday:active{transform:scale(.94)}
+.dday.inr{background:var(--hot-soft);border-color:var(--hot)}
+.dday[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--paper)}.dday[aria-pressed="true"] small{color:var(--paper);opacity:.8}
+.dv-when{margin:10px 0 2px}
+#dv-cal{margin:6px 0 4px}
 </style>
 <!-- mesure d'audience anonyme (GoatCounter : sans cookie, sans donnée personnelle) -->
 <script data-goatcounter="https://fomo.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
@@ -684,7 +700,10 @@ html,body{overscroll-behavior-y:contain}
 
   <!-- DÉCOUVERTE : les bulles -->
   <section class="view" id="v-discover">
-    <div><h1 class="h-page" id="hello">Qu'est-ce qu'on fait ?</h1><p class="sub status" id="src-txt">Chargement des événements…</p></div>
+    <div><h1 class="h-page" id="hello">Qu'est-ce qu'on fait ?</h1></div>
+    <div class="filters dv-when" id="dv-when"></div>
+    <div class="panel" id="dv-cal" hidden></div>
+    <p class="sub status" id="src-txt">Chargement des événements…</p>
     <div class="bubbles" id="bubbles" role="list"></div>
     <button class="home-ask" data-go="ask"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg><span><b>Demande-moi</b><span class="small">« Un festival house à taille humaine en août 2027 »</span></span></button>
   </section>
@@ -721,7 +740,7 @@ html,body{overscroll-behavior-y:contain}
     <div class="ptr" id="ptr" aria-hidden="true"><span class="ptr-i">↓</span><span class="ptr-t">Tire pour rafraîchir</span></div>
     <div><h1 class="h-page" id="fy-title">Pour toi</h1><p class="sub" id="fy-sub">Classé par correspondance avec tes goûts. Chaque ♥ affine la suite.</p></div>
     <div class="fy-stays" id="fy-stays"></div>
-    <div class="fy-pick" id="fy-mode"><button class="fy-pbtn" id="fy-pbtn" aria-haspopup="listbox" aria-expanded="false"><span id="fy-plab">🗓️ Ta semaine</span><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button><div class="fy-menu" id="fy-menu" role="listbox" hidden></div></div>
+    <div class="fy-pick" id="fy-mode" hidden><button class="fy-pbtn" id="fy-pbtn" aria-haspopup="listbox" aria-expanded="false"><span id="fy-plab">🗓️ Ta semaine</span><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button><div class="fy-menu" id="fy-menu" role="listbox" hidden></div></div>
     <div class="chips" id="fy-filter"></div>
     <p class="fy-hint" id="fy-hint" hidden>← Glisse à gauche ou à droite pour changer d'univers →</p>
     <div class="feed" id="feed"></div>
@@ -1767,7 +1786,8 @@ async function loadEvents(quiet){
     if(evs.length&&(LOADING||!EVENTS.length)){EVENTS=evs;LOADING=false;PROF_V++;$("src-txt").textContent="Mise à jour…";renderAll(true);}};
   if(!quiet&&!EVENTS.length){await collBoot();if(Object.keys(COLL.files||{}).length)quick();
     jobs[jobs.length-1][1].then(()=>{if(LOADING||EVENTS.length<50)quick();});}
-  const res=await Promise.allSettled(jobs.map(j=>j[1]));
+  const cap=(p,ms)=>Promise.race([p,new Promise((_,rej)=>setTimeout(()=>rej(new Error("trop lent")),ms))]);
+  const res=await Promise.allSettled(jobs.map(j=>cap(j[1],j[0]==="Collecteur"?30000:12000)));
   const errs=[];let list=[];
   res.forEach((r,i)=>{if(r.status==="fulfilled")list=list.concat(r.value);else errs.push(jobs[i][0]+" : "+r.reason.message);});
   const before=new Set(EVENTS.map(e=>e.id));
@@ -1775,12 +1795,19 @@ async function loadEvents(quiet){
   checkLikedChanges();
   LOADING=false;LOAD_ERR=errs.join(" · ");LAST_LOAD=Date.now();
   const n=EVENTS.filter(e=>e.src!=="kb").length,fresh=EVENTS.filter(e=>!before.has(e.id)&&e.src!=="kb").length;
-  $("src-txt").textContent=n?fmtN(n)+" événements autour de "+homeCity()+" et en France":"Aucun événement chargé : vérifie tes connexions dans Réglages.";
+  $("src-txt").textContent=n?fmtN(n)+" événements autour de "+(typeof placeName==="function"?placeName():homeCity()):"Aucun événement chargé : vérifie tes connexions dans Réglages.";
   PROF_V++;
   if(quiet&&before.size&&fresh>0){const nb=feedItems().filter(x=>!before.has(x.e.id)).length;if(nb)notify("Nouveautés","Ton onglet Pour toi a "+nb+" nouvelle"+(nb>1?"s":"")+" proposition"+(nb>1?"s":"")+".");}
   renderAll(quiet);
   trackArtists();
 }
+let PLACE_SEQ=0;
+async function refreshPlace(){const my=++PLACE_SEQ;NOW=new Date();
+  try{await loadCollector();}catch(e){}
+  if(my!==PLACE_SEQ)return;
+  EVENTS=keepRules(dedupe(EVENTS.filter(e=>!/^c/.test(String(e.id))&&!e._loc).concat(collectorEvents(),LOCAL_EV)));PROF_V++;
+  try{localStorage.removeItem("fomo2-wk");}catch(e){}renderAll(true);
+  await loadLocalAround().catch(()=>{});if(my!==PLACE_SEQ)return;PROF_V++;renderAll(true);}
 // dates en France des artistes que tu écoutes, repérées en avance (Ticketmaster, jusqu'à un an)
 let TRACKED=[],TRACK_AT=0,TRACK_KEY="";
 async function trackArtists(){
@@ -2515,6 +2542,7 @@ function locCenter(){const p=vPlaceOf(VF());return p||homePos();}
 // lieu choisi pour cet univers : une ville cherchée, la ville des soirées, ou (ancien réglage) une grande ville
 const LOC_CODES=c=>["fr","eu","intl"].includes(c)||/^[A-Z]{2}$/.test(c||"");
 // lieu de recherche de Découverte : choisi en haut à droite (sinon chez toi). Pour toi garde ses propres règles.
+function placeName(){const g=S.home&&S.home.src==="gps";return S.browse?S.browse.name:g&&S.home.quartier?S.home.quartier:homeCity();}
 function vPlaceOf(f){
   if(S.browse&&S.browse.lat!=null)return S.browse;
   if(f.place&&f.place.lat!=null)return f.place;
@@ -2522,15 +2550,18 @@ function vPlaceOf(f){
   if(f.loc&&!LOC_CODES(f.loc)){const p=cityPos(f.loc);if(p)return{name:p.city,lat:p.lat,lon:p.lon};}
   return null;}
 // rayon : choisi au curseur, sinon celui de l'univers (0 = sans limite)
-function curRad(conf,f){if(conf.fixedR)return f.rad||conf.fixedR;if(S.browseR!=null)return S.browseR;if(conf.near)return 5;if(CUR==="festival")return vPlaceOf(f)?80:0;return conf.radius;}
+function curRad(conf,f){if(conf.fixedR)return f.rad||conf.fixedR;if(S.browseR!=null)return S.browseR;if(conf.near)return 5;if(CUR==="festival")return 150;return conf.radius;}
 function summer(){const y=NOW.getMonth()>8?NOW.getFullYear()+1:NOW.getFullYear();return[new Date(y,4,1),new Date(y,8,30,23,59)];}
 const ymd=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
 function dateRange(f){
-  const k=(f.date&&f.date.k)||"all";if(k==="all")return null;
+  const k=(S.dd&&S.dd.k)||"all";if(k==="all")return null;
   const t0=new Date(NOW.getFullYear(),NOW.getMonth(),NOW.getDate());
+  if(k==="tonight")return[NOW,nightEnd()];
+  if(k==="tomorrow")return[new Date(+t0+864e5),new Date(+nightEnd()+864e5)];
+  if(k==="we"){const [a,b]=weekend();return[new Date(Math.max(+a,+NOW)),b];}
   if(k==="7d")return[NOW,new Date(+t0+8*864e5-1)];
-  if(k==="summer")return summer();
-  if(k==="custom"){const a=f.date.from?new Date(f.date.from+"T00:00"):new Date(0),b=new Date((f.date.to||f.date.from)+"T23:59:59");return[a,b];}
+  if(k==="summer")return CUR==="festival"?summer():null;
+  if(k==="custom"){const a=S.dd.from?new Date(S.dd.from+"T00:00"):new Date(0),b=new Date((S.dd.to||S.dd.from)+"T23:59:59");return[a,b];}
   return null;
 }
 function inDate(e,f){
@@ -2609,8 +2640,7 @@ function mkEnsure(){if(typeof MK==="undefined"||MK.busy)return;const c=locMk(),c
   setTimeout(()=>loadMarkets().then(()=>{if(VIEW==="vert"&&CUR==="local")renderVList();}).catch(()=>{}),0);}
 function vItems(cat,seg){
   CUR=cat;const f=VF(),conf=VCONF[cat],c0=locCenter(),q=norm(f.q||"");
-  if(f.date&&f.date.k==="summer"&&cat!=="festival")delete f.date;
-  if(f.date&&f.date.k==="month")delete f.date;
+  if(S.dd&&(S.dd.k==="month"||S.dd.k==="custom"&&(S.dd.to||S.dd.from)<ymd(NOW)))delete S.dd;
   let L=cat==="local"?EVENTS.filter(e=>NB_CATS.includes(e.cat)&&!e.proj&&!e.approx&&!e.tba&&D(e.until||e.end||e.d)>NOW)
       // les marchés n'apparaissent qu'avec le filtre « Marchés »
       .concat((f.lt||[]).includes("marche")?(mkEnsure(),MK_EVENTS.filter(e=>D(e.until||e.end||e.d)>NOW).concat(osmMarketEvents())):[])
@@ -2634,12 +2664,12 @@ function vItems(cat,seg){
     else if(loc!=="eu"&&R)L=L.filter(e=>e._k!=null&&e._k<=R);}
   else if(cat==="sport"){
     if(loc==="intl")L=L.filter(e=>e.country!=="FR");else if(loc==="fr")L=L.filter(e=>e.country==="FR");
-    else L=L.filter(e=>isBigSport(e)&&!pl&&S.browseR==null||(e._k!=null&&(!R||e._k<=R)));}
+    else{const cn=norm(pl?pl.name:homeCity());L=L.filter(e=>e._k!=null?(!R||e._k<=R):norm(e.city||"")===cn);}}
   else if(cat==="soiree"){const cn=norm(pl?pl.name:homeCity());L=L.filter(e=>e._k!=null?(!R||e._k<=R):norm(e.city)===cn);}
   else if(near){L=L.filter(e=>e._k!=null&&(!R||e._k<=R+.05));}
   // les plus grandes courses : toute la France, sauf si tu as choisi un lieu
   else if(cat==="competition"&&seg==="hype"&&!pl&&S.browseR==null){}
-  else if(R)L=L.filter(e=>e._k==null||e._k<=R);
+  else if(R){const cn=norm(pl?pl.name:homeCity());L=L.filter(e=>e._k==null?norm(e.city||"")===cn:e._k<=R);}
   if(q)L=L.filter(e=>norm([e.t,e.w,e.venue,e.city,(e.lineup||[]).join(" "),e.home,e.away,e.comp].join(" ")).includes(q));
   if((f.g||[]).length)L=L.filter(e=>(e.genres||[]).some(g=>f.g.includes(g)));
 
@@ -2712,6 +2742,9 @@ function renderBubbles(){
   box.style.height=H+"px";
   box.innerHTML=P.map(p=>`<button class="bubble v-${p.k}" role="listitem" data-vert="${p.k}" style="width:${p.r*2}px;height:${p.r*2}px;left:${p.x-p.r}px;top:${p.y-p.r}px">
     <b style="font-size:${Math.max(11,Math.min(Math.round(p.r/3.6),Math.floor(p.r*2.5/VERTS[p.k].n.length)))}px">${esc(VERTS[p.k].n)}</b></button>`).join("");
+  const tot=data.filter(d=>d.k!=="marche").reduce((s,d)=>s+d.n,0);
+  dvWhen();
+  if(!(LOADING&&!EVENTS.length))$("src-txt").textContent=tot?fmtN(tot)+" événement"+(tot>1?"s":"")+dqPhrase()+" autour de "+placeName():"Rien"+dqPhrase()+" autour de "+placeName()+" pour l'instant.";
   $("hello").textContent=S.name?"Salut "+S.name+", on sort ?":"Qu'est-ce qu'on fait ?";
 }
 addEventListener("resize",()=>{if(!$("v-discover").hidden)renderBubbles();});
@@ -2745,10 +2778,11 @@ function setVPlace(p){const f=VF();
   VPAGE=40;save();renderVert();}
 function chipLabel(k){
   const f=VF();
-  if(k==="date"){const dk=(f.date&&f.date.k)||"all";if(dk==="summer")return["Cet été",1];if(dk==="7d")return["7 prochains jours",1];
-    if(dk==="custom"){if(f.date.m){const d=new Date(f.date.from+"T12:00");return[capital(MOL[d.getMonth()])+(d.getFullYear()!==NOW.getFullYear()?" "+d.getFullYear():""),1];}
-      const s=x=>{const d=new Date(x+"T12:00");return d.getDate()+" "+MO[d.getMonth()];};return[!f.date.to||f.date.from===f.date.to?"Le "+s(f.date.from):"Du "+s(f.date.from)+" au "+s(f.date.to),1];}
-    return["Dates",0];}
+  if(k==="date"){const dk=(S.dd&&S.dd.k)||"all";if(dk==="summer")return["Cet été",1];if(dk==="7d")return["7 prochains jours",1];
+    if(dk==="custom"){if(S.dd.m){const d=new Date(S.dd.from+"T12:00");return[capital(MOL[d.getMonth()])+(d.getFullYear()!==NOW.getFullYear()?" "+d.getFullYear():""),1];}
+      const s=x=>{const d=new Date(x+"T12:00");return d.getDate()+" "+MO[d.getMonth()];};return[!S.dd.to||S.dd.from===S.dd.to?"Le "+s(S.dd.from):"Du "+s(S.dd.from)+" au "+s(S.dd.to),1];}
+    if(DQ.some(x=>x[0]===dk&&dk!=="all"))return[DQ.find(x=>x[0]===dk)[1],1];
+    return["Quand ?",0];}
   const multi={genre:["g","Style",x=>GENRES[x].n],size:["size","Taille",x=>SIZE[x]],disc:["ds","Discipline",x=>DISC[x].n],dist:["km","Distance",null],dplus:["dp","Dénivelé",null],
     tgenre:["tg","Genre",x=>THEATRE_G[x].n],etype:["et","Type",x=>EXPO_TYPES[x].n],ctype:["ct","Thème",x=>CONF_T[x].n],stype:["st","Genre",x=>SPEC_T[x].n],xtype:["xt","Type",x=>XP_T[x].n],ltype:["lt","Type",x=>NB_T[x]||(x==="exp"?"Expériences":(LOCAL_T[x]||{}).n)]}[k];
   if(multi){const a=f[multi[0]]||[];return[a.length?(a.length===1&&multi[2]?multi[2](a[0]):multi[1]+" ("+a.length+")"):multi[1],a.length];}
@@ -2764,6 +2798,34 @@ function chipLabel(k){
   if(k==="free")return["Gratuit",!!f.free];
   return[k,0];
 }
+/* --- « Quand ? » : la date d'abord, la même dans tous les univers --- */
+const DQ=[["all","Tout"],["tonight","Ce soir"],["tomorrow","Demain"],["we","Ce week-end"],["7d","7 jours"]];
+let DVCAL=false;
+function dqKey(){const k=(S.dd&&S.dd.k)||"all";return DQ.some(x=>x[0]===k)?k:"pick";}
+function dqPhrase(){const k=dqKey();if(k==="all")return"";if(k==="pick"){const l=chipLabel("date")[0];return S.dd&&S.dd.m?" en "+l.toLowerCase():" "+l.charAt(0).toLowerCase()+l.slice(1);}
+  return{tonight:" ce soir",tomorrow:" demain",we:" ce week-end","7d":" dans les 7 prochains jours"}[k];}
+function dateStrip(id,open){const k=dqKey(),pick=k==="pick";
+  $(id).innerHTML=DQ.map(([v,n])=>`<button class="chip" data-dq="${v}" aria-pressed="${k===v}">${n}</button>`).join("")
+    +`<button class="chip${open?" open":""}" data-dq="pick" aria-pressed="${pick}">📅 ${pick?esc(chipLabel("date")[0]):"Une date"}</button>`;stripCenter($(id));}
+function dqSet(v){if(v==="all")delete S.dd;else S.dd={k:v};save();}
+// clics dans le calendrier (Découverte et univers)
+function dateClick(ev){
+  const dt=ev.target.closest("[data-date]");if(dt){const on=S.dd&&S.dd.k===dt.dataset.date;if(on)delete S.dd;else S.dd={k:dt.dataset.date};return 1;}
+  const mo=ev.target.closest("[data-month]");if(mo){const [y,m]=mo.dataset.month.split("-").map(Number),a=ymd(new Date(y,m-1,1)),b=ymd(new Date(y,m,0));
+    const on=S.dd&&S.dd.k==="custom"&&S.dd.m&&S.dd.from===a;if(on)delete S.dd;else S.dd={k:"custom",from:a<ymd(NOW)?ymd(NOW):a,to:b,m:1};return 1;}
+  const cm=ev.target.closest("[data-cm]");if(cm){VCAL=new Date(VCAL.getFullYear(),VCAL.getMonth()+ +cm.dataset.cm,1);return 2;}
+  const cd=ev.target.closest("[data-cday]");if(cd){const k=cd.dataset.cday,cur=S.dd&&S.dd.k==="custom"&&!S.dd.m?S.dd:null;
+    if(cur&&cur.from===(cur.to||cur.from)){if(k===cur.from)delete S.dd;else S.dd={k:"custom",from:k<cur.from?k:cur.from,to:k<cur.from?cur.from:k};}
+    else S.dd={k:"custom",from:k,to:k};return 1;}
+  return 0;}
+/* --- « Quand ? » sur l'écran des bulles : même date que dans les univers --- */
+function dvWhen(){const [l,on]=chipLabel("date");
+  $("dv-when").innerHTML=`<button class="chip${on?" has":""}${DVCAL?" open":""}" data-dw="1" aria-pressed="${DVCAL}">${esc(l)}<span class="caret">▾</span></button>`+(on?`<button class="chip" data-dw="0" aria-label="Toutes les dates">✕</button>`:"");
+  const c=$("dv-cal");c.hidden=!DVCAL;c.innerHTML=DVCAL?calHTML({}):"";}
+$("dv-when").addEventListener("click",ev=>{const b=ev.target.closest("[data-dw]");if(!b)return;
+  if(b.dataset.dw==="0"){delete S.dd;DVCAL=false;save();}else{DVCAL=!DVCAL;VCAL=null;}renderBubbles();});
+$("dv-cal").addEventListener("click",ev=>{const r=dateClick(ev);if(!r)return;
+  if(r===1){save();if(!(S.dd&&S.dd.k==="custom"&&!S.dd.m&&S.dd.from===S.dd.to))DVCAL=false;}renderBubbles();});
 function renderVert(){
   const conf=VCONF[CUR],seg=curSeg(),fv=VF().venue;
   $("vt-title").textContent=VERTS[CUR].n;$("vt-bar").className="vbar v-"+CUR;$("vt-seg").className="vtabs v-"+CUR;$("vt-bar").style.background="var(--vc)";
@@ -2786,14 +2848,14 @@ function optRow(key,opts,multi){
 // sélection de dates : 7 prochains jours, un mois entier, ou le calendrier (un toucher = ce jour-là, un second = la plage entre les deux)
 let VCAL=null;
 function calHTML(f){
-  const dk=(f.date&&f.date.k)||"all",t0=new Date(NOW.getFullYear(),NOW.getMonth(),1);
-  if(!VCAL)VCAL=dk==="custom"&&f.date.from?new Date(f.date.from.slice(0,7)+"-01T12:00"):t0;
+  const dk=(S.dd&&S.dd.k)||"all",t0=new Date(NOW.getFullYear(),NOW.getMonth(),1);
+  if(!VCAL)VCAL=dk==="custom"&&S.dd.from?new Date(S.dd.from.slice(0,7)+"-01T12:00"):t0;
   const y=VCAL.getFullYear(),m=VCAL.getMonth(),first=new Date(y,m,1),start=new Date(y,m,1-((first.getDay()+6)%7));
-  const from=dk==="custom"?f.date.from:null,to=dk==="custom"?(f.date.to||f.date.from):null,today=ymd(NOW);
+  const from=dk==="custom"?S.dd.from:null,to=dk==="custom"?(S.dd.to||S.dd.from):null,today=ymd(NOW);
   let cells="";for(let i=0;i<42;i++){const d=new Date(start.getFullYear(),start.getMonth(),start.getDate()+i);if(i>=35&&d.getMonth()!==m)break;
     const k=ymd(d),past=k<today,out=d.getMonth()!==m,sel=from&&(k===from||k===to),inr=from&&k>from&&k<to;
     cells+=`<button class="dcell${out?" out":""}${k===today?" today":""}${sel?" sel":""}${inr?" inr":""}" data-cday="${k}"${past?" disabled":""} aria-pressed="${!!(sel||inr)}"><span class="n">${d.getDate()}</span></button>`;}
-  const mName=capital(MOL[m])+(y!==NOW.getFullYear()?" "+y:""),monthOn=dk==="custom"&&f.date.m&&from&&from.slice(0,7)===ymd(first).slice(0,7);
+  const mName=capital(MOL[m])+(y!==NOW.getFullYear()?" "+y:""),monthOn=dk==="custom"&&S.dd.m&&from&&from.slice(0,7)===ymd(first).slice(0,7);
   const quick=CUR==="festival"?`<button class="chip" data-date="summer" aria-pressed="${dk==="summer"}">☀️ Cet été</button>`
     :`<button class="chip" data-date="7d" aria-pressed="${dk==="7d"}">Les 7 prochains jours</button><button class="chip" data-month="${ymd(first).slice(0,7)}" aria-pressed="${!!monthOn}">Tout ${/^[aeiou]/i.test(MOL[m])?"le mois d'":"le mois de "}${esc(MOL[m])}</button>`;
   return`<div class="opts">${quick}</div>
@@ -2881,14 +2943,7 @@ $("vt-filters").addEventListener("click",ev=>{if(ev.target.closest("[data-fclear
   if(k==="free"){f.free=!f.free;save();renderVert();return;}
   VPANEL=VPANEL===k?null:k;renderVert();});
 $("vt-panel").addEventListener("click",ev=>{const f=VF();
-  const dt=ev.target.closest("[data-date]");if(dt){const on=f.date&&f.date.k===dt.dataset.date;f.date=on?null:{k:dt.dataset.date};if(!f.date)delete f.date;VPAGE=40;save();renderVert();return;}
-  const mo=ev.target.closest("[data-month]");if(mo){const [y,m]=mo.dataset.month.split("-").map(Number),a=ymd(new Date(y,m-1,1)),b=ymd(new Date(y,m,0));
-    const on=f.date&&f.date.k==="custom"&&f.date.m&&f.date.from===a;if(on)delete f.date;else f.date={k:"custom",from:a<ymd(NOW)?ymd(NOW):a,to:b,m:1};VPAGE=40;save();renderVert();return;}
-  const cm=ev.target.closest("[data-cm]");if(cm){VCAL=new Date(VCAL.getFullYear(),VCAL.getMonth()+ +cm.dataset.cm,1);renderPanel();return;}
-  const cd=ev.target.closest("[data-cday]");if(cd){const k=cd.dataset.cday,cur=f.date&&f.date.k==="custom"&&!f.date.m?f.date:null;
-    if(cur&&cur.from===(cur.to||cur.from)){if(k===cur.from)delete f.date;else f.date={k:"custom",from:k<cur.from?k:cur.from,to:k<cur.from?cur.from:k};}
-    else f.date={k:"custom",from:k,to:k};
-    VPAGE=40;save();renderVert();return;}
+  {const r=dateClick(ev);if(r===2){renderPanel();return;}if(r===1){VPAGE=40;save();renderVert();return;}}
   const rd=ev.target.closest("[data-rad]");if(rd){f.rad=+rd.dataset.rad;VPAGE=40;save();renderVert();return;}
   const wh=ev.target.closest("[data-wh]");if(wh){const v=wh.dataset.wh;
     if(v==="gps"){locate().then(()=>{notify("Position précise activée","Les événements les plus proches passent en premier.");afterCity();}).catch(e=>notify("Position",e.message));return;}
@@ -3509,9 +3564,11 @@ function likedIn(cat){return Object.values(S.interest||{}).concat(Object.values(
 // candidats : à venir, pas refusés, regroupés par série de dates, notés une fois
 function fyBase(){
   // plus rapide : on écarte d'abord ce qui est trop loin (sauf festivals et grandes affiches sportives), avant de noter
-  const farOk=e=>e.cat==="festival"||e.cat==="sport";
+  const st=typeof stayNow==="function"?stayNow():null,sa=st?new Date(st.s):null,sb=st?new Date(st.e):null;
+  const inStay=e=>{const a=D(e.d),b=D(e.until||e.end||e.d);return a<sb&&b>=sa;};
+  const farOk=e=>!st&&(e.cat==="festival"||e.cat==="sport");
   const L=EVENTS.filter(e=>vertOn(e.cat)&&!(VERTS[e.cat]||{}).noDeck&&!S.disliked[e.id]&&!e.noDate&&(e.approx||D(e.until||e.end||e.d)>NOW)&&!e.soldout
-    &&!(S.liked[e.id]&&S.liked[e.id].likedAt<FEED_T0)&&(farOk(e)||(()=>{const k=kmHome(e);if(k==null){const tr=e.approx?null:tripAt(e.d);return !(tr&&tr.lat!=null);}return k<=FY_R;})()));
+    &&!(S.liked[e.id]&&S.liked[e.id].likedAt<FEED_T0)&&(!st||e.approx?!st:inStay(e))&&(farOk(e)||(()=>{const k=kmHome(e);if(k==null){const tr=e.approx?null:tripAt(e.d);return !(tr&&tr.lat!=null);}return k<=FY_R;})()));
   const runs=groupRuns(L,e=>e.cat==="sport"||e.cat==="competition"||e.approx||e.market?null:groupKey(e),e=>e.d);
   return runs.map(r=>{const e=r.length>1?mergeRun(r):r[0];const x=Object.assign({e},score(e));
     const it=r.map(y=>(S.interest||{})[y.id]).find(Boolean);if(it&&!it.auto)x.loved=it.likedAt||1;x.k=kmHome(e);return x;});
@@ -3722,7 +3779,7 @@ function renderWeek(){
     if(c&&c.day===fyDayKey()&&c.html){feed.innerHTML=c.html;if(c.sub)$("fy-sub").textContent=c.sub;requestAnimationFrame(wkDrawPath);return;}
     feed.innerHTML=`<div class="empty"><div class="spin"></div>Je prépare ta semaine…</div>`;return;}
   const P=wkPlan(),today=wkStart();
-  $("fy-sub").textContent=P.n?`${P.n} sortie${P.n>1?"s":""} choisie${P.n>1?"s":""} pour toi ${WK_OFF?"la semaine prochaine":"cette semaine"}, à ton rythme. Touche ✕ pour en retirer une, 🔔 pour mettre une alerte.`:"Pas encore assez d'infos pour te composer une semaine.";
+  $("fy-sub").textContent=P.n?`${P.n} idée${P.n>1?"s":""} pour ${WK_OFF?"la semaine suivante":"ta semaine"}, jour par jour.`:"Pas encore assez d'infos pour te composer une semaine.";
   // « Ton week-end » en haut : vendredi soir, samedi, dimanche
   const weD=P.days.filter(d=>[5,6,0].includes(d.d.getDay())),weItems=[];
   weD.forEach(d=>d.items.forEach(it=>{if(d.d.getDay()===5&&it.slot==="jour")return;weItems.push({it,d});}));
@@ -3731,10 +3788,10 @@ function renderWeek(){
     <div class="we-row">${weItems.map(({it,d})=>{const e=it.e,dd=D(e.d),wd=capital(WD[d.d.getDay()].replace(".",""));
       return`<article class="we-card v-${e.cat}" data-info="${esc(e.id)}" role="button" tabindex="0"><div class="we-img" style="${imgStyle(e)}"><span class="we-when">${esc(wd)} · ${esc(WK_SLOTS[it.slot].replace("Dans la ","").replace("En ",""))}${!(e.until||e.anytime)&&(dd.getHours()||dd.getMinutes())?" · "+hm(dd):""}</span>${calBtn(e,"we-cal")}</div>
         <div class="we-tx"><small><i class="dot"></i>${esc(VERTS[e.cat].n)}</small><b>${esc(e.t)}</b><span>${esc(e.venue||e.city||"")}</span></div></article>`;}).join("")}</div></section>`:"";
-  feed.innerHTML=banner+`<h2 class="wk-h">${WK_OFF?"La semaine suivante, jour par jour":"Ta semaine, jour par jour"}</h2><div class="wk" id="wk"><svg class="wk-path" id="wk-path" aria-hidden="true"></svg>${P.days.map((day,i)=>{
+  feed.innerHTML=`<div class="wk" id="wk"><svg class="wk-path" id="wk-path" aria-hidden="true"></svg>${P.days.map((day,i)=>{
     const wd=day.d.getDay(),lab=WK_OFF?capital(WD[wd].replace(".","")):i===0?"Auj.":i===1?"Demain":capital(WD[wd].replace(".","")),we=wd===0||wd===6;
     return`<section class="wk-day ${i%2?"r":"l"}${we?" we":""}${day.items.length?"":" free"}"><div class="wk-node"><b>${esc(lab)}</b><span>${day.d.getDate()}</span><small>${esc(MO[day.d.getMonth()])}</small></div>
-      <div class="wk-items">${(()=>{const tr=tripAt(new Date(day.d.getFullYear(),day.d.getMonth(),day.d.getDate(),14));return tr&&tr.lat!=null?`<div class="wk-where">📍 ${esc(tr.city)}</div>`:"";})()}${day.items.length?day.items.map(it=>wkItemHTML(it,day)).join(""):`<p class="wk-free">${we?"Rien qui te ressemble ce jour-là : journée libre 😌":"Soirée libre"}</p>`}</div></section>`;}).join("")}</div>`;
+      <div class="wk-items">${(()=>{const tr=tripAt(new Date(day.d.getFullYear(),day.d.getMonth(),day.d.getDate(),14));const sn=stayNow();return tr&&tr.lat!=null&&!(sn&&sn.city===tr.city)?`<div class="wk-where">📍 ${esc(tr.city)}</div>`:"";})()}${day.items.length?day.items.map(it=>wkItemHTML(it,day)).join(""):`<p class="wk-free">${we?"Rien qui te ressemble ce jour-là : journée libre 😌":"Soirée libre"}</p>`}</div></section>`;}).join("")}</div>`;
   feed.insertAdjacentHTML("beforeend",`<div class="wk-next">${WK_OFF?`<button class="btn ghost wide" data-wkoff="0">← Revenir à cette semaine</button>`:`<button class="btn wide" data-wkoff="1">Passer à la semaine suivante →</button>`}</div>`);
   // tes ♥ plus lointains : après la semaine
   const end=new Date(+today+7*864e5),later=Object.keys(S.interest||{}).filter(id=>!(S.interest[id]||{}).auto).map(id=>EVENTS.find(y=>y.id===id)||S.interest[id])
@@ -3760,7 +3817,7 @@ document.addEventListener("click",ev=>{const b=ev.target.closest("[data-wkswap]"
   if(!S.wk||S.wk.day!==S.fyDay)S.wk={day:S.fyDay,skip:{}};S.wk.skip[b.dataset.wkswap]=1;save();renderForYou();},true);
 
 document.addEventListener("click",ev=>{const b=ev.target.closest("[data-wkoff]");if(!b)return;WK_OFF=+b.dataset.wkoff;renderForYou();
-  const h=document.querySelector("#feed .wk-h, #feed .we-band");if(h)h.scrollIntoView({behavior:"smooth",block:"start"});else window.scrollTo(0,0);});
+  const h=document.querySelector("#feed .wk");if(h)h.scrollIntoView({behavior:"smooth",block:"start"});else window.scrollTo(0,0);});
 
 /* ================= Pour toi ================= */
 let FY_N=12,FY_PREV=null;
@@ -3781,26 +3838,26 @@ document.addEventListener("visibilitychange",()=>{if(document.visibilityState===
 setInterval(()=>{if(document.visibilityState==="visible")fyMorningCheck();},10*60e3);
 function renderStays(){const L=stays().filter(x=>new Date(x.s)<new Date(+NOW+14*864e5));
   $("fy-stays").innerHTML=L.map((x,i)=>{const s=new Date(x.s),e=new Date(+new Date(x.e)-60e3),now=s<=NOW;
-    return`<div class="stay"><span class="stay-i">📍</span><span class="stay-t"><b>${now?"Tu es à ":"Bientôt à "}${esc(x.city)}</b><small>${now?"":"du "+dlong(s)+" "}jusqu'au ${esc(dlong(e))} : ta semaine et tes idées sont choisies là-bas</small></span><button class="stay-x" data-stayx="${i}" aria-label="Terminer ce séjour">Terminer</button></div>`;}).join("");}
+    return`<div class="stay"><span class="stay-t">📍 <b>${now?"À ":"Bientôt à "}${esc(x.city)}</b> ${now?"":"du "+esc(dlong(s))+" "}jusqu'au ${esc(dlong(e))}</span><button class="stay-x" data-stayx="${i}" aria-label="Terminer ce séjour">Terminer</button></div>`;}).join("");}
 $("fy-stays").addEventListener("click",ev=>{const b=ev.target.closest("[data-stayx]");if(!b)return;const L=stays(),x=L[+b.dataset.stayx];if(!x)return;
   S.stays=(S.stays||[]).filter(y=>!(y.s===x.s&&y.city===x.city));if(S.browse&&km(S.browse,x)<15){S.browse=null;whereLabel();}save();PROF_V++;try{localStorage.removeItem("fomo2-wk");}catch(e){}
-  notify("Séjour terminé","Ta semaine revient autour de chez toi.");renderForYou();loadEvents(true);});
+  notify("Séjour terminé","Ta semaine revient autour de chez toi.");renderForYou();refreshPlace();});
+// la rangée du haut : « Ta semaine », puis chaque univers qui a des propositions (on glisse de l'un à l'autre)
+function fyCur(){return S.fyMode!=="sel"||!S.fyF||S.fyF==="all"?"week":S.fyF;}
+function fyStrip(){const cats=LOADING&&!EVENTS.length?[]:fyCats(),cur=fyCur(),f=$("fy-filter");f.className="ustrip";f.hidden=false;
+  f.innerHTML=["week"].concat(cats).map(k=>`<button class="ustrip-b${k==="week"?"":" v-"+k}" data-fy="${k}" aria-pressed="${cur===k}"><span>${k==="week"?"🗓️":FY_EMO[k]||""}</span>${k==="week"?"Ta semaine":esc(VERTS[k].n)}</button>`).join("");
+  stripCenter(f);}
 function renderForYou(){
   $("fy-title").textContent=S.name?"Pour toi, "+S.name:"Pour toi";renderStays();
-  const week=S.fyMode!=="sel";
-  $("fy-filter").hidden=week;$("fy-plab").textContent=fyViewLab(week?"week":S.fyF||"all");
-  if(week){$("fy-hint").hidden=true;$("fy-more").hidden=true;FY_MORE=0;renderWeek();return;}
-  // seuls les univers qui ont des propositions apparaissent (et se parcourent en glissant)
-  if(!(LOADING&&!EVENTS.length)&&S.fyF&&S.fyF!=="all"&&!fyCats().includes(S.fyF))S.fyF="all";
-  const cats=LOADING&&!EVENTS.length?[]:fyCats();
-  // bandeau des univers : on voit où on est, et vers quel univers mène le glisser
-  $("fy-filter").className="ustrip";
-  $("fy-filter").innerHTML=["all"].concat(cats).map(k=>`<button class="ustrip-b${k==="all"?"":" v-"+k}" data-fy="${k}" aria-pressed="${(S.fyF||"all")===k}"><span>${k==="all"?"✨":FY_EMO[k]||""}</span>${k==="all"?"Toute ta sélection":esc(VERTS[k].n)}</button>`).join("");
-  stripCenter($("fy-filter"));
-  $("fy-hint").hidden=(S.fySwiped||0)>=3;
+  if(S.fyMode==="sel"&&(!S.fyF||S.fyF==="all"))S.fyMode="week";
+  // un univers qui n'a plus de propositions : retour à la semaine
+  if(S.fyMode==="sel"&&!(LOADING&&!EVENTS.length)&&!fyCats().includes(S.fyF)){S.fyMode="week";}
+  const week=S.fyMode!=="sel";fyStrip();
+  $("fy-hint").hidden=true;
+  if(week){$("fy-more").hidden=true;FY_MORE=0;renderWeek();return;}
   const feed=$("feed");
   if(LOADING&&!EVENTS.length){feed.innerHTML=`<div class="empty"><div class="spin"></div>Je cherche ce qui va te plaire…</div>`;$("fy-more").hidden=true;return;}
-  $("fy-sub").textContent="Une sélection courte, autour de "+homeCity()+", choisie d'après tes réponses, tes écoutes et tes ♥.";
+  $("fy-sub").textContent="Tes meilleures idées "+VERTS[S.fyF].n+" autour de "+((stayNow()||{}).city||homeCity())+".";
   const q=curatedFeed(S.fyF||"all");
   if(!q.length){feed.innerHTML=`<div class="empty"><h3>Pas encore assez d'infos sur toi</h3><p>Touche « Pourquoi pas ! » sur quelques événements dans Découverte : Pour toi s'affine à chaque fois.</p><div class="row" style="justify-content:center"><button class="btn sm" data-go="discover">Aller dans Découverte</button><button class="btn ghost sm" data-go="settings">Connecter mes comptes</button></div></div>`;$("fy-more").hidden=true;return;}
   feed.innerHTML=q.map(fcardHTML).join("");
@@ -3822,19 +3879,19 @@ $("fy-pbtn").addEventListener("click",ev=>{ev.stopPropagation();fyMenuOpen($("fy
 $("fy-menu").addEventListener("click",ev=>{const b=ev.target.closest("[data-fyv]");if(!b)return;const v=b.dataset.fyv;
   if(v==="week")S.fyMode="week";else{S.fyMode="sel";S.fyF=v;}FY_N=12;fyMoreReset();save();fyMenuOpen(false);renderForYou();window.scrollTo(0,0);});
 document.addEventListener("click",ev=>{if(!ev.target.closest("#fy-mode")&&$("fy-menu")&&!$("fy-menu").hidden)fyMenuOpen(false);});
-$("fy-filter").addEventListener("click",ev=>{const b=ev.target.closest("[data-fy]");if(!b)return;S.fyF=b.dataset.fy;FY_N=12;fyMoreReset();save();renderForYou();});
+$("fy-filter").addEventListener("click",ev=>{const b=ev.target.closest("[data-fy]");if(!b)return;const v=b.dataset.fy;if(v==="week"){S.fyMode="week";}else{S.fyMode="sel";S.fyF=v;}FY_N=12;fyMoreReset();save();renderForYou();});
 let FY_MORE=0,FY_END=false,FY_LEN=0;
 function fyMoreReset(){FY_MORE=0;FY_END=false;}
 $("fy-more").onclick=()=>{const before=FY_LEN,y=scrollY;FY_MORE++;renderForYou();scrollTo(0,y);
   if(FY_LEN<=before){FY_MORE--;FY_END=true;$("fy-more").hidden=true;notify("C'est tout pour l'instant","Je n'ai rien d'autre d'assez proche de tes goûts. Reviens demain matin.");}};
 /* --- glisser à gauche / à droite dans Pour toi pour changer d'univers --- */
 function fyCats(){const all=curatedFeed("all");return VKEYS.filter(k=>!VERTS[k].noDeck&&vertOn(k)&&all.some(x=>x.e.cat===k));}
-function fyOrder(){return["all"].concat(fyCats());}
+function fyOrder(){return["week"].concat(fyCats());}
 function fyGo(dir){
-  const L=fyOrder(),i=Math.max(0,L.indexOf(S.fyF||"all")),j=i+dir;
+  const L=fyOrder(),i=Math.max(0,L.indexOf(fyCur())),j=i+dir;
   const feed=$("feed");
   if(j<0||j>=L.length){feed.style.transition="transform .25s cubic-bezier(.2,.8,.2,1)";feed.style.transform="";return false;}
-  S.fyF=L[j];FY_N=12;fyMoreReset();save();
+  if(L[j]==="week")S.fyMode="week";else{S.fyMode="sel";S.fyF=L[j];}FY_N=12;fyMoreReset();save();
   feed.style.transition="transform .16s ease-in,opacity .16s ease-in";feed.style.transform=`translateX(${-dir*45}%)`;feed.style.opacity="0";
   setTimeout(()=>{renderForYou();window.scrollTo({top:0});feed.style.transition="none";feed.style.transform=`translateX(${dir*45}%)`;
     requestAnimationFrame(()=>requestAnimationFrame(()=>{feed.style.transition="transform .28s cubic-bezier(.2,.8,.2,1),opacity .2s ease-out";feed.style.transform="";feed.style.opacity="";}));
@@ -3842,13 +3899,13 @@ function fyGo(dir){
   return true;
 }
 let FYS=null;
-addEventListener("touchstart",ev=>{if(VIEW!=="foryou"||S.fyMode!=="sel"||ev.touches.length!==1||ev.target.closest(".sheet,#sheet,#fy-filter,input,.ob,.abar,button,a"))return;
+addEventListener("touchstart",ev=>{if(VIEW!=="foryou"||ev.touches.length!==1||ev.target.closest(".sheet,#sheet,#fy-filter,.we-row,input,.ob,.abar,button,a"))return;
   FYS={x0:ev.touches[0].clientX,y0:ev.touches[0].clientY,dx:0,on:null};},{passive:true});
 addEventListener("touchmove",ev=>{if(!FYS)return;const dx=ev.touches[0].clientX-FYS.x0,dy=ev.touches[0].clientY-FYS.y0;
   if(FYS.on===null&&(Math.abs(dx)>12||Math.abs(dy)>12))FYS.on=Math.abs(dx)>Math.abs(dy)*1.4;
   if(!FYS.on){if(FYS.on===false)FYS=null;return;}
   if(PTR){PTR=null;$("ptr").style.height="0px";}
-  FYS.dx=dx;const L=fyOrder(),i=L.indexOf(S.fyF||"all"),edge=(dx>0&&i<=0)||(dx<0&&i>=L.length-1);
+  FYS.dx=dx;const L=fyOrder(),i=L.indexOf(fyCur()),edge=(dx>0&&i<=0)||(dx<0&&i>=L.length-1);
   const f=$("feed");f.style.transition="none";f.style.transform=`translateX(${dx*(edge?.18:.6)}px)`;},{passive:true});
 addEventListener("touchend",()=>{if(!FYS)return;const s=FYS;FYS=null;if(!s.on)return;
   if(Math.abs(s.dx)>70)fyGo(s.dx<0?1:-1);else{const f=$("feed");f.style.transition="transform .25s cubic-bezier(.2,.8,.2,1)";f.style.transform="";}},{passive:true});
@@ -4142,7 +4199,7 @@ function hsNudge(id){const el=$(id);S.nudged=S.nudged||{};if(!el||HS_NUDGED[id]|
 const COACH={
   foryou:[
     {a:'nav.tabs [data-v="foryou"]',k:"Pour toi",h:"Ta sélection perso",p:"Ici, FOMO choisit pour toi les sorties qui vont te plaire, autour de toi, d'après tes réponses, ta musique et ce que tu aimes. Ce n'est pas tout ce qui existe : seulement le meilleur pour toi."},
-    {a:"#fy-pbtn",k:"Pour toi",h:"Ta semaine, jour par jour",p:"Le serpentin commence aujourd'hui et te propose une idée ou plus par jour, davantage le week-end. Touche ici pour voir toute ta sélection, ou un seul univers."},
+    {a:"#fy-filter",k:"Pour toi",h:"Ta semaine, puis tes univers",p:"« Ta semaine » : le serpentin commence aujourd'hui, avec une idée ou plus par jour, davantage le week-end. Touche un univers à côté, ou glisse à gauche et à droite, pour voir tes idées concerts, sports, expos…"},
     {a:"#feed",k:"Comment ça marche",h:"Ça change tous les matins",p:"Chaque matin, ta sélection est renouvelée avec les nouveautés de la nuit, et elle se complète dans la journée. Tire vers le bas pour rafraîchir. ✕ retire une idée, ♥ Pourquoi pas la garde, ✓ Déjà fait apprend sans la reproposer."}],
   discover:[
     {a:'nav.tabs [data-v="discover"]',k:"Découverte",h:"Tout ce qui se passe",p:"La différence avec Pour toi : ici, rien n'est trié selon tes goûts. Tu vois tous les événements, univers par univers, et tu fouilles toi-même."},
@@ -4977,7 +5034,7 @@ function stayAsk(p,gpsHere){
     <div class="stay-dates"><b>Ou choisis tes dates</b><div class="row"><label>Du <input type="date" id="st-a" value="${ymdL(t0)}" min="${ymdL(t0)}"></label><label>au <input type="date" id="st-b" value="${ymdL(new Date(+t0+2*864e5))}" min="${ymdL(t0)}"></label></div><button class="btn sm" data-stay="dates">Ze parti</button></div>
     ${gpsHere?`<button class="lnk" data-stay="move" style="align-self:center">J'habite ici maintenant</button>`:`<button class="lnk" data-stay="none" style="align-self:center">Je regarde juste, je n'y vais pas</button>`}</div>`,"phonecal");
   document.querySelectorAll("[data-stay]").forEach(b=>b.onclick=()=>{const k=b.dataset.stay;if(k==="none"){closeSheet();return;}
-    if(k==="move"){S.home=Object.assign({},gpsHere);S.stays=[];S.browse=null;save();PROF_V++;closeSheet();whereLabel();notify("📍 Bienvenue à "+(gpsHere.city||""),"FOMO te propose maintenant ce qui se passe autour de chez toi, ici.");loadEvents(true);return;}
+    if(k==="move"){S.home=Object.assign({},gpsHere);S.stays=[];S.browse=null;save();PROF_V++;closeSheet();whereLabel();notify("📍 Bienvenue à "+(gpsHere.city||""),"FOMO te propose maintenant ce qui se passe autour de chez toi, ici.");refreshPlace();return;}
     let s=new Date(t0),e;
     if(k==="day")e=eod(t0);else if(k==="we")e=eod(sun);else if(k==="week")e=eod(new Date(+t0+6*864e5));
     else{const a=$("st-a").value,z=$("st-b").value;if(!a||!z)return;s=new Date(a+"T00:00");e=eod(new Date(z+"T12:00"));if(new Date(e)<s)return;}
@@ -4986,7 +5043,7 @@ function stayAsk(p,gpsHere){
     S.fyMode="week";save();PROF_V++;try{localStorage.removeItem("fomo2-wk");}catch(x){}closeSheet();
     if(typeof gc==="function")gc("sejour","Séjour déclaré");
     notify("📍 Ta semaine passe à "+p.name,"Jusqu'au "+dlong(new Date(+new Date(e)-60e3))+". Ensuite, retour autour de chez toi.");
-    loadEvents(true).then(()=>{if(VIEW==="foryou")renderForYou();});});
+    refreshPlace().then(()=>{if(VIEW==="foryou")renderForYou();});});
 }
 // position du téléphone dans une autre ville : même question, avec « j'habite ici maintenant »
 function travelAsk(here){const st=stayNow();if(st&&km(st,here)<15)return;if(!$("sheet").hidden||COACH_ON)return setTimeout(()=>travelAsk(here),1500);
@@ -5002,7 +5059,7 @@ function setBrowse(p,r){
   if(!p&&stayNow()){S.stays=stays().filter(x=>new Date(x.s)>NOW);save();PROF_V++;try{localStorage.removeItem("fomo2-wk");}catch(e){}}
   renderAll(true);if(VIEW==="vert")renderVert();if(VIEW==="markets")renderMarkets();
   // tout se recharge autour du nouveau lieu (collecte de la ville la plus proche, fêtes et concerts du coin)
-  loadEvents(true).then(()=>{if(VIEW==="vert")renderVert();});
+  refreshPlace().then(()=>{if(VIEW==="vert")renderVert();});
   if(p&&km(homePos(),p)>8&&norm(p.name||"")!==norm(homeCity())&&!stays().some(x=>km(x,p)<15))setTimeout(()=>stayAsk(p),400);if(typeof MK!=="undefined"&&(VF().lt||[]).includes("marche"))loadMarkets().then(()=>{if(VIEW==="vert")renderVert();}).catch(()=>{});}
 $("where").onclick=()=>{
   let pick=S.browse,rad=S.browseR==null?"auto":S.browseR;
