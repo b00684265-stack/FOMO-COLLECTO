@@ -684,6 +684,7 @@ html,body{overscroll-behavior-y:contain}
 .dday[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--paper)}.dday[aria-pressed="true"] small{color:var(--paper);opacity:.8}
 .dv-when{margin:10px 0 2px}
 #dv-cal{margin:6px 0 4px}
+.ob-none{margin-top:14px}
 </style>
 <!-- mesure d'audience anonyme (GoatCounter : sans cookie, sans donnée personnelle) -->
 <script data-goatcounter="https://fomo.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
@@ -1595,6 +1596,37 @@ function kbFestivals(){
       link:"https://www.google.com/search?q="+encodeURIComponent(f[0]+" "+y+" billetterie"),more:"https://www.google.com/search?q="+encodeURIComponent(f[0]+" "+y),img:""}));});
   return out;
 }
+/* doublons qui ont passé le premier tri : même jour, même lieu, titre presque pareil
+   (« CHATON - LA CIGALE » et « CHATON », « Le Discours d'un Roi avec… », les formules d'un même spectacle : revue seule, revue + champagne, dîner…) */
+const DUP_STOP=new Set("le la les l de des du d et a au aux en un une the of and with avec by par live concert spectacle tour tournee pass billet billets show seule seul champagne diner dejeuner gourmandise formule menu pour personnes personne revue2 visite2 edition presente presentent salle grande petite theatre".split(" "));
+const dupStem=w=>w.slice(0,5);
+function dupToks(e){const comp=e.cat==="competition",vt=comp?new Set():new Set(norm(e.venue||"").replace(/[^a-z0-9]+/g," ").split(" ").filter(w=>w.length>2&&!DUP_STOP.has(w)).map(dupStem));
+  return new Set(norm(e.t).replace(/\bst\b/g,"saint").replace(/\b\d{1,2}h\d{0,2}\b/g," ").replace(/\b(19|20)\d\d\b/g," ").replace(/[^a-z0-9]+/g," ").split(" ").filter(w=>w.length>1&&!DUP_STOP.has(w)).map(dupStem).filter(w=>!vt.has(w)));}
+const dupVen=e=>new Set(norm(e.venue||"").replace(/\b(theatre|salle|scene|espace|club|le|la|les|l|du|de|des|paris)\b/g," ").replace(/[^a-z0-9]+/g," ").split(" ").filter(w=>w.length>3).map(dupStem));
+const dupCity=e=>dupStem(norm(e.city||"").replace(/[^a-z]+/g,""));
+function dedupeFuzzy(list){
+  const by=new Map(),dead=new Set(),rank=e=>(e.hype?9:0)+(e.cat==="festival"?.5:0)+(PRIO[e.src]||0)+(e.img?.3:0)+(e.p!=null?.1:0);
+  list.forEach(e=>{if(!e.d||e.approx||e.market||e.cat==="sport")return;const comp=e.cat==="competition",k=dayKey(e.d)+"|"+(comp?"c":norm(e.city||""));(by.get(k)||by.set(k,[]).get(k)).push(e);});
+  by.forEach(L=>{if(L.length<2)return;const T=L.map(dupToks),V=L.map(dupVen),C=L.map(dupCity);
+    for(let i=0;i<L.length;i++){if(dead.has(L[i]))continue;
+      for(let j=i+1;j<L.length;j++){const a=L[i],b=L[j];if(dead.has(b)||dead.has(a))continue;
+        const comp=a.cat==="competition";if(comp!==(b.cat==="competition"))continue;
+        if(comp){const near=a.lat!=null&&b.lat!=null&&km(a,b)<15;if(!near&&!(C[i]&&C[i]===C[j]))continue;}
+        else{const va=V[i],vb=V[j];let vs=false;va.forEach(w=>{if(vb.has(w))vs=true;});
+          if(!vs){if(va.size&&vb.size)continue;if(Math.abs(D(a.d)-D(b.d))>90*6e4)continue;}}
+        const ta=T[i],tb=T[j];if(!ta.size||!tb.size)continue;let n=0,long=false;ta.forEach(w=>{if(tb.has(w)){n++;if(w.length>=4)long=true;}});
+        if(!long)continue;const r=n/Math.min(ta.size,tb.size);if(r<(comp?.67:1))continue;
+        const keep=rank(a)>=rank(b)?a:b,drop=keep===a?b:a;
+        keep.saleAt=keep.saleAt||drop.saleAt;keep.presaleAt=keep.presaleAt||drop.presaleAt;keep.tracked=keep.tracked||drop.tracked;keep.img=keep.img||drop.img;
+        keep.p=keep.p==null?drop.p:drop.p==null?keep.p:Math.min(keep.p,drop.p);if(!keep.rating&&drop.rating){keep.rating=drop.rating;keep.ratingCount=drop.ratingCount;}
+        if(drop.link&&drop.link!==keep.link)keep.alt=(keep.alt||[]).concat([{src:drop.src,link:drop.link}]);dead.add(drop);}}});
+  // billets « jour » d'un festival vendus comme concerts (TRANS MUSICALES - MERCREDI, - JEUDI…) : rangés dans la fiche du festival
+  const FE=list.filter(e=>e.cat==="festival"&&!dead.has(e)&&!e.approx&&e.d).map(f=>({f,t:dupToks(Object.assign({},f,{venue:""}))})).filter(x=>[...x.t].some(w=>w.length>=4));
+  if(FE.length)list.forEach(e=>{if(e.cat!=="concert"||dead.has(e)||!e.d)return;
+    const x=FE.find(({f,t})=>Math.abs(D(e.d)-D(f.d))<3*864e5&&(e.lat!=null&&f.lat!=null?km(e,f)<25:norm(e.city||"")===norm(f.city||""))&&(()=>{const te=dupToks(Object.assign({},e,{venue:""}));return[...t].every(w=>te.has(w));})());
+    if(!x)return;const f=x.f,fe=f.end||f.d;if(D(e.d)<D(f.d))f.d=e.d;f.end=D(e.end||e.d)>D(fe)?(e.end||e.d):fe;if(dayKey(f.end)===dayKey(f.d))f.end=null;f.saleAt=f.saleAt||e.saleAt;f.img=f.img||e.img;
+    f.alt=(f.alt||[]).concat([{src:e.src,link:e.link}]);dead.add(e);});
+  return dead.size?list.filter(e=>!dead.has(e)):list;}
 function dedupe(list){
   const seen=new Map();
   list.forEach(e=>{const k=norm(e.t).replace(/[^a-z0-9]/g,"").slice(0,18)+"|"+(e.approx?"kb":dayKey(e.d));
@@ -1630,7 +1662,7 @@ function dedupe(list){
   [...seen.entries()].forEach(([k,e])=>{if(e.cat!=="competition"||e.src!=="veille")return;const b=norm(e.t).replace(/[^a-z0-9]+/g," ").trim();
     const r=comps.find(x=>{const t=norm(x.t).replace(/[^a-z0-9]+/g," ").trim();return(t.includes(b)||b.includes(t))&&(!e.city||norm(x.city||"").includes(norm(e.city).slice(0,5)))&&(e.approx||Math.abs(D(x.d)-D(e.d))<15*864e5);});
     if(r){r.saleAt=r.saleAt||e.saleAt;r.ann=true;r.tba=true;seen.delete(k);}});
-  const out=[...seen.values()],real=out.filter(e=>e.cat==="festival"&&e.src!=="kb").map(e=>norm(e.t));
+  const out=dedupeFuzzy([...seen.values()]),real=out.filter(e=>e.cat==="festival"&&e.src!=="kb").map(e=>norm(e.t));
   return out.filter(e=>e.src!=="kb"||!real.some(t=>t.includes(norm(e.t).replace(/^les? /,"").slice(0,12))));
 }
 
@@ -2452,7 +2484,7 @@ const VCONF={
   concert:{segs:[["soon","⏳|Bientôt en vente"],["last","🔥|Dernières places"],["now","🎟️|En vente"]],filters:["date","genre"],radius:60},
   soiree:{segs:[["tonight","🌙|Ce soir"],["we","🪩|Ce week-end"],["later","📆|Plus tard"]],filters:["date","genre","vtype"],radius:35},
   festival:{segs:[["soon","⏳|Bientôt en vente"],["now","🎟️|En vente"]],filters:["date","genre","size"],radius:0},
-  sport:{segs:[["soon","⏳|Bientôt en vente"],["now","🏟️|Toutes les affiches"]],filters:["date","sport"],radius:120},
+  sport:{segs:[["hype","⭐|Les grandes affiches"],["soon","⏳|Bientôt en vente"],["now","🏟️|Toutes les affiches"]],filters:["date","sport"],radius:120},
   competition:{segs:[["hype","⭐|Les plus attendus"],["soon","⏳|À venir"],["now","✅|Inscriptions ouvertes"],["all","📅|Toutes les courses"]],filters:["date","disc","dist","dplus"],radius:100},
   theatre:{segs:[["now","🎟️|En vente"],["fav","❤️|Coups de cœur"],["soon","⏳|Bientôt en vente"]],filters:["date","tgenre"],radius:30},
   expo:{segs:null,filters:["last","date","etype","free"],radius:30,near:true},
@@ -2518,9 +2550,16 @@ function weekend(){const t0=new Date(NOW);t0.setHours(0,0,0,0);const dow=t0.getD
 const COMP_HYPE=[/hyrox/];
 // HYROX : seulement les étapes officielles (hyrox.com), pas les entraînements ni les courses jeunes
 const compHype=e=>{if(e.hype)return true;if(e.src!=="hyrox"||!(e.disc||[]).includes("hyrox"))return false;const t=norm(e.t);return COMP_HYPE.some(r=>r.test(t))&&!/youngstars|road to|challenge|sprint/.test(t);};
-function hypeOf(e){if(e.cat==="competition")return compHype(e);if(e.cat==="spectacle")return !!(e.buzz||isBigParis(e)||isBigVenue(e));return !!(isBigVenue(e)||isBigParis(e)||e.tracked||e.buzz||(e.pop||0)>=500);}
-function hypeRank(e){if(e.cat==="competition")return 0;return(isBigParis(e)?0:isBigVenue(e)?1:2)*100-(e.buzz||0)*10;}
-function hypeLab(e){if(e.cat==="competition")return monthBucket(e)[1];return isBigParis(e)?"Dans les grandes salles de Paris":isBigVenue(e)?"Dans les grandes salles":e.buzz?"Cités par la presse et les newsletters":"Très suivis";}
+/* Sports · les grandes affiches : équipes de France (foot, rugby), Ligue des champions, chocs du Top 14 entre les gros clubs */
+const TOP14_BIG=[/toulous/,/bordeaux.?begles|\bubb\b/,/stade francais/,/clermont/,/racing/,/bayonn/,/palois|\bpau\b/];
+function bigAffiche(e){if(e.cat!=="sport")return false;const t=norm(e.t),c=norm(e.comp||"");
+  if((e.sport==="foot"||e.sport==="rugby")&&/^france\b|[–-] france$/.test(t.replace(/\s+/g," ").trim())&&!/bleues|feminin|u20|espoirs/.test(t+" "+c))return true;
+  if(e.sport==="foot"&&/ligue des champions|champions league/.test(c))return true;
+  if(e.sport==="rugby"&&/top 14/.test(c)){if(/finale|demi/.test(t))return true;const h=norm(e.home||""),a=norm(e.away||"");return TOP14_BIG.some(r=>r.test(h))&&TOP14_BIG.some(r=>r.test(a));}
+  return false;}
+function hypeOf(e){if(e.cat==="competition")return compHype(e);if(e.cat==="sport")return bigAffiche(e);if(e.cat==="spectacle")return !!(e.buzz||isBigParis(e)||isBigVenue(e));return !!(isBigVenue(e)||isBigParis(e)||e.tracked||e.buzz||(e.pop||0)>=500);}
+function hypeRank(e){if(e.cat==="competition"||e.cat==="sport")return 0;return(isBigParis(e)?0:isBigVenue(e)?1:2)*100-(e.buzz||0)*10;}
+function hypeLab(e){if(e.cat==="competition"||e.cat==="sport")return monthBucket(e)[1];return isBigParis(e)?"Dans les grandes salles de Paris":isBigVenue(e)?"Dans les grandes salles":e.buzz?"Cités par la presse et les newsletters":"Très suivis";}
 function segOf(e){
   const c=e.cat,future=x=>x&&D(x)>NOW;
   if(c==="concert"){if(e.ann||future(e.saleAt)||future(e.presaleAt))return"soon";return isBigVenue(e)?"last":"now";}
@@ -2664,6 +2703,7 @@ function vItems(cat,seg){
     else if(loc!=="eu"&&R)L=L.filter(e=>e._k!=null&&e._k<=R);}
   else if(cat==="sport"){
     if(loc==="intl")L=L.filter(e=>e.country!=="FR");else if(loc==="fr")L=L.filter(e=>e.country==="FR");
+    else if(seg==="hype"&&!pl&&S.browseR==null){}// les grandes affiches : toute la France, sauf si tu as choisi un lieu
     else{const cn=norm(pl?pl.name:homeCity());L=L.filter(e=>e._k!=null?(!R||e._k<=R):norm(e.city||"")===cn);}}
   else if(cat==="soiree"){const cn=norm(pl?pl.name:homeCity());L=L.filter(e=>e._k!=null?(!R||e._k<=R):norm(e.city)===cn);}
   else if(near){L=L.filter(e=>e._k!=null&&(!R||e._k<=R+.05));}
@@ -3098,7 +3138,7 @@ async function connectDeezer(link){
 /* --- l'accueil, écran par écran --- */
 let OB=[];
 const OB_ORDER=["soiree","concert","festival","sport","competition","theatre","expo","spectacle","experience","local"];
-const OB_NOQ=["local","marche"];// Vie de quartier et Marchés : pas de questions, tout se règle tout seul
+const OB_NOQ=["local","marche","theatre","expo","spectacle","experience"];// Vie de quartier et Marchés : pas de questions, tout se règle tout seul
 function obSteps(){OB=["hello","intro","verts"].concat(OB_ORDER.filter(k=>(S.verts||[]).includes(k)&&!OB_NOQ.includes(k)).map(k=>"q:"+k),["done"]);return OB;}
 let OB_FB="";
 const OB_EMO={hello:"👋",intro:"✨",verts:"🎯",done:"🎉",soiree:"🪩",concert:"🎤",festival:"🎪",sport:"🏟️",competition:"🏃",theatre:"🎭",expo:"🖼️",spectacle:"🎬",experience:"🌟"};
@@ -3230,8 +3270,9 @@ async function dreamArtist(a){
 }
 function compHTML(){
   const R=S.race||{},d=R.disc||{},on=k=>(d[k]||0)>0;
-  let h=`<div class="lab">Dis-moi ce que tu pratiques</div>`+chipsHTML("disc",[["route","Course à pied"],["trail","Trail"],["velo","Cyclisme"],["triathlon","Triathlon"],["hyrox","Hyrox"]],on);
-  if(on("route"))h+=chipsHTML("kz",[["s","5 à 10 km"],["m","Semi"],["l","Marathon"],["u","Ultra"]],k=>(R.kz||{})[k],"Tes distances sur route");
+  return`<div class="lab">Dis-moi ce que tu pratiques</div>`+chipsHTML("disc",[["route","Course à pied"],["trail","Trail"],["velo","Cyclisme"],["triathlon","Triathlon"],["hyrox","Hyrox"]],on)
+    +`<button class="chip ob-none" data-ob-none="competition">🚫 Aucun de ceux-là</button>`;
+  let h="";if(on("route"))h+=chipsHTML("kz",[["s","5 à 10 km"],["m","Semi"],["l","Marathon"],["u","Ultra"]],k=>(R.kz||{})[k],"Tes distances sur route");
   if(on("trail"))h+=chipsHTML("tk",[["s","Moins de 20 km"],["m","20 à 42 km"],["l","42 à 80 km"],["u","Plus de 80 km"]],k=>(R.tk||{})[k],"Tes distances en trail")+chipsHTML("dpk",[["a","Moins de 500 m D+"],["b","500 à 1 500 m"],["c","Plus de 1 500 m"]],k=>(R.dpk||{})[k],"Le dénivelé que tu vises");
   if(on("triathlon"))h+=chipsHTML("tri",[["XS","XS"],["S","S"],["M","M"],["L","L"]],k=>(R.tri||{})[k],"Ton format de triathlon");
   if(on("hyrox"))h+=chipsHTML("hx",[["solo","Solo"],["duo","Duo"],["relay","Relais"]],k=>(R.hyrox||{})[k],"Ton format Hyrox");
@@ -3259,7 +3300,7 @@ function chToggle(key,v){
   else if(key==="st"){S.soireeType=v;}
   PROF_V++;save();
 }
-const Q_TITLE={soiree:"Tes soirées",concert:"Tes concerts",festival:"Tes festivals",sport:"Le sport que tu regardes",competition:"Tes compétitions",theatre:"Ton théâtre",expo:"Tes expos",spectacle:"Tes spectacles",experience:"Tes expériences",local:"Ce qui se passe près de chez toi",marche:"Tes marchés"};
+const Q_TITLE={soiree:"Tes soirées",concert:"Tes concerts",festival:"Tes festivals",sport:"Tes sports",competition:"Tes dossards",theatre:"Ton théâtre",expo:"Tes expos",spectacle:"Tes spectacles",experience:"Tes expériences",local:"Ce qui se passe près de chez toi",marche:"Tes marchés"};
 function renderOb(){
   obSteps();
   const i=Math.min(S.obStep||0,OB.length-1),st=OB[i];
@@ -3288,7 +3329,7 @@ function renderOb(){
       `<button class="btn wide hot" id="ob-next">Façonnons ton app</button>`);
     $("ob-next").onclick=()=>obGo(i+1);return;}
   if(st==="verts"){
-    S.verts=S.verts||[];
+    S.verts=[...new Set(S.verts||[])];
     const big=["soiree","concert","festival","sport","competition"];
     obShell(i,"Qu'est-ce qui te fait sortir ?","Touche tout ce qui te parle. Tu pourras changer ça plus tard dans les réglages.",
       `<div class="pickb">${OB_ORDER.map(k=>`<button class="pb v-${k}${S.verts.includes(k)?" on":""}${big.includes(k)?" big":""}" data-pb="${k}" aria-pressed="${S.verts.includes(k)}"><span class="pe">${OB_EMO[k]||(k==="local"?"🏘️":k==="marche"?"🧺":"✨")}</span><b>${esc(VERTS[k].n)}</b></button>`).join("")}</div>`,
@@ -3300,18 +3341,20 @@ function renderOb(){
     if(k==="expo")body=chipsHTML("et",Object.keys(EXPO_TYPES).map(t=>[t,EXPO_TYPES[t].n]),t=>(S.expow||{})[t]>=1.4,"Quelles expos apprécies-tu ?");
     if(k==="experience")body=chipsHTML("xt",Object.keys(XP_T).map(t=>[t,XP_T[t].n]),t=>(S.xpw||{})[t]>=1.4,"Quelles expériences te tentent ?");
     if(k==="spectacle")body=chipsHTML("spt",Object.keys(SPEC_T).map(t=>[t,SPEC_T[t].n]),t=>(S.specw||{})[t]>=1.4,"Quels spectacles te font envie ?");
-    if(k==="soiree")body=musicHTML()+chipsHTML("st",[["club","Soirée en club"],["day","Teuf de jour"],["both","Les deux"]],v=>S.soireeType===v,"Tu préfères…");
-    if(k==="concert")body=((S.verts||[]).includes("soiree")?"":musicHTML())+fieldHTML("ob-lc","Ton dernier concert, c'était qui ?","Un artiste ou un groupe")+fieldHTML("ob-dream","L'artiste que tu rêves de voir sur scène ?","Beyoncé, Daft Punk, Rosalía…");
+    if(k==="soiree")body=musicHTML();
+    if(k==="concert")body=((S.verts||[]).includes("soiree")?"":musicHTML())+fieldHTML("ob-lc","Ton dernier concert, c'était qui ?","Un artiste ou un groupe");
     if(k==="festival"){const Z=S.festZone||[],city=homeCity();
       body=`<div class="lab">Tu aimerais que je te propose des festivals…</div><div class="zones">${[["near","📍","Pas loin",city?"autour de "+esc(city):"de chez toi"],["fr","🇫🇷","En France","partout"],["eu","🇪🇺","En Europe","pour voyager"]].map(([z,ic,t,sub])=>`<button class="zone${Z.includes(z)?" on":""}" data-fz="${z}" aria-pressed="${Z.includes(z)}"><span class="zi">${ic}</span><b>${t}</b><small>${sub}</small></button>`).join("")}</div>`
         +fieldHTML("ob-lf","Le dernier festival où tu es allé ?","MIMO, Solidays, Dekmantel…");}
     if(k==="theatre")body=chipsHTML("tg",Object.keys(THEATRE_G).map(g=>[g,THEATRE_G[g].n]),g=>(S.tgw||{})[g],"Quel type de pièce apprécies-tu ?");
-    if(k==="sport")body=fieldHTML("ob-lm","Le dernier match ou événement auquel tu as assisté ?","PSG – OM, XV de France, Roland-Garros…")+chipsHTML("sw",Object.keys(SPORTS).map(x=>[x,SPORTS[x].e+" "+SPORTS[x].n]),x=>(S.sportw||{})[x]>0,"Quels sports veux-tu que je surveille pour toi ?");
+    if(k==="sport")body=chipsHTML("sw",Object.keys(SPORTS).map(x=>[x,SPORTS[x].e+" "+SPORTS[x].n]),x=>(S.sportw||{})[x]>0,"Quels sports veux-tu que je surveille pour toi ?");
     if(k==="competition")body=compHTML();
     if(false&&k==="local")body=chipsHTML("lt",[...Object.keys(LOCAL_T).map(g=>[g,LOCAL_T[g].n]),["exp","Ateliers et expériences"]],g=>(S.ltw||{})[g],"Qu'est-ce qui t'intéresse près de chez toi ?");
     if(false&&k==="marche")body=freqHTML("marche","À quelle fréquence vas-tu au marché ?")+chipsHTML("md",DAYS_FRL.map((d,n)=>[String(n),capital(d)]),n=>(S.marketDays||[]).includes(+n),"Pour toi, marché rime avec…");
     obShell(i,Q_TITLE[k],"",body,`<button class="btn wide" id="ob-next">Continuer</button>`);
-    $("ob-wrap").querySelectorAll("[data-ch]").forEach(b=>b.onclick=()=>{chToggle(b.dataset.ch,b.dataset.v);if(["disc","st"].includes(b.dataset.ch))redraw();else b.setAttribute("aria-pressed",b.getAttribute("aria-pressed")!=="true");});
+    // « Aucun de ceux-là » : on enlève la bulle Dossards et on passe à la suite
+    $("ob-wrap").querySelectorAll("[data-ob-none]").forEach(b=>b.onclick=()=>{const v=b.dataset.obNone;S.verts=(S.verts||[]).filter(x=>x!==v);if(S.race)S.race.disc={};delete S.vw[v];PROF_V++;save();OB_FBS={};obGo(i);});
+    $("ob-wrap").querySelectorAll("[data-ch]").forEach(b=>b.onclick=()=>{chToggle(b.dataset.ch,b.dataset.v);if(false)redraw();else b.setAttribute("aria-pressed",b.getAttribute("aria-pressed")!=="true");});
     $("ob-wrap").querySelectorAll("[data-fz]").forEach(b=>b.onclick=()=>{const z=b.dataset.fz;S.festZone=S.festZone||[];S.festZone=S.festZone.includes(z)?S.festZone.filter(x=>x!==z):S.festZone.concat([z]);
       if(S.festZone.length)S.fest.zone=S.festZone.includes("eu")?"europe":"france";PROF_V++;save();b.classList.toggle("on");b.setAttribute("aria-pressed",String(S.festZone.includes(z)));});
     $("ob-wrap").querySelectorAll("[data-freq]").forEach(sel=>sel.onchange=()=>{S.freq=S.freq||{};if(sel.value)S.freq[sel.dataset.freq]=+sel.value;else delete S.freq[sel.dataset.freq];
@@ -3324,7 +3367,7 @@ function renderOb(){
     bindField("ob-lm",sMatch,async a=>{const r=recogMatch(a);if(r)S.vw.sport=Math.max(S.vw.sport||0,1.2);return r;});
     $("ob-next").onclick=()=>{OB_FBS={};obGo(i+1);};return;}
   if(st==="done"){
-    const n=(S.verts||[]).length;
+    const n=new Set((S.verts||[]).filter(k=>OB_ORDER.includes(k))).size;
     obShell(i,"C'est prêt"+(S.name?", "+esc(S.name):"")+" !","Ton app est façonnée : "+n+" univers, et un Pour toi calibré sur tes réponses.",
       `<div class="ob-list"><div><span>♥</span><p><b>Pourquoi pas !</b>j'apprends que ça te plaît.</p></div><div><span>✕</span><p><b>Pas pour moi</b>je l'enlève et j'apprends aussi.</p></div><div><span>🔔</span><p><b>Mettre une alerte</b>dans ton agenda et celui de ton téléphone, avec l'ouverture de la billetterie et les préventes.</p></div></div>`,
       `<button class="btn wide hot" id="ob-next">Voir mon Pour toi</button>`);
@@ -3708,6 +3751,10 @@ function wkPlan(){
   const budget=Math.max(3,Math.min(9,Math.round(total)));
   const cap={};for(const k in rates)cap[k]=rates[k]>=.9?Math.ceil(rates[k]*1.5):rates[k]>=.25?1:0;
   const skip=(S.wk&&S.wk.day===S.fyDay&&S.wk.skip)||{};
+  // trop loin de là où tu seras ce jour-là (chez toi, ou la ville de ton séjour)
+  const lim=e=>e.cat==="festival"||e.cat==="sport"&&e.big?FY_R:30;
+  const farOn=(e,i)=>{const d=days[i].d,at=new Date(d.getFullYear(),d.getMonth(),d.getDate(),14),p=eventPos(e);
+    if(!p){const tr=tripAt(at);return!!(tr&&tr.lat!=null);}return km(expectedAt(at),p)>lim(e);};
   const used=new Set(),count={};let n=0;
   // une sortie retirée (✕) garde sa place dans le calcul, sans être remplacée : la semaine ne se remplit pas d'autre chose
   const put=(i,x,slot,pinned)=>{const day=days[i],hid=!pinned&&!!skip[x.e.id];day.items.push({e:x.e,slot,pinned,why:x.why,pct:x.pct,hid});day.slots[slot]=1;used.add(groupKey(x.e));count[x.e.cat]=(count[x.e.cat]||0)+1;n++;};
@@ -3719,8 +3766,8 @@ function wkPlan(){
   likedIds.forEach(id=>{const e=EVENTS.find(y=>y.id===id)||S.interest[id];if(!e||!e.d||e.approx)return;
     const long=e.until||(e.end&&D(e.end)-D(e.d)>20*36e5);let i=dayIdx(D(e.d));
     if(long){const a=Math.max(0,i<0&&D(e.d)<t0?0:i),b=dayIdx(D(e.until||e.end));if(D(e.d)>=new Date(+t0+7*864e5)||D(e.until||e.end)<t0)return;
-      const to=b<0?6:b;i=[...Array(7).keys()].filter(j=>j>=a&&j<=to).sort((x,y)=>days[x].items.length-days[y].items.length)[0];}
-    if(i==null||i<0)return;put(i,{e,why:"♥ Tu l'as aimé"},wkSlotOf(e,i),true);days[i].items[days[i].items.length-1].liked=1;});
+      const to=b<0?6:b;i=[...Array(7).keys()].filter(j=>j>=a&&j<=to&&!farOn(e,j)).sort((x,y)=>days[x].items.length-days[y].items.length)[0];}
+    if(i==null||i<0||farOn(e,i))return;put(i,{e,why:"♥ Tu l'as aimé"},wkSlotOf(e,i),true);days[i].items[days[i].items.length-1].liked=1;});
   // 2. les candidats : chaque date de la semaine, notée d'après tes goûts
   const fy=new Set(curatedFeed("all").map(x=>groupKey(x.e)));
   const C=[],wkEnd=new Date(+t0+7*864e5);
@@ -3729,14 +3776,15 @@ function wkPlan(){
     // d'abord le moins coûteux : la date (cette semaine) — la note de goût ne se calcule que pour ce qui reste
     {const s0=D(e.d),long0=e.until||(e.end&&D(e.end)-s0>20*36e5),e0=long0?D(e.until||e.end):s0;if(e0<t0||s0>=wkEnd)return;}
     if(typeof isMarketOnly==="function"&&isMarketOnly(e))return;
-    const k=kmHome(e);if(k!=null&&k>(e.cat==="festival"||e.cat==="sport"&&e.big?FY_R:30))return;
+    const k=kmHome(e),lng=e.until||(e.end&&D(e.end)-D(e.d)>20*36e5);if(!lng&&k!=null&&k>lim(e))return;
     // en séjour : un événement dont on ne connaît pas le lieu ne passe pas
-    if(k==null){const tr=tripAt(e.d);if(tr&&tr.lat!=null)return;}
+    if(!lng&&k==null){const tr=tripAt(e.d);if(tr&&tr.lat!=null)return;}
     const x=score(e);if(x.block||(typeof clash==="function"&&clash(e)))return;
     const long=e.until||(e.end&&D(e.end)-D(e.d)>20*36e5);
     let v=x.s+(fy.has(groupKey(e))?3:0)+((S.interest||{})[e.id]&&!(S.interest[e.id]).auto?4:0)+(e.buzz?1.5:0)-(k!=null?k/12:1);
-    if(long){const a=Math.max(0,dayIdx(D(e.d))),b=dayIdx(D(e.until||e.end));C.push({e,v:v-.8,long:1,from:a,to:b<0?6:b,pct:x.pct,why:(x.r||[])[0]});return;}
-    const i=dayIdx(D(e.d));if(i<0)return;const wd=D(e.d).getDay(),we=wd===0||wd===6||wd===5&&D(e.d).getHours()>=18;
+    if(long){const a=Math.max(0,dayIdx(D(e.d))),b=dayIdx(D(e.until||e.end)),to=b<0?6:b,ok=[...Array(7).keys()].filter(j=>j>=a&&j<=to&&!farOn(e,j));if(!ok.length)return;
+      C.push({e,v:v-.8,long:1,from:a,to,ok:new Set(ok),pct:x.pct,why:(x.r||[])[0]});return;}
+    const i=dayIdx(D(e.d));if(i<0||farOn(e,i))return;const wd=D(e.d).getDay(),we=wd===0||wd===6||wd===5&&D(e.d).getHours()>=18;
     C.push({e,v:v+(we?1.2:0),i,pct:x.pct,why:(x.r||[])[0]});});
   C.sort((a,b)=>b.v-a.v);
   // 3. on remplit la semaine : les meilleures idées d'abord, sans dépasser ton rythme ni un univers par jour
@@ -3744,21 +3792,21 @@ function wkPlan(){
   const okCat=c=>(count[c.e.cat]||0)<Math.max(cap[c.e.cat]||0,(S.interest||{})[c.e.id]?1:0);
   for(const c of C){if(n>=budget)break;if(used.has(groupKey(c.e))||!okCat(c))continue;
     if(c.long){// une expo ou une expérience longue : le meilleur jour libre, de préférence le week-end
-      const order=[...Array(7).keys()].filter(i=>i>=c.from&&i<=c.to).sort((a,b)=>{const we=i=>[0,6].includes(days[i].d.getDay())?0:1;return we(a)-we(b)||days[a].items.length-days[b].items.length;});
+      const order=[...Array(7).keys()].filter(i=>c.ok.has(i)).sort((a,b)=>{const we=i=>[0,6].includes(days[i].d.getDay())?0:1;return we(a)-we(b)||days[a].items.length-days[b].items.length;});
       const sl=WK_EVE.includes(c.e.cat)?"soir":"jour",i=order.find(i=>fits(i,c,sl));if(i!=null)put(i,c,sl);continue;}
     const slot=wkSlotOf(c.e,c.i);if(fits(c.i,c,slot))put(c.i,c,slot);}
   // 4. un week-end vide, c'est dommage : une idée de plus si on en a une
   [5,6,0].forEach(wd=>{const i=days.findIndex(x=>x.d.getDay()===wd);if(i<0||days[i].items.length)return;
-    const c=C.find(c=>!used.has(groupKey(c.e))&&(c.long?i>=c.from&&i<=c.to:c.i===i));if(c)put(i,c,wkSlotOf(c.e,i));});
+    const c=C.find(c=>!used.has(groupKey(c.e))&&(c.long?c.ok.has(i):c.i===i));if(c)put(i,c,wkSlotOf(c.e,i));});
   // le week-end (vendredi soir, samedi, dimanche) : plus d'idées, jusqu'à remplir ses créneaux
   const weI=days.map((d,i)=>i).filter(i=>[0,6].includes(days[i].d.getDay())||days[i].d.getDay()===5);
   const weTarget=Math.min(7,Math.max(5,budget));
   const weCount=()=>weI.reduce((a,i)=>a+days[i].items.length,0);
   for(const c of C){if(weCount()>=weTarget)break;if(used.has(groupKey(c.e)))continue;
-    if(c.long){const i=weI.find(i=>i>=c.from&&i<=c.to&&days[i].d.getDay()!==5&&fits(i,c,WK_EVE.includes(c.e.cat)?"soir":"jour"));if(i!=null)put(i,c,WK_EVE.includes(c.e.cat)?"soir":"jour");continue;}
+    if(c.long){const i=weI.find(i=>c.ok.has(i)&&days[i].d.getDay()!==5&&fits(i,c,WK_EVE.includes(c.e.cat)?"soir":"jour"));if(i!=null)put(i,c,WK_EVE.includes(c.e.cat)?"soir":"jour");continue;}
     if(!weI.includes(c.i))continue;const sl=wkSlotOf(c.e,c.i);if(days[c.i].d.getDay()===5&&sl==="jour")continue;if(fits(c.i,c,sl))put(c.i,c,sl);}
   // aucun jour vide quand il y a de quoi faire : la meilleure idée du jour, même au-delà de ton rythme
-  days.forEach((day,i)=>{if(day.items.length)return;const c=C.find(c=>!used.has(groupKey(c.e))&&!skip[c.e.id]&&(c.long?i>=c.from&&i<=c.to:c.i===i));
+  days.forEach((day,i)=>{if(day.items.length)return;const c=C.find(c=>!used.has(groupKey(c.e))&&!skip[c.e.id]&&(c.long?c.ok.has(i):c.i===i));
     if(c)put(i,c,c.long?(WK_EVE.includes(c.e.cat)?"soir":"jour"):wkSlotOf(c.e,i));});
   days.forEach(d=>{d.items=d.items.filter(it=>!it.hid);});n=days.reduce((a,d)=>a+d.items.length,0);
   days.forEach(d=>d.items.sort((a,b)=>["jour","soir","nuit"].indexOf(a.slot)-["jour","soir","nuit"].indexOf(b.slot)));
@@ -5027,16 +5075,16 @@ function whereLabel(){const g=S.home&&S.home.src==="gps";$("where-txt").textCont
 /* --- séjour : « Hey, combien de temps seras-tu à Honfleur ? » --- */
 function stayAsk(p,gpsHere){
   const t0=new Date(NOW.getFullYear(),NOW.getMonth(),NOW.getDate()),eod=d=>new Date(d.getFullYear(),d.getMonth(),d.getDate(),23,59).toISOString();
-  const dow=t0.getDay(),toSun=dow===0?0:7-dow,sun=new Date(+t0+toSun*864e5),ymdL=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+  const dow=t0.getDay(),toSun=dow===0?0:7-dow,sun=new Date(t0.getFullYear(),t0.getMonth(),t0.getDate()+toSun),ymdL=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
   const opt=(k,ic,ti,sub)=>`<button class="pc-opt" data-stay="${k}"><span class="ic">${ic}</span><span><b>${ti}</b><small>${sub}</small></span></button>`;
   openSheet(`<div class="in pcsheet"><h3>Hey, combien de temps seras-tu à ${esc(p.name)} ?</h3><p class="small">Ta semaine et tes idées de sorties s'adaptent : là-bas pendant ton séjour, chez toi ensuite.</p>
-    ${opt("day","☀️","Aujourd'hui","Jusqu'à ce soir")}${opt("we","🧳",dow===0||dow===6?"Ce week-end":"Jusqu'à dimanche","Jusqu'au "+dlong(sun))}${opt("week","🗓️","Toute la semaine","Jusqu'au "+dlong(new Date(+t0+6*864e5)))}
-    <div class="stay-dates"><b>Ou choisis tes dates</b><div class="row"><label>Du <input type="date" id="st-a" value="${ymdL(t0)}" min="${ymdL(t0)}"></label><label>au <input type="date" id="st-b" value="${ymdL(new Date(+t0+2*864e5))}" min="${ymdL(t0)}"></label></div><button class="btn sm" data-stay="dates">Ze parti</button></div>
+    ${opt("day","☀️","Aujourd'hui","Jusqu'à ce soir")}${opt("we","🧳",dow===0||dow===6?"Ce week-end":"Jusqu'à dimanche","Jusqu'au "+dlong(sun))}${opt("week","🗓️","Toute la semaine","Jusqu'au "+dlong(new Date(t0.getFullYear(),t0.getMonth(),t0.getDate()+6)))}
+    <div class="stay-dates"><b>Ou choisis tes dates</b><div class="row"><label>Du <input type="date" id="st-a" value="${ymdL(t0)}" min="${ymdL(t0)}"></label><label>au <input type="date" id="st-b" value="${ymdL(new Date(t0.getFullYear(),t0.getMonth(),t0.getDate()+2))}" min="${ymdL(t0)}"></label></div><button class="btn sm" data-stay="dates">Ze parti</button></div>
     ${gpsHere?`<button class="lnk" data-stay="move" style="align-self:center">J'habite ici maintenant</button>`:`<button class="lnk" data-stay="none" style="align-self:center">Je regarde juste, je n'y vais pas</button>`}</div>`,"phonecal");
   document.querySelectorAll("[data-stay]").forEach(b=>b.onclick=()=>{const k=b.dataset.stay;if(k==="none"){closeSheet();return;}
     if(k==="move"){S.home=Object.assign({},gpsHere);S.stays=[];S.browse=null;save();PROF_V++;closeSheet();whereLabel();notify("📍 Bienvenue à "+(gpsHere.city||""),"FOMO te propose maintenant ce qui se passe autour de chez toi, ici.");refreshPlace();return;}
     let s=new Date(t0),e;
-    if(k==="day")e=eod(t0);else if(k==="we")e=eod(sun);else if(k==="week")e=eod(new Date(+t0+6*864e5));
+    if(k==="day")e=eod(t0);else if(k==="we")e=eod(sun);else if(k==="week")e=eod(new Date(t0.getFullYear(),t0.getMonth(),t0.getDate()+6));
     else{const a=$("st-a").value,z=$("st-b").value;if(!a||!z)return;s=new Date(a+"T00:00");e=eod(new Date(z+"T12:00"));if(new Date(e)<s)return;}
     S.stays=stays().filter(x=>!(new Date(x.s)<new Date(e)&&new Date(x.e)>s)).concat([{city:p.name,lat:+p.lat,lon:+p.lon,s:s.toISOString(),e}]).sort((a,b)=>new Date(a.s)-new Date(b.s));
     if(gpsHere){S.browse={name:p.name,lat:+p.lat,lon:+p.lon,country:"FR"};whereLabel();}
