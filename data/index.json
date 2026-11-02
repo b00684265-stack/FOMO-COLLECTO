@@ -2,24 +2,24 @@
  "cities": {
   "paris": {
    "name": "Paris",
-   "updated": "2026-11-01T04:59:29.153336+00:00",
-   "n": 7901,
+   "updated": "2026-11-02T05:13:58.935158+00:00",
+   "n": 7868,
    "sources": {
     "ra": {
      "n": 142
     },
     "dice": {
-     "n": 389
+     "n": 371
     },
     "tm": {
-     "n": 6711
+     "n": 6710
     },
     "fnac": {
      "n": 0,
      "err": "HTTP Error 403: Forbidden"
     },
     "dtour": {
-     "n": 234
+     "n": 229
     },
     "marches": {
      "n": 80
@@ -31,13 +31,13 @@
      "n": 13
     },
     "offi": {
-     "n": 354
+     "n": 357
     }
    }
   },
   "france": {
    "name": "Festivals",
-   "updated": "2026-11-01T04:59:29.153336+00:00",
+   "updated": "2026-11-02T05:13:58.935158+00:00",
    "n": 1995,
    "sources": {
     "festivals": {
@@ -47,27 +47,27 @@
   },
   "sports": {
    "name": "Sport (France)",
-   "updated": "2026-11-01T04:59:29.153336+00:00",
-   "n": 867,
+   "updated": "2026-11-02T05:13:58.935158+00:00",
+   "n": 858,
    "sources": {
     "sports": {
-     "n": 867
+     "n": 858
     }
    }
   },
   "races": {
    "name": "Courses (France)",
-   "updated": "2026-11-01T04:59:29.153336+00:00",
-   "n": 5247,
+   "updated": "2026-11-02T05:13:58.935158+00:00",
+   "n": 5258,
    "sources": {
     "races": {
-     "n": 5247
+     "n": 5258
     }
    }
   },
   "artists": {
    "name": "Dates de tes artistes",
-   "updated": "2026-11-01T04:59:29.153336+00:00",
+   "updated": "2026-11-02T05:13:58.935158+00:00",
    "n": 2,
    "sources": {
     "artists": {
@@ -159,8 +159,8 @@
   },
   "clermont-ferrand": {
    "name": "Clermont-Ferrand",
-   "updated": "2026-10-29T04:58:00.364067+00:00",
-   "n": 455,
+   "updated": "2026-11-02T05:13:58.935158+00:00",
+   "n": 453,
    "sources": {
     "ra": {
      "n": 0
@@ -170,20 +170,20 @@
      "err": "HTTP Error 404: Not Found"
     },
     "tm": {
-     "n": 239
+     "n": 244
     },
     "fnac": {
      "n": 0,
      "err": "HTTP Error 403: Forbidden"
     },
     "dtour": {
-     "n": 169
+     "n": 152
     },
     "marches": {
      "n": 0
     },
     "br": {
-     "n": 52
+     "n": 62
     },
     "tac": {
      "n": 0
@@ -195,8 +195,8 @@
   },
   "saint-etienne": {
    "name": "Saint-Étienne",
-   "updated": "2026-10-29T04:58:00.364067+00:00",
-   "n": 480,
+   "updated": "2026-11-02T05:13:58.935158+00:00",
+   "n": 474,
    "sources": {
     "ra": {
      "n": 0
@@ -206,20 +206,20 @@
      "err": "HTTP Error 404: Not Found"
     },
     "tm": {
-     "n": 218
+     "n": 236
     },
     "fnac": {
      "n": 0,
      "err": "HTTP Error 403: Forbidden"
     },
     "dtour": {
-     "n": 222
+     "n": 201
     },
     "marches": {
      "n": 0
     },
     "br": {
-     "n": 43
+     "n": 40
     },
     "tac": {
      "n": 0
@@ -259,8 +259,8 @@
   },
   "toulon": {
    "name": "Toulon",
-   "updated": "2026-10-29T15:59:39.833006+00:00",
-   "n": 428,
+   "updated": "2026-11-02T05:13:58.935158+00:00",
+   "n": 480,
    "sources": {
     "ra": {
      "n": 0
@@ -270,20 +270,20 @@
      "err": "HTTP Error 404: Not Found"
     },
     "tm": {
-     "n": 341
+     "n": 344
     },
     "fnac": {
      "n": 0,
      "err": "HTTP Error 403: Forbidden"
     },
     "dtour": {
-     "n": 83
+     "n": 74
     },
     "marches": {
      "n": 0
     },
     "br": {
-     "n": 66
+     "n": 65
     },
     "tac": {
      "n": 0
@@ -295,8 +295,8 @@
   },
   "le-havre": {
    "name": "Le Havre",
-   "updated": "2026-10-29T15:59:39.833006+00:00",
-   "n": 849,
+   "updated": "2026-11-02T05:13:58.935158+00:00",
+   "n": 861,
    "sources": {
     "ra": {
      "n": 0
@@ -306,14 +306,14 @@
      "err": "HTTP Error 404: Not Found"
     },
     "tm": {
-     "n": 136
+     "n": 132
     },
     "fnac": {
      "n": 0,
      "err": "HTTP Error 403: Forbidden"
     },
     "dtour": {
-     "n": 786
+     "n": 731
     },
     "marches": {
      "n": 0
@@ -603,11 +603,11 @@
   },
   "buzz": {
    "name": "Les plus attendus",
-   "updated": "2026-11-01T04:59:29.153336+00:00",
-   "n": 34,
+   "updated": "2026-11-02T05:13:58.935158+00:00",
+   "n": 42,
    "sources": {
     "buzz": {
-     "n": 34
+     "n": 42
     }
    }
   },
@@ -1097,21 +1097,21 @@
   },
   "berlin": {
    "name": "Berlin",
-   "updated": "2026-10-27T04:46:34.340197+00:00",
-   "n": 292,
+   "updated": "2026-11-02T05:13:58.935158+00:00",
+   "n": 293,
    "sources": {
     "ra": {
      "n": 200
     },
     "dice": {
-     "n": 98
+     "n": 113
     }
    }
   },
   "amsterdam": {
    "name": "Amsterdam",
-   "updated": "2026-10-27T04:46:34.340197+00:00",
-   "n": 192,
+   "updated": "2026-11-02T05:13:58.935158+00:00",
+   "n": 194,
    "sources": {
     "ra": {
      "n": 200
@@ -1504,5 +1504,5 @@
    }
   }
  },
- "updated": "2026-11-01T04:59:29.153336+00:00"
+ "updated": "2026-11-02T05:13:58.935158+00:00"
 }
